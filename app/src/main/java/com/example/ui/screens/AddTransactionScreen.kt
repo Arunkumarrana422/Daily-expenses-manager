@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.entity.CategoryEntity
+import com.example.ui.components.CategoryIconHelper
 import com.example.ui.theme.FinanceSuccess
 import com.example.ui.theme.IndigoPrimary
 import com.example.ui.viewmodel.FinanceViewModel
@@ -92,7 +93,7 @@ fun AddTransactionScreen(
 
     var showAddCategoryDialog by remember { mutableStateOf(false) }
     var newCategoryName by remember { mutableStateOf("") }
-    var newCategoryIcon by remember { mutableStateOf("🏷️") }
+    var newCategoryIcon by remember { mutableStateOf("category") }
 
     val quickAmounts = listOf(100, 500, 1000, 2000, 5000)
     val paymentMethods = listOf("Cash", "UPI", "Debit Card", "Credit Card", "Bank Transfer", "Wallet")
@@ -110,19 +111,24 @@ fun AddTransactionScreen(
                         modifier = Modifier.fillMaxWidth().testTag("new_category_name_input")
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    Text("Select Emoji/Icon:", fontSize = 13.sp)
+                    Text("Select Icon:", fontSize = 13.sp)
                     Spacer(modifier = Modifier.height(6.dp))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("☕", "🎬", "🛍️", "🏋️", "📚", "🐶", "🎁", "💻", "🏥", "🚕").forEach { emoji ->
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("restaurant", "shopping_cart", "directions_car", "home", "phone", "payments", "account_balance", "star", "build", "place").forEach { iconKey ->
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(38.dp)
                                     .clip(CircleShape)
-                                    .background(if (newCategoryIcon == emoji) IndigoPrimary.copy(alpha = 0.2f) else Color.Transparent)
-                                    .clickable { newCategoryIcon = emoji },
+                                    .background(if (newCategoryIcon == iconKey) IndigoPrimary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                    .clickable { newCategoryIcon = iconKey },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(emoji, fontSize = 20.sp)
+                                Icon(
+                                    imageVector = CategoryIconHelper.getIcon(iconKey),
+                                    contentDescription = iconKey,
+                                    tint = if (newCategoryIcon == iconKey) IndigoPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
                         }
                     }
@@ -341,7 +347,12 @@ fun AddTransactionScreen(
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(text = category.icon, fontSize = 16.sp)
+                                    Icon(
+                                        imageVector = CategoryIconHelper.getIcon(category.name, category.icon),
+                                        contentDescription = category.name,
+                                        tint = if (isSelected) IndigoPrimary else Color(category.color),
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = category.name,

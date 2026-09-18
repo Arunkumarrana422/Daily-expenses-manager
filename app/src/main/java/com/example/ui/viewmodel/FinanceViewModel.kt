@@ -194,7 +194,7 @@ class FinanceViewModel(
                 isExpense = false,
                 amount = it.amount,
                 title = it.source,
-                categoryIcon = "💰",
+                categoryIcon = "payments",
                 categoryColor = 0xFF2E7D32,
                 paymentMethod = it.paymentMethod,
                 date = it.date,

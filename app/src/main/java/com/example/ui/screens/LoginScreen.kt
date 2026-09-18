@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -90,30 +92,30 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
     fun attemptLogin() {
-        errorMessage = null
         if (email.isBlank()) {
-            errorMessage = "Please enter your email"
+            Toast.makeText(context, "Please enter your email", Toast.LENGTH_SHORT).show()
             return
         }
         if (password.isBlank()) {
-            errorMessage = "Please enter your password"
+            Toast.makeText(context, "Please enter your password", Toast.LENGTH_SHORT).show()
             return
         }
 
         isLoading = true
-        onLogin(email, password) { success, error ->
+        onLogin(email.trim(), password) { success, error ->
             isLoading = false
             if (success) {
                 onLoginSuccess()
             } else {
-                errorMessage = error ?: "Login failed. Check your credentials."
+                val errorMsg = error ?: "Incorrect email or password. Please try again."
+                Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -181,25 +183,6 @@ fun LoginScreen(
                         .fillMaxWidth()
                         .padding(20.dp)
                 ) {
-                    // Error Banner
-                    if (errorMessage != null) {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 16.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            color = FinanceError.copy(alpha = 0.12f)
-                        ) {
-                            Text(
-                                text = errorMessage!!,
-                                color = FinanceError,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(12.dp)
-                            )
-                        }
-                    }
-
                     // Email Field
                     Text(
                         text = "Email Address",
@@ -210,10 +193,7 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(6.dp))
                     OutlinedTextField(
                         value = email,
-                        onValueChange = {
-                            email = it
-                            errorMessage = null
-                        },
+                        onValueChange = { email = it },
                         placeholder = { Text("you@example.com") },
                         singleLine = true,
                         maxLines = 1,
@@ -249,10 +229,7 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(6.dp))
                     OutlinedTextField(
                         value = password,
-                        onValueChange = {
-                            password = it
-                            errorMessage = null
-                        },
+                        onValueChange = { password = it },
                         placeholder = { Text("••••••••") },
                         singleLine = true,
                         maxLines = 1,

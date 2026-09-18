@@ -19,10 +19,10 @@ object DateTimeUtils {
     fun getGreeting(): String {
         val hour = LocalTime.now().hour
         return when (hour) {
-            in 4..11 -> "Good Morning 👋"
-            in 12..16 -> "Good Afternoon ☀️"
-            in 17..21 -> "Good Evening 🌆"
-            else -> "Good Night 🌙"
+            in 4..11 -> "Good Morning"
+            in 12..16 -> "Good Afternoon"
+            in 17..21 -> "Good Evening"
+            else -> "Good Night"
         }
     }
 

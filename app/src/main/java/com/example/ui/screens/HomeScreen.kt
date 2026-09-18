@@ -355,7 +355,12 @@ fun HomeScreen(
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = "📊", fontSize = 36.sp)
+                        Icon(
+                            imageVector = Icons.Default.PieChart,
+                            contentDescription = null,
+                            tint = IndigoPrimary,
+                            modifier = Modifier.size(44.dp)
+                        )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = "No expenses yet",

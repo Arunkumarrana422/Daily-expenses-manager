@@ -10,7 +10,7 @@ data class ExpenseEntity(
     val amount: Double,
     val categoryId: Long,
     val categoryName: String,
-    val categoryIcon: String = "🍔",
+    val categoryIcon: String = "restaurant",
     val categoryColor: Long = 0xFF3949AB,
     val paymentMethod: String = "Cash",
     val accountId: Long = 1,

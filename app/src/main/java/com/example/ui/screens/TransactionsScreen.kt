@@ -230,7 +230,12 @@ fun TransactionsScreen(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("🔍", fontSize = 40.sp)
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.size(44.dp)
+                        )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = "No Transactions Found",

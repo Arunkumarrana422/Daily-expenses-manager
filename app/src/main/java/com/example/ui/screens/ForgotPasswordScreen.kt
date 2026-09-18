@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -80,17 +81,16 @@ fun ForgotPasswordScreen(
     modifier: Modifier = Modifier
 ) {
     var email by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSubmitted by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
     fun attemptReset() {
-        errorMessage = null
         if (email.isBlank() || !email.contains("@")) {
-            errorMessage = "Please enter a valid email address"
+            Toast.makeText(context, "Please enter a valid email address", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -100,7 +100,8 @@ fun ForgotPasswordScreen(
             if (success) {
                 isSubmitted = true
             } else {
-                errorMessage = error ?: "Failed to send reset email. Please verify."
+                val errorMsg = error ?: "Failed to send reset email. Please verify."
+                Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -229,25 +230,6 @@ fun ForgotPasswordScreen(
                             }
                         }
                     } else {
-                        // Error Banner
-                        if (errorMessage != null) {
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 14.dp),
-                                shape = RoundedCornerShape(10.dp),
-                                color = FinanceError.copy(alpha = 0.12f)
-                            ) {
-                                Text(
-                                    text = errorMessage!!,
-                                    color = FinanceError,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.padding(12.dp)
-                                )
-                            }
-                        }
-
                         // Email Field
                         Text(
                             text = "Email Address",
@@ -258,10 +240,7 @@ fun ForgotPasswordScreen(
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
                             value = email,
-                            onValueChange = {
-                                email = it
-                                errorMessage = null
-                            },
+                            onValueChange = { email = it },
                             placeholder = { Text("you@example.com") },
                             singleLine = true,
                             maxLines = 1,

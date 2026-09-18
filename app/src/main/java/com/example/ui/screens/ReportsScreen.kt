@@ -142,7 +142,7 @@ fun ReportsScreen(
                 IconButton(
                     onClick = {
                         val reportText = buildString {
-                            appendLine("📊 Daily Expense Manager Financial Report")
+                            appendLine("Daily Expense Manager Financial Report")
                             appendLine("Period: $reportsPeriod")
                             appendLine("Total Income: ${CurrencyFormatter.format(totalIncome, currency)}")
                             appendLine("Total Expenses: ${CurrencyFormatter.format(totalSpent, currency)}")

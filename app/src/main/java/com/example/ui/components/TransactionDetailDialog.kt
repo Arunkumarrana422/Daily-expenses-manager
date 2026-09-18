@@ -142,7 +142,12 @@ fun TransactionDetailDialog(
                         .background(Color(transaction.categoryColor).copy(alpha = 0.15f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = transaction.categoryIcon, fontSize = 28.sp)
+                    Icon(
+                        imageVector = CategoryIconHelper.getIcon(transaction.title, transaction.categoryIcon),
+                        contentDescription = transaction.title,
+                        tint = Color(transaction.categoryColor),
+                        modifier = Modifier.size(32.dp)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))

@@ -227,7 +227,7 @@ class FirebaseSyncManager(
                 try {
                     val amount = doc.getDouble("amount") ?: 0.0
                     val categoryName = doc.getString("categoryName") ?: "Other"
-                    val categoryIcon = doc.getString("categoryIcon") ?: "📦"
+                    val categoryIcon = doc.getString("categoryIcon") ?: "category"
                     val categoryColor = doc.getLong("categoryColor") ?: 0xFF3949AB
                     val categoryId = doc.getLong("categoryId") ?: 1L
                     val paymentMethod = doc.getString("paymentMethod") ?: "Cash"

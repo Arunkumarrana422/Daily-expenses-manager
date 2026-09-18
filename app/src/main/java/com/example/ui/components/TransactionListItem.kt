@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -67,9 +68,11 @@ fun TransactionListItem(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = item.categoryIcon,
-                    fontSize = 20.sp
+                Icon(
+                    imageVector = CategoryIconHelper.getIcon(item.title, item.categoryIcon),
+                    contentDescription = item.title,
+                    tint = Color(item.categoryColor),
+                    modifier = Modifier.size(24.dp)
                 )
             }
 

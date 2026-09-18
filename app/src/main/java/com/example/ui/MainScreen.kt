@@ -92,6 +92,13 @@ fun MainScreen(
         }
     }
 
+    // Automatically trigger cloud fetch/sync whenever internet is available or reconnected
+    LaunchedEffect(isOnline) {
+        if (isOnline) {
+            viewModel.triggerCloudSync()
+        }
+    }
+
     // 0. Strict Internet Connection Check: Block access when offline
     if (!isOnline) {
         NoInternetScreen(

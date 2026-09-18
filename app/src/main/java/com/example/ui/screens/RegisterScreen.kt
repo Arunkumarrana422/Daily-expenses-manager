@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -91,28 +92,27 @@ fun RegisterScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
     fun attemptRegister() {
-        errorMessage = null
         if (name.isBlank()) {
-            errorMessage = "Please enter your name"
+            Toast.makeText(context, "Please enter your name", Toast.LENGTH_SHORT).show()
             return
         }
         if (email.isBlank() || !email.contains("@")) {
-            errorMessage = "Please enter a valid email address"
+            Toast.makeText(context, "Please enter a valid email address", Toast.LENGTH_SHORT).show()
             return
         }
         if (password.length < 6) {
-            errorMessage = "Password must be at least 6 characters"
+            Toast.makeText(context, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
             return
         }
         if (password != confirmPassword) {
-            errorMessage = "Passwords do not match"
+            Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -122,7 +122,8 @@ fun RegisterScreen(
             if (success) {
                 onRegisterSuccess()
             } else {
-                errorMessage = error ?: "Registration failed. Please try again."
+                val errorMsg = error ?: "Registration failed. Please try again."
+                Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -190,25 +191,6 @@ fun RegisterScreen(
                         .fillMaxWidth()
                         .padding(20.dp)
                 ) {
-                    // Error Banner
-                    if (errorMessage != null) {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 14.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            color = FinanceError.copy(alpha = 0.12f)
-                        ) {
-                            Text(
-                                text = errorMessage!!,
-                                color = FinanceError,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(12.dp)
-                            )
-                        }
-                    }
-
                     // Full Name Field
                     Text(
                         text = "Full Name",
@@ -219,10 +201,7 @@ fun RegisterScreen(
                     Spacer(modifier = Modifier.height(6.dp))
                     OutlinedTextField(
                         value = name,
-                        onValueChange = {
-                            name = it
-                            errorMessage = null
-                        },
+                        onValueChange = { name = it },
                         placeholder = { Text("Your Name") },
                         singleLine = true,
                         maxLines = 1,
@@ -258,10 +237,7 @@ fun RegisterScreen(
                     Spacer(modifier = Modifier.height(6.dp))
                     OutlinedTextField(
                         value = email,
-                        onValueChange = {
-                            email = it
-                            errorMessage = null
-                        },
+                        onValueChange = { email = it },
                         placeholder = { Text("you@example.com") },
                         singleLine = true,
                         maxLines = 1,
@@ -297,10 +273,7 @@ fun RegisterScreen(
                     Spacer(modifier = Modifier.height(6.dp))
                     OutlinedTextField(
                         value = password,
-                        onValueChange = {
-                            password = it
-                            errorMessage = null
-                        },
+                        onValueChange = { password = it },
                         placeholder = { Text("••••••••") },
                         singleLine = true,
                         maxLines = 1,
@@ -346,10 +319,7 @@ fun RegisterScreen(
                     Spacer(modifier = Modifier.height(6.dp))
                     OutlinedTextField(
                         value = confirmPassword,
-                        onValueChange = {
-                            confirmPassword = it
-                            errorMessage = null
-                        },
+                        onValueChange = { confirmPassword = it },
                         placeholder = { Text("••••••••") },
                         singleLine = true,
                         maxLines = 1,
