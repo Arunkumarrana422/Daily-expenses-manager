@@ -31,6 +31,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -42,6 +44,9 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -95,6 +100,67 @@ fun AddTransactionScreen(
     var showAddCategoryDialog by remember { mutableStateOf(false) }
     var newCategoryName by remember { mutableStateOf("") }
     var newCategoryIcon by remember { mutableStateOf("category") }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState()
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val instant = java.time.Instant.ofEpochMilli(millis)
+                        val date = java.time.LocalDate.ofInstant(instant, java.time.ZoneId.of("UTC"))
+                        selectedDate = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        val currentTime = java.time.LocalTime.now()
+        val timePickerState = rememberTimePickerState(
+            initialHour = currentTime.hour,
+            initialMinute = currentTime.minute,
+            is24Hour = false,
+        )
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val hour = timePickerState.hour
+                    val minute = timePickerState.minute
+                    val localTime = java.time.LocalTime.of(hour, minute)
+                    selectedTime = localTime.format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a"))
+                    showTimePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) {
+                    Text("Cancel")
+                }
+            },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    TimePicker(state = timePickerState)
+                }
+            }
+        )
+    }
 
     val quickAmounts = listOf(100, 500, 1000, 2000, 5000)
     val paymentMethods = listOf("Cash", "UPI", "Debit Card", "Credit Card", "Bank Transfer", "Wallet")
@@ -470,24 +536,51 @@ fun AddTransactionScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        OutlinedTextField(
-                            value = selectedDate,
-                            onValueChange = { selectedDate = it },
-                            label = { Text("Date (YYYY-MM-DD)") },
-                            leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = "Date") },
+                        Box(
                             modifier = Modifier
                                 .weight(1.2f)
-                                .testTag("transaction_date_input")
-                        )
+                                .clickable { showDatePicker = true }
+                        ) {
+                            OutlinedTextField(
+                                value = selectedDate,
+                                onValueChange = {},
+                                readOnly = true,
+                                enabled = false,
+                                label = { Text("Date (YYYY-MM-DD)") },
+                                leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = "Date") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("transaction_date_input"),
+                                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                    disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                        }
 
-                        OutlinedTextField(
-                            value = selectedTime,
-                            onValueChange = { selectedTime = it },
-                            label = { Text("Time (12-hr)") },
+                        Box(
                             modifier = Modifier
                                 .weight(0.8f)
-                                .testTag("transaction_time_input")
-                        )
+                                .clickable { showTimePicker = true }
+                        ) {
+                            OutlinedTextField(
+                                value = selectedTime,
+                                onValueChange = {},
+                                readOnly = true,
+                                enabled = false,
+                                label = { Text("Time (12-hr)") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("transaction_time_input"),
+                                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                        }
                     }
                 }
             }
