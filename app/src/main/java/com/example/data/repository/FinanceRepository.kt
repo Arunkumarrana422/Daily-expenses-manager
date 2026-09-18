@@ -232,6 +232,12 @@ class FinanceRepository(
 
     suspend fun sendPasswordReset(email: String): Result<Unit> = authManager.sendPasswordReset(email)
 
+    suspend fun updateProfilePhoto(base64Photo: String): Result<Unit> = authManager.updateProfilePhoto(base64Photo)
+
+    suspend fun updateDisplayName(newName: String): Result<Unit> = authManager.updateDisplayName(newName)
+
+    suspend fun updatePassword(currentPass: String, newPass: String): Result<Unit> = authManager.updatePassword(currentPass, newPass)
+
     suspend fun logout() {
         authManager.logout()
         // Clear local user transactions on logout

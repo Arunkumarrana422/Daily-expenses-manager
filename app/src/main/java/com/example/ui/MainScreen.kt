@@ -46,8 +46,11 @@ import androidx.navigation.compose.rememberNavController
 import com.example.ui.components.AddAccountDialog
 import com.example.ui.components.AddBudgetDialog
 import com.example.ui.components.PinLockScreen
+import com.example.ui.components.ToastType
+import com.example.ui.components.TopToastHost
 import com.example.ui.components.TransactionDetailDialog
 import com.example.ui.components.TransferMoneyDialog
+import com.example.ui.components.rememberTopToastState
 import com.example.ui.navigation.Screen
 import com.example.ui.screens.AddTransactionScreen
 import com.example.ui.screens.ForgotPasswordScreen
@@ -79,6 +82,7 @@ fun MainScreen(
     val prefs by viewModel.userPreferences.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val topToastState = rememberTopToastState()
 
     // Dialog Visibility states
     var showAddBudgetDialog by remember { mutableStateOf(false) }
@@ -88,6 +92,12 @@ fun MainScreen(
     // Collect snackbar messages
     LaunchedEffect(Unit) {
         viewModel.snackbarMessage.collect { msg ->
+            val toastType = when {
+                msg.contains("failed", ignoreCase = true) || msg.contains("error", ignoreCase = true) || msg.contains("offline", ignoreCase = true) -> ToastType.ERROR
+                msg.contains("success", ignoreCase = true) || msg.contains("saved", ignoreCase = true) || msg.contains("welcome", ignoreCase = true) || msg.contains("updated", ignoreCase = true) -> ToastType.SUCCESS
+                else -> ToastType.INFO
+            }
+            topToastState.show(msg, toastType)
             snackbarHostState.showSnackbar(msg)
         }
     }
@@ -219,7 +229,14 @@ fun MainScreen(
                     NavigationBarItem(
                         selected = isSelected,
                         onClick = {
-                            if (currentRoute != screen.route) {
+                            if (screen.route == Screen.Home.route) {
+                                navController.navigate(Screen.Home.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        inclusive = false
+                                    }
+                                    launchSingleTop = true
+                                }
+                            } else if (currentRoute != screen.route) {
                                 navController.navigate(screen.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true
@@ -330,6 +347,8 @@ fun MainScreen(
                     )
                 }
             }
+
+            TopToastHost(state = topToastState)
         }
     }
 }

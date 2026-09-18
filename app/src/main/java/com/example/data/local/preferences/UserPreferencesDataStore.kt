@@ -26,6 +26,7 @@ data class AppUserPreferences(
     val monthlySummaryEnabled: Boolean = true,
     val userDisplayName: String = "User",
     val userEmail: String = "",
+    val profilePhotoBase64: String = "",
     val lastSyncTimestamp: Long = 0L
 )
 
@@ -43,6 +44,7 @@ class UserPreferencesDataStore(private val context: Context) {
     private val KEY_MONTHLY_SUMMARY = booleanPreferencesKey("monthly_summary")
     private val KEY_USER_NAME = stringPreferencesKey("user_name")
     private val KEY_USER_EMAIL = stringPreferencesKey("user_email")
+    private val KEY_PROFILE_PHOTO = stringPreferencesKey("profile_photo_base64")
     private val KEY_LAST_SYNC = longPreferencesKey("last_sync")
 
     val preferencesFlow: Flow<AppUserPreferences> = context.dataStore.data.map { prefs ->
@@ -59,6 +61,7 @@ class UserPreferencesDataStore(private val context: Context) {
             monthlySummaryEnabled = prefs[KEY_MONTHLY_SUMMARY] ?: true,
             userDisplayName = prefs[KEY_USER_NAME] ?: "User",
             userEmail = prefs[KEY_USER_EMAIL] ?: "",
+            profilePhotoBase64 = prefs[KEY_PROFILE_PHOTO] ?: "",
             lastSyncTimestamp = prefs[KEY_LAST_SYNC] ?: 0L
         )
     }
@@ -80,12 +83,27 @@ class UserPreferencesDataStore(private val context: Context) {
         }
     }
 
-    suspend fun setLoggedInUser(uid: String, name: String, email: String) {
+    suspend fun setLoggedInUser(uid: String, name: String, email: String, profilePhoto: String = "") {
         context.dataStore.edit {
             it[KEY_IS_LOGGED_IN] = true
             it[KEY_USER_UID] = uid
             it[KEY_USER_NAME] = name
             it[KEY_USER_EMAIL] = email
+            if (profilePhoto.isNotEmpty()) {
+                it[KEY_PROFILE_PHOTO] = profilePhoto
+            }
+        }
+    }
+
+    suspend fun setProfilePhoto(base64: String) {
+        context.dataStore.edit {
+            it[KEY_PROFILE_PHOTO] = base64
+        }
+    }
+
+    suspend fun setUserName(name: String) {
+        context.dataStore.edit {
+            it[KEY_USER_NAME] = name
         }
     }
 
@@ -95,6 +113,7 @@ class UserPreferencesDataStore(private val context: Context) {
             it[KEY_USER_UID] = ""
             it[KEY_USER_NAME] = "User"
             it[KEY_USER_EMAIL] = ""
+            it[KEY_PROFILE_PHOTO] = ""
         }
     }
 

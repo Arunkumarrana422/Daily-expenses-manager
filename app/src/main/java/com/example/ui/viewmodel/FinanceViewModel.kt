@@ -551,6 +551,42 @@ class FinanceViewModel(
         }
     }
 
+    fun updateProfilePhoto(base64: String, onResult: (Boolean, String?) -> Unit = { _, _ -> }) {
+        viewModelScope.launch {
+            val result = repository.updateProfilePhoto(base64)
+            result.onSuccess {
+                _snackbarMessage.emit("Profile photo updated successfully")
+                onResult(true, null)
+            }.onFailure { err ->
+                onResult(false, err.message ?: "Failed to update profile photo")
+            }
+        }
+    }
+
+    fun updateDisplayName(name: String, onResult: (Boolean, String?) -> Unit = { _, _ -> }) {
+        viewModelScope.launch {
+            val result = repository.updateDisplayName(name)
+            result.onSuccess {
+                _snackbarMessage.emit("Name updated successfully")
+                onResult(true, null)
+            }.onFailure { err ->
+                onResult(false, err.message ?: "Failed to update name")
+            }
+        }
+    }
+
+    fun updatePassword(currentPass: String, newPass: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.updatePassword(currentPass, newPass)
+            result.onSuccess {
+                _snackbarMessage.emit("Password updated successfully")
+                onResult(true, null)
+            }.onFailure { err ->
+                onResult(false, err.message ?: "Failed to update password")
+            }
+        }
+    }
+
     fun logout() {
         viewModelScope.launch {
             repository.logout()

@@ -123,7 +123,16 @@ fun LoginScreen(
             if (success) {
                 onLoginSuccess()
             } else {
-                val errorMsg = error ?: "Incorrect email or password"
+                val errorMsg = when {
+                    error.isNullOrBlank() -> "Incorrect email & password"
+                    error.contains("network", ignoreCase = true) -> "Network error. Please check your internet connection."
+                    error.contains("password", ignoreCase = true) ||
+                    error.contains("credential", ignoreCase = true) ||
+                    error.contains("user", ignoreCase = true) ||
+                    error.contains("account", ignoreCase = true) ||
+                    error.contains("email", ignoreCase = true) -> "Incorrect email & password"
+                    else -> error
+                }
                 topToastState.show(errorMsg, ToastType.ERROR)
                 showSystemTopToast(context, errorMsg)
             }

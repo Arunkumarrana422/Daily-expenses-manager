@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.remote.SyncState
 import com.example.ui.components.FinanceBalanceCard
+import com.example.ui.components.ProfileAvatar
 import com.example.ui.components.SummaryCardsRow
 import com.example.ui.components.TransactionListItem
 import com.example.ui.theme.FinanceSuccess
@@ -149,22 +150,14 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     // Profile Avatar
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(IndigoPrimary)
-                            .clickable { onNavigateToSettings() }
-                            .testTag("profile_avatar_button"),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = prefs.userDisplayName.take(1).uppercase(),
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                    }
+                    ProfileAvatar(
+                        name = prefs.userDisplayName,
+                        profilePhotoBase64 = prefs.profilePhotoBase64,
+                        size = 40.dp,
+                        fontSize = 16.sp,
+                        onClick = { onNavigateToSettings() },
+                        modifier = Modifier.testTag("profile_avatar_button")
+                    )
                 }
             }
         }
