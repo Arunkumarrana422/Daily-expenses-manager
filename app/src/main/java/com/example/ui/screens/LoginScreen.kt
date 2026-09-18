@@ -48,6 +48,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import com.example.ui.components.ToastType
+import com.example.ui.components.TopToastHost
+import com.example.ui.components.rememberTopToastState
+import com.example.ui.components.showSystemTopToast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
@@ -94,17 +98,22 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
 
+    val topToastState = rememberTopToastState()
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
     fun attemptLogin() {
         if (email.isBlank()) {
-            Toast.makeText(context, "Please enter your email", Toast.LENGTH_SHORT).show()
+            val msg = "Please enter your email"
+            topToastState.show(msg, ToastType.ERROR)
+            showSystemTopToast(context, msg)
             return
         }
         if (password.isBlank()) {
-            Toast.makeText(context, "Please enter your password", Toast.LENGTH_SHORT).show()
+            val msg = "Please enter your password"
+            topToastState.show(msg, ToastType.ERROR)
+            showSystemTopToast(context, msg)
             return
         }
 
@@ -114,8 +123,9 @@ fun LoginScreen(
             if (success) {
                 onLoginSuccess()
             } else {
-                val errorMsg = error ?: "Incorrect email or password. Please try again."
-                Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                val errorMsg = error ?: "Incorrect email or password"
+                topToastState.show(errorMsg, ToastType.ERROR)
+                showSystemTopToast(context, errorMsg)
             }
         }
     }
@@ -127,6 +137,7 @@ fun LoginScreen(
             .imePadding(),
         contentAlignment = Alignment.Center
     ) {
+        TopToastHost(state = topToastState)
         Column(
             modifier = Modifier
                 .fillMaxSize()

@@ -46,6 +46,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.example.ui.components.ToastType
+import com.example.ui.components.TopToastHost
+import com.example.ui.components.rememberTopToastState
+import com.example.ui.components.showSystemTopToast
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -84,13 +88,16 @@ fun ForgotPasswordScreen(
     var isSubmitted by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
 
+    val topToastState = rememberTopToastState()
     val context = androidx.compose.ui.platform.LocalContext.current
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
     fun attemptReset() {
         if (email.isBlank() || !email.contains("@")) {
-            Toast.makeText(context, "Please enter a valid email address", Toast.LENGTH_SHORT).show()
+            val msg = "Please enter a valid email"
+            topToastState.show(msg, ToastType.ERROR)
+            showSystemTopToast(context, msg)
             return
         }
 
@@ -99,9 +106,13 @@ fun ForgotPasswordScreen(
             isLoading = false
             if (success) {
                 isSubmitted = true
+                val msg = "Password reset email sent"
+                topToastState.show(msg, ToastType.SUCCESS)
+                showSystemTopToast(context, msg)
             } else {
-                val errorMsg = error ?: "Failed to send reset email. Please verify."
-                Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                val errorMsg = error ?: "Failed to send reset email"
+                topToastState.show(errorMsg, ToastType.ERROR)
+                showSystemTopToast(context, errorMsg)
             }
         }
     }
@@ -112,6 +123,7 @@ fun ForgotPasswordScreen(
             .background(MaterialTheme.colorScheme.background)
             .imePadding()
     ) {
+        TopToastHost(state = topToastState)
         // Back Button
         IconButton(
             onClick = onNavigateBack,

@@ -5,11 +5,14 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.os.Build
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class NetworkObserver(private val context: Context) {
@@ -20,22 +23,23 @@ class NetworkObserver(private val context: Context) {
     private val _isOnline = MutableStateFlow(checkConnection())
     val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 
-    private val scope = CoroutineScope(Dispatchers.Default)
+    private val scope = CoroutineScope(Dispatchers.Main.immediate)
 
     init {
         val cm = connectivityManager
         if (cm != null) {
-            val networkRequest = NetworkRequest.Builder()
-                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                .build()
-
             val networkCallback = object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
-                    scope.launch { _isOnline.value = true }
+                    _isOnline.value = checkConnection()
                 }
 
                 override fun onLost(network: Network) {
-                    scope.launch { _isOnline.value = checkConnection() }
+                    // Default network lost, immediately set offline
+                    _isOnline.value = false
+                }
+
+                override fun onUnavailable() {
+                    _isOnline.value = false
                 }
 
                 override fun onCapabilitiesChanged(
@@ -43,14 +47,32 @@ class NetworkObserver(private val context: Context) {
                     networkCapabilities: NetworkCapabilities
                 ) {
                     val hasInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    scope.launch { _isOnline.value = hasInternet }
+                    _isOnline.value = hasInternet
                 }
             }
 
             try {
-                cm.registerNetworkCallback(networkRequest, networkCallback)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    cm.registerDefaultNetworkCallback(networkCallback)
+                } else {
+                    val networkRequest = NetworkRequest.Builder()
+                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        .build()
+                    cm.registerNetworkCallback(networkRequest, networkCallback)
+                }
             } catch (e: Exception) {
                 _isOnline.value = checkConnection()
+            }
+        }
+
+        // Active background poller to ensure immediate detection if callback is throttled or delayed
+        scope.launch(Dispatchers.IO) {
+            while (isActive) {
+                delay(1000)
+                val currentStatus = checkConnection()
+                if (_isOnline.value != currentStatus) {
+                    _isOnline.value = currentStatus
+                }
             }
         }
     }

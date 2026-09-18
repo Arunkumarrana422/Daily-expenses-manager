@@ -49,6 +49,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import com.example.ui.components.ToastType
+import com.example.ui.components.TopToastHost
+import com.example.ui.components.rememberTopToastState
+import com.example.ui.components.showSystemTopToast
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -94,25 +98,34 @@ fun RegisterScreen(
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
 
+    val topToastState = rememberTopToastState()
     val context = androidx.compose.ui.platform.LocalContext.current
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
     fun attemptRegister() {
         if (name.isBlank()) {
-            Toast.makeText(context, "Please enter your name", Toast.LENGTH_SHORT).show()
+            val msg = "Please enter your name"
+            topToastState.show(msg, ToastType.ERROR)
+            showSystemTopToast(context, msg)
             return
         }
         if (email.isBlank() || !email.contains("@")) {
-            Toast.makeText(context, "Please enter a valid email address", Toast.LENGTH_SHORT).show()
+            val msg = "Please enter a valid email"
+            topToastState.show(msg, ToastType.ERROR)
+            showSystemTopToast(context, msg)
             return
         }
         if (password.length < 6) {
-            Toast.makeText(context, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
+            val msg = "Password must be at least 6 characters"
+            topToastState.show(msg, ToastType.ERROR)
+            showSystemTopToast(context, msg)
             return
         }
         if (password != confirmPassword) {
-            Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+            val msg = "Passwords do not match"
+            topToastState.show(msg, ToastType.ERROR)
+            showSystemTopToast(context, msg)
             return
         }
 
@@ -122,8 +135,9 @@ fun RegisterScreen(
             if (success) {
                 onRegisterSuccess()
             } else {
-                val errorMsg = error ?: "Registration failed. Please try again."
-                Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                val errorMsg = error ?: "Registration failed. Please try again"
+                topToastState.show(errorMsg, ToastType.ERROR)
+                showSystemTopToast(context, errorMsg)
             }
         }
     }
@@ -135,6 +149,7 @@ fun RegisterScreen(
             .imePadding(),
         contentAlignment = Alignment.Center
     ) {
+        TopToastHost(state = topToastState)
         Column(
             modifier = Modifier
                 .fillMaxSize()
