@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Wallet base in white with rounded corners -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,34 C25.8,34 24,35.8 24,38 L24,70 C24,72.2 25.8,74 28,74 L80,74 C82.2,74 84,72.2 84,70 L84,48 C84,45.8 82.2,44 80,44 L78,44 L78,38 C78,35.8 76.2,34 74,34 Z" />
+    <!-- Wallet inner flap / card line -->
+    <path
+        android:fillColor="#E0E7FF"
+        android:pathData="M32,40 L70,40 C71.1,40 72,40.9 72,42 L72,44 L32,44 Z" />
+    <!-- Wallet clasp / flap with Emerald Green accent -->
+    <path
+        android:pathData="M66,48 L84,48 C85.1,48 86,48.9 86,50 L86,66 C86,67.1 85.1,68 84,68 L66,68 C64.9,68 64,67.1 64,66 L64,50 C64,48.9 64.9,48 66,48 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="64"
+                android:startY="48"
+                android:endX="86"
+                android:endY="68"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#00897B" />
+                <item android:offset="1.0" android:color="#004D40" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Clasp button / golden coin indicator -->
+    <path
+        android:fillColor="#FFD54F"
+        android:pathData="M75,58 A3.5,3.5 0 1 0 75,51 A3.5,3.5 0 1 0 75,58" />
+    <!-- Rising financial upward arrow in Emerald Green -->
+    <path
+        android:fillColor="#00BFA5"
+        android:pathData="M32,64 L42,54 L49,60 L60,49 L60,54 L63,54 L63,44 L53,44 L53,47 L58,47 L49,56 L42,50 L30,62 Z" />
+</vector>
