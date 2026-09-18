@@ -47,12 +47,25 @@ import androidx.compose.ui.unit.dp
 object CategoryIconHelper {
     fun getIcon(categoryName: String, iconKey: String? = null): ImageVector {
         val combined = "${categoryName.lowercase()} ${(iconKey ?: "").lowercase()}"
+        val splitWords = combined.split(" ", "_", "-", "/", ".", ",")
+
         return when {
+            // 1. Grocery & Mart / Shopping Cart (Checked first so 'shopping_cart' never collides with 'car')
+            combined.contains("grocery") || combined.contains("shopping_cart") || combined.contains("market") || combined.contains("mart") || combined.contains("kirana") || combined.contains("vegetable") || combined.contains("fruit") || combined.contains("milk") || combined.contains("supermarket") || combined.contains("store") -> Icons.Default.ShoppingCart
+
+            // 2. Shopping & Clothes
+            combined.contains("shopping_bag") || combined.contains("shopping") || combined.contains("cloth") || combined.contains("dress") || combined.contains("mall") || combined.contains("buy") || combined.contains("order") -> Icons.Default.ShoppingBag
+
+            // 3. Food & Dining
             combined.contains("restaurant") || combined.contains("food") || combined.contains("cafe") || combined.contains("coffee") || combined.contains("burger") || combined.contains("pizza") || combined.contains("dinner") || combined.contains("lunch") || combined.contains("breakfast") || combined.contains("snack") || combined.contains("eat") || combined.contains("meal") || combined.contains("tea") -> Icons.Default.Restaurant
+
+            // 4. Fuel & Gas
             combined.contains("gas") || combined.contains("fuel") || combined.contains("petrol") || combined.contains("diesel") || combined.contains("cng") -> Icons.Default.LocalGasStation
-            combined.contains("transport") || combined.contains("car") || combined.contains("taxi") || combined.contains("cab") || combined.contains("auto") || combined.contains("bus") || combined.contains("train") || combined.contains("vehicle") || combined.contains("directions_car") -> Icons.Default.DirectionsCar
-            combined.contains("grocery") || combined.contains("market") || combined.contains("mart") || combined.contains("kirana") || combined.contains("vegetable") || combined.contains("fruit") || combined.contains("milk") || combined.contains("shopping_cart") -> Icons.Default.ShoppingCart
-            combined.contains("shopping") || combined.contains("cloth") || combined.contains("dress") || combined.contains("mall") || combined.contains("buy") || combined.contains("order") -> Icons.Default.ShoppingBag
+
+            // 5. Transport & Vehicles (Exact word matching for 'car' to avoid matching 'shopping_cart' or 'card')
+            combined.contains("directions_car") || combined.contains("transport") || combined.contains("taxi") || combined.contains("cab") || combined.contains("auto") || combined.contains("bus") || combined.contains("train") || combined.contains("vehicle") || splitWords.any { it == "car" || it == "cars" } -> Icons.Default.DirectionsCar
+
+            // 6. Home & Rent
             combined.contains("rent") || combined.contains("house") || combined.contains("home") || combined.contains("flat") || combined.contains("room") -> Icons.Default.Home
             combined.contains("electric") || combined.contains("power") || combined.contains("current") || combined.contains("light") || combined.contains("bolt") -> Icons.Default.Bolt
             combined.contains("mobile") || combined.contains("phone") || combined.contains("recharge") || combined.contains("call") -> Icons.Default.Phone

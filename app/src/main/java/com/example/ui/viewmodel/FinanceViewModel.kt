@@ -30,6 +30,7 @@ data class TransactionItem(
     val isExpense: Boolean,
     val amount: Double,
     val title: String,
+    val categoryName: String = "",
     val categoryIcon: String,
     val categoryColor: Long,
     val paymentMethod: String,
@@ -176,7 +177,8 @@ class FinanceViewModel(
                 id = it.id,
                 isExpense = true,
                 amount = it.amount,
-                title = it.categoryName,
+                title = if (it.note.isNotBlank()) it.note else it.categoryName,
+                categoryName = it.categoryName,
                 categoryIcon = it.categoryIcon,
                 categoryColor = it.categoryColor,
                 paymentMethod = it.paymentMethod,
@@ -193,7 +195,8 @@ class FinanceViewModel(
                 id = it.id,
                 isExpense = false,
                 amount = it.amount,
-                title = it.source,
+                title = if (it.note.isNotBlank()) it.note else it.source,
+                categoryName = it.source,
                 categoryIcon = "payments",
                 categoryColor = 0xFF2E7D32,
                 paymentMethod = it.paymentMethod,
@@ -378,7 +381,7 @@ class FinanceViewModel(
             addExpense(
                 amount = item.amount,
                 categoryId = 1,
-                categoryName = item.title,
+                categoryName = item.categoryName.ifBlank { item.title },
                 categoryIcon = item.categoryIcon,
                 categoryColor = item.categoryColor,
                 paymentMethod = item.paymentMethod,
@@ -391,7 +394,7 @@ class FinanceViewModel(
         } else {
             addIncome(
                 amount = item.amount,
-                source = item.title,
+                source = item.categoryName.ifBlank { item.title },
                 paymentMethod = item.paymentMethod,
                 accountId = item.accountId,
                 note = if (item.note.isNotBlank()) "${item.note} (Copy)" else "Duplicated income",
@@ -607,12 +610,7 @@ class FinanceViewModel(
 
     fun triggerCloudSync() {
         viewModelScope.launch {
-            val ok = repository.syncWithCloud()
-            if (ok) {
-                _snackbarMessage.emit("Cloud synchronization completed")
-            } else {
-                _snackbarMessage.emit("Offline: Data stored safely locally")
-            }
+            repository.syncWithCloud()
         }
     }
 }

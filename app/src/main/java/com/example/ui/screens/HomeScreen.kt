@@ -123,9 +123,7 @@ fun HomeScreen(
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surface,
                         tonalElevation = 2.dp,
-                        modifier = Modifier
-                            .clickable { viewModel.triggerCloudSync() }
-                            .testTag("sync_status_button")
+                        modifier = Modifier.testTag("sync_status_button")
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),

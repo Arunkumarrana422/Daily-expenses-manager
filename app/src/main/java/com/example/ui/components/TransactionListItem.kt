@@ -69,7 +69,7 @@ fun TransactionListItem(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = CategoryIconHelper.getIcon(item.title, item.categoryIcon),
+                    imageVector = CategoryIconHelper.getIcon(item.categoryName.ifBlank { item.title }, item.categoryIcon),
                     contentDescription = item.title,
                     tint = Color(item.categoryColor),
                     modifier = Modifier.size(24.dp)
@@ -97,11 +97,19 @@ fun TransactionListItem(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    val subtitleText = if (item.note.isNotBlank() && item.categoryName.isNotBlank()) {
+                        "${item.categoryName} • ${DateTimeUtils.formatDisplayDate(item.date)} • ${DateTimeUtils.formatDisplayTime(item.time)}"
+                    } else {
+                        "${DateTimeUtils.formatDisplayDate(item.date)} • ${DateTimeUtils.formatDisplayTime(item.time)}"
+                    }
+
                     Text(
-                        text = "${DateTimeUtils.formatDisplayDate(item.date)} • ${item.time}",
+                        text = subtitleText,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
 
                     Surface(

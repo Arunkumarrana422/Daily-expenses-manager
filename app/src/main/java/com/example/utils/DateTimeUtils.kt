@@ -7,12 +7,31 @@ import java.util.Locale
 
 object DateTimeUtils {
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault())
-    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
+    private val timeFormatter12 = DateTimeFormatter.ofPattern("hh:mm a", Locale.getDefault())
+    private val timeFormatter24 = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
     private val fullDisplayFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault())
     private val shortDisplayFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())
 
     fun getTodayString(): String = LocalDate.now().format(dateFormatter)
-    fun getCurrentTimeString(): String = LocalTime.now().format(timeFormatter)
+    fun getCurrentTimeString(): String = LocalTime.now().format(timeFormatter12)
+
+    fun formatDisplayTime(timeStr: String): String {
+        if (timeStr.isBlank()) return ""
+        if (timeStr.contains("AM", ignoreCase = true) || timeStr.contains("PM", ignoreCase = true)) {
+            return timeStr
+        }
+        return try {
+            val parsed24 = LocalTime.parse(timeStr, timeFormatter24)
+            parsed24.format(timeFormatter12)
+        } catch (_: Exception) {
+            try {
+                val parsed = LocalTime.parse(timeStr)
+                parsed.format(timeFormatter12)
+            } catch (_: Exception) {
+                timeStr
+            }
+        }
+    }
 
     fun getFormattedToday(): String = LocalDate.now().format(fullDisplayFormatter)
 

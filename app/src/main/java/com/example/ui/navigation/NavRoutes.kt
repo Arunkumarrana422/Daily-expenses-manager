@@ -6,7 +6,9 @@ sealed class Screen(val route: String, val title: String) {
     object ForgotPassword : Screen("forgot_password", "Forgot Password")
     object Home : Screen("home", "Home")
     object Transactions : Screen("transactions", "Transactions")
-    object Add : Screen("add", "Add")
+    object Add : Screen("add", "Add") {
+        fun createRoute(isExpense: Boolean = true): String = "add?isExpense=$isExpense"
+    }
     object Reports : Screen("reports", "Reports")
     object Settings : Screen("settings", "Settings")
 }

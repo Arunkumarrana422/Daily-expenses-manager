@@ -38,10 +38,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.ui.components.AddAccountDialog
 import com.example.ui.components.AddBudgetDialog
 import com.example.ui.components.PinLockScreen
@@ -222,7 +224,7 @@ fun MainScreen(
                 )
 
                 navItems.forEach { (screen, icon, label) ->
-                    val isSelected = currentRoute == screen.route
+                    val isSelected = currentRoute == screen.route || (screen == Screen.Add && currentRoute?.startsWith("add") == true)
                     NavigationBarItem(
                         selected = isSelected,
                         onClick = {
@@ -232,6 +234,14 @@ fun MainScreen(
                                         inclusive = false
                                     }
                                     launchSingleTop = true
+                                }
+                            } else if (screen == Screen.Add) {
+                                navController.navigate(Screen.Add.createRoute(true)) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
                             } else if (currentRoute != screen.route) {
                                 navController.navigate(screen.route) {
@@ -270,7 +280,7 @@ fun MainScreen(
                 exit = fadeOut()
             ) {
                 FloatingActionButton(
-                    onClick = { navController.navigate(Screen.Add.route) },
+                    onClick = { navController.navigate(Screen.Add.createRoute(true)) },
                     containerColor = IndigoPrimary,
                     contentColor = Color.White,
                     shape = CircleShape,
@@ -299,8 +309,8 @@ fun MainScreen(
                 composable(Screen.Home.route) {
                     HomeScreen(
                         viewModel = viewModel,
-                        onNavigateToAddExpense = { navController.navigate(Screen.Add.route) },
-                        onNavigateToAddIncome = { navController.navigate(Screen.Add.route) },
+                        onNavigateToAddExpense = { navController.navigate(Screen.Add.createRoute(true)) },
+                        onNavigateToAddIncome = { navController.navigate(Screen.Add.createRoute(false)) },
                         onNavigateToTransactions = { navController.navigate(Screen.Transactions.route) },
                         onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                         onOpenTransferDialog = { showTransferDialog = true },
@@ -316,9 +326,19 @@ fun MainScreen(
                     )
                 }
 
-                composable(Screen.Add.route) {
+                composable(
+                    route = "add?isExpense={isExpense}",
+                    arguments = listOf(
+                        navArgument("isExpense") {
+                            type = NavType.BoolType
+                            defaultValue = true
+                        }
+                    )
+                ) { backStackEntry ->
+                    val isExpenseArg = backStackEntry.arguments?.getBoolean("isExpense") ?: true
                     AddTransactionScreen(
                         viewModel = viewModel,
+                        initialIsExpense = isExpenseArg,
                         onTransactionSaved = {
                             navController.navigate(Screen.Home.route) {
                                 popUpTo(Screen.Home.route) { inclusive = true }

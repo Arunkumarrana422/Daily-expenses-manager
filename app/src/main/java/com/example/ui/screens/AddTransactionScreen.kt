@@ -72,7 +72,7 @@ fun AddTransactionScreen(
     onTransactionSaved: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var isExpense by remember { mutableStateOf(initialIsExpense) }
+    var isExpense by remember(initialIsExpense) { mutableStateOf(initialIsExpense) }
     var amountText by remember { mutableStateOf("") }
     var noteText by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf(DateTimeUtils.getTodayString()) }
@@ -87,7 +87,7 @@ fun AddTransactionScreen(
     val incomeCategories = categories.filter { it.type == "INCOME" }
 
     val currentCategoryList = if (isExpense) expenseCategories else incomeCategories
-    var selectedCategory by remember(currentCategoryList) {
+    var selectedCategory by remember(isExpense, currentCategoryList) {
         mutableStateOf(currentCategoryList.firstOrNull())
     }
 
@@ -295,7 +295,52 @@ fun AddTransactionScreen(
             }
         }
 
-        // 3. Category Selector Grid
+        // 3. Item Name / What did you spend on? (Clear purpose field)
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = if (isExpense) "What did you spend on? (Item / Detail)" else "What is this income for? (Source / Detail)",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = noteText,
+                        onValueChange = { noteText = it },
+                        label = { Text(if (isExpense) "Expense Title / Item Name" else "Income Title / Source") },
+                        placeholder = {
+                            Text(
+                                if (isExpense) "e.g. Milk & Eggs, Petrol, Coffee, Vegetables, Dinner"
+                                else "e.g. Monthly Salary, Freelance project, Gift"
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Receipt,
+                                contentDescription = "Item Title",
+                                tint = IndigoPrimary
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("transaction_note_input"),
+                        shape = RoundedCornerShape(14.dp),
+                        singleLine = true
+                    )
+                }
+            }
+        }
+
+        // 4. Category Selector Grid
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -436,23 +481,12 @@ fun AddTransactionScreen(
                         OutlinedTextField(
                             value = selectedTime,
                             onValueChange = { selectedTime = it },
-                            label = { Text("Time") },
+                            label = { Text("Time (12-hr)") },
                             modifier = Modifier
                                 .weight(0.8f)
                                 .testTag("transaction_time_input")
                         )
                     }
-
-                    // Note field
-                    OutlinedTextField(
-                        value = noteText,
-                        onValueChange = { noteText = it },
-                        label = { Text("Note / Description (Optional)") },
-                        placeholder = { Text("e.g. Dinner with clients, grocery store") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("transaction_note_input")
-                    )
                 }
             }
         }

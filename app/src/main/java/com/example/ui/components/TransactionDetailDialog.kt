@@ -143,7 +143,7 @@ fun TransactionDetailDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = CategoryIconHelper.getIcon(transaction.title, transaction.categoryIcon),
+                        imageVector = CategoryIconHelper.getIcon(transaction.categoryName.ifBlank { transaction.title }, transaction.categoryIcon),
                         contentDescription = transaction.title,
                         tint = Color(transaction.categoryColor),
                         modifier = Modifier.size(32.dp)
@@ -174,13 +174,16 @@ fun TransactionDetailDialog(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 // Info Rows
+                if (transaction.categoryName.isNotBlank() && transaction.categoryName != transaction.title) {
+                    DetailInfoRow(label = "Category", value = transaction.categoryName)
+                }
                 DetailInfoRow(label = "Date", value = DateTimeUtils.formatDisplayDate(transaction.date))
-                DetailInfoRow(label = "Time", value = transaction.time)
+                DetailInfoRow(label = "Time", value = DateTimeUtils.formatDisplayTime(transaction.time))
                 DetailInfoRow(label = "Payment Method", value = transaction.paymentMethod)
                 DetailInfoRow(label = "Sync Status", value = transaction.syncStatus)
 
-                if (transaction.note.isNotBlank()) {
-                    DetailInfoRow(label = "Note", value = transaction.note)
+                if (transaction.note.isNotBlank() && transaction.note != transaction.title) {
+                    DetailInfoRow(label = "Item / Description", value = transaction.note)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -203,7 +206,8 @@ fun TransactionDetailDialog(
 
                     OutlinedButton(
                         onClick = {
-                            val shareText = "Daily Expense Manager\nType: ${if (transaction.isExpense) "Expense" else "Income"}\nTitle: ${transaction.title}\nAmount: ${CurrencyFormatter.format(transaction.amount, currencySymbol)}\nDate: ${transaction.date} ${transaction.time}\nPayment: ${transaction.paymentMethod}"
+                            val displayTime = DateTimeUtils.formatDisplayTime(transaction.time)
+                            val shareText = "Daily Expense Manager\nType: ${if (transaction.isExpense) "Expense" else "Income"}\nTitle: ${transaction.title}\nAmount: ${CurrencyFormatter.format(transaction.amount, currencySymbol)}\nDate: ${transaction.date} $displayTime\nPayment: ${transaction.paymentMethod}"
                             ExportUtils.shareReport(context, "Transaction Details", shareText)
                         },
                         modifier = Modifier.weight(1f).testTag("share_transaction_button"),

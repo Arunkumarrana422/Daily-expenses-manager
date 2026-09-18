@@ -757,54 +757,7 @@ fun SettingsScreen(
             }
         }
 
-        // 9. Cloud Sync & Backup
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Text(
-                        text = "Cloud Backup & Sync",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    val lastSyncText = if (prefs.lastSyncTimestamp > 0) {
-                        SimpleDateFormat("d MMM yyyy, HH:mm", Locale.getDefault()).format(Date(prefs.lastSyncTimestamp))
-                    } else {
-                        "Never"
-                    }
-
-                    Text(
-                        text = "Last synced: $lastSyncText",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Button(
-                        onClick = { viewModel.triggerCloudSync() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("manual_cloud_sync_button"),
-                        colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Default.CloudSync, contentDescription = "Sync")
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Sync with Cloud")
-                    }
-                }
-            }
-        }
-
-        // 10. About Section
+        // 9. About Section
         item {
             Column(
                 modifier = Modifier
