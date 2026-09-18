@@ -97,7 +97,6 @@ fun ForgotPasswordScreen(
         if (email.isBlank() || !email.contains("@")) {
             val msg = "Please enter a valid email"
             topToastState.show(msg, ToastType.ERROR)
-            showSystemTopToast(context, msg)
             return
         }
 
@@ -108,11 +107,9 @@ fun ForgotPasswordScreen(
                 isSubmitted = true
                 val msg = "Password reset email sent"
                 topToastState.show(msg, ToastType.SUCCESS)
-                showSystemTopToast(context, msg)
             } else {
                 val errorMsg = error ?: "Failed to send reset email"
                 topToastState.show(errorMsg, ToastType.ERROR)
-                showSystemTopToast(context, errorMsg)
             }
         }
     }
@@ -123,7 +120,6 @@ fun ForgotPasswordScreen(
             .background(MaterialTheme.colorScheme.background)
             .imePadding()
     ) {
-        TopToastHost(state = topToastState)
         // Back Button
         IconButton(
             onClick = onNavigateBack,
@@ -340,5 +336,10 @@ fun ForgotPasswordScreen(
                 }
             }
         }
+
+        TopToastHost(
+            state = topToastState,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
     }
 }

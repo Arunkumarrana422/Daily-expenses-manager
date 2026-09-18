@@ -196,7 +196,7 @@ fun HomeScreen(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     // Add Expense
                     Button(
@@ -211,7 +211,7 @@ fun HomeScreen(
                     ) {
                         Icon(imageVector = Icons.Default.Add, contentDescription = "Add Expense", modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Expense", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1, softWrap = false)
+                        Text("Expense", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, maxLines = 1, softWrap = false)
                     }
 
                     // Add Income
@@ -226,22 +226,7 @@ fun HomeScreen(
                     ) {
                         Icon(imageVector = Icons.Default.Payments, contentDescription = "Add Income", tint = FinanceSuccess, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Income", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, softWrap = false)
-                    }
-
-                    // Transfer
-                    OutlinedButton(
-                        onClick = onOpenTransferDialog,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp)
-                            .testTag("quick_action_transfer"),
-                        shape = RoundedCornerShape(14.dp),
-                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = "Transfer", tint = IndigoPrimary, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Transfer", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, softWrap = false)
+                        Text("Income", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, softWrap = false)
                     }
                 }
             }

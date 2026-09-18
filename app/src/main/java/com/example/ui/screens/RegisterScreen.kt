@@ -107,25 +107,21 @@ fun RegisterScreen(
         if (name.isBlank()) {
             val msg = "Please enter your name"
             topToastState.show(msg, ToastType.ERROR)
-            showSystemTopToast(context, msg)
             return
         }
         if (email.isBlank() || !email.contains("@")) {
             val msg = "Please enter a valid email"
             topToastState.show(msg, ToastType.ERROR)
-            showSystemTopToast(context, msg)
             return
         }
         if (password.length < 6) {
             val msg = "Password must be at least 6 characters"
             topToastState.show(msg, ToastType.ERROR)
-            showSystemTopToast(context, msg)
             return
         }
         if (password != confirmPassword) {
             val msg = "Passwords do not match"
             topToastState.show(msg, ToastType.ERROR)
-            showSystemTopToast(context, msg)
             return
         }
 
@@ -137,7 +133,6 @@ fun RegisterScreen(
             } else {
                 val errorMsg = error ?: "Registration failed. Please try again"
                 topToastState.show(errorMsg, ToastType.ERROR)
-                showSystemTopToast(context, errorMsg)
             }
         }
     }
@@ -146,10 +141,8 @@ fun RegisterScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .imePadding(),
-        contentAlignment = Alignment.Center
+            .imePadding()
     ) {
-        TopToastHost(state = topToastState)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -431,5 +424,10 @@ fun RegisterScreen(
                 }
             }
         }
+
+        TopToastHost(
+            state = topToastState,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
     }
 }

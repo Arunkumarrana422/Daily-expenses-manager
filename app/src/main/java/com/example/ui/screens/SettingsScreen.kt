@@ -92,7 +92,7 @@ import java.util.Locale
 fun SettingsScreen(
     viewModel: FinanceViewModel,
     onOpenAddBudgetDialog: () -> Unit,
-    onOpenAddAccountDialog: () -> Unit,
+    onOpenAddAccountDialog: () -> Unit = {},
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -640,67 +640,6 @@ fun SettingsScreen(
             }
         }
 
-        // 4. Accounts & Balances Management
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.AccountBalance, contentDescription = "Accounts", tint = IndigoPrimary, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Accounts & Balances",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        TextButton(
-                            onClick = onOpenAddAccountDialog,
-                            modifier = Modifier.testTag("add_account_button")
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("New", fontSize = 12.sp)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    accounts.forEach { acc ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 6.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(acc.name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                Text(acc.type, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            Text(
-                                text = CurrencyFormatter.format(acc.balance, prefs.currency),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
         // 5. Budgets Management
         item {
             Card(
@@ -890,7 +829,10 @@ fun SettingsScreen(
         }
     }
 
-    TopToastHost(state = topToastState)
+    TopToastHost(
+        state = topToastState,
+        modifier = Modifier.align(Alignment.TopCenter)
+    )
 }
 }
 

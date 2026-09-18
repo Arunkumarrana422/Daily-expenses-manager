@@ -107,13 +107,11 @@ fun LoginScreen(
         if (email.isBlank()) {
             val msg = "Please enter your email"
             topToastState.show(msg, ToastType.ERROR)
-            showSystemTopToast(context, msg)
             return
         }
         if (password.isBlank()) {
             val msg = "Please enter your password"
             topToastState.show(msg, ToastType.ERROR)
-            showSystemTopToast(context, msg)
             return
         }
 
@@ -134,7 +132,6 @@ fun LoginScreen(
                     else -> error
                 }
                 topToastState.show(errorMsg, ToastType.ERROR)
-                showSystemTopToast(context, errorMsg)
             }
         }
     }
@@ -143,10 +140,8 @@ fun LoginScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .imePadding(),
-        contentAlignment = Alignment.Center
+            .imePadding()
     ) {
-        TopToastHost(state = topToastState)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -366,5 +361,10 @@ fun LoginScreen(
                 }
             }
         }
+
+        TopToastHost(
+            state = topToastState,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
     }
 }
