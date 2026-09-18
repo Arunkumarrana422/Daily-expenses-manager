@@ -56,6 +56,7 @@ import com.example.ui.viewmodel.TransactionItem
 import com.example.utils.CurrencyFormatter
 import com.example.utils.DateTimeUtils
 import com.example.utils.ExportUtils
+import com.example.utils.PdfExportUtils
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -164,17 +165,24 @@ fun TransactionsScreen(
                 }
             }
 
-            // Export CSV Button
+            // Export PDF Button
             IconButton(
                 onClick = {
-                    val csvData = ExportUtils.generateCsv(allExpenses, allIncomes)
-                    ExportUtils.shareReport(context, "Exported Transactions (CSV)", csvData)
+                    val file = PdfExportUtils.generateTransactionsPdf(
+                        context = context,
+                        expenses = allExpenses,
+                        incomes = allIncomes,
+                        currency = prefs.currency
+                    )
+                    file?.let {
+                        PdfExportUtils.sharePdf(context, it, "Share Transactions PDF")
+                    }
                 },
                 modifier = Modifier.testTag("export_transactions_button")
             ) {
                 Icon(
                     imageVector = Icons.Default.IosShare,
-                    contentDescription = "Export",
+                    contentDescription = "Export PDF",
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }

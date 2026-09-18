@@ -50,6 +50,7 @@ import com.example.ui.viewmodel.FinanceViewModel
 import com.example.utils.CurrencyFormatter
 import com.example.utils.DateTimeUtils
 import com.example.utils.ExportUtils
+import com.example.utils.PdfExportUtils
 import java.time.LocalDate
 
 @Composable
@@ -142,22 +143,23 @@ fun ReportsScreen(
 
                 IconButton(
                     onClick = {
-                        val reportText = buildString {
-                            appendLine("Daily Expense Manager Financial Report")
-                            appendLine("Period: $reportsPeriod")
-                            appendLine("Total Income: ${CurrencyFormatter.format(totalIncome, currency)}")
-                            appendLine("Total Expenses: ${CurrencyFormatter.format(totalSpent, currency)}")
-                            appendLine("Net Balance: ${CurrencyFormatter.format(totalIncome - totalSpent, currency)}")
-                            appendLine("\nCategory Breakdown:")
-                            categorySlices.forEach {
-                                appendLine("- ${it.categoryName}: ${CurrencyFormatter.format(it.amount, currency)} (${String.format("%.1f", it.percentage)}%)")
-                            }
+                        val breakdown = categorySlices.map { Triple(it.categoryName, it.amount, it.percentage.toDouble()) }
+                        val file = PdfExportUtils.generateFinancialReportPdf(
+                            context = context,
+                            title = "Financial Report Summary",
+                            period = reportsPeriod,
+                            totalIncome = totalIncome,
+                            totalExpenses = totalSpent,
+                            currency = currency,
+                            categoryBreakdown = breakdown
+                        )
+                        file?.let {
+                            PdfExportUtils.sharePdf(context, it, "Share Financial Report PDF")
                         }
-                        ExportUtils.shareReport(context, "Financial Report Summary", reportText)
                     },
                     modifier = Modifier.testTag("share_report_button")
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = "Share Report", tint = IndigoPrimary)
+                    Icon(Icons.Default.Share, contentDescription = "Share Report PDF", tint = IndigoPrimary)
                 }
             }
         }
