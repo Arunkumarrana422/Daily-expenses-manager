@@ -22,24 +22,74 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Make Gradle Wrapper Executable
-        run: chmod +x gradlew
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Ensure google-services.json exists
+        run: |
+          find . -name "app" -type d | while read appdir; do
+            if [ ! -f "$appdir/google-services.json" ]; then
+              echo "Creating fallback google-services.json in $appdir"
+              cat << 'EOF' > "$appdir/google-services.json"
+          {
+            "project_info": {
+              "project_number": "123456789012",
+              "project_id": "expense-manager-app",
+              "storage_bucket": "expense-manager-app.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:123456789012:android:0123456789abcdef",
+                  "android_client_info": {
+                    "package_name": "com.aistudio.expensemanager.dxpvrt"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "AIzaSyDummyKeyForBuildVerification12345"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+            fi
+          done
+
       - name: Decode Debug Keystore (Optional)
         run: |
-          if [ -f debug.keystore.base64 ]; then
-            base64 -d debug.keystore.base64 > debug.keystore || true
-          fi
+          find . -name "debug.keystore.base64" | while read kfile; do
+            kdir=$(dirname "$kfile")
+            base64 -d "$kfile" > "$kdir/debug.keystore" || true
+          done
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: |
+          SETTINGS_FILE=$(find . -name "settings.gradle.kts" -not -path "*/build/*" | head -n 1)
+          if [ -n "$SETTINGS_FILE" ]; then
+            PROJECT_DIR=$(dirname "$SETTINGS_FILE")
+            echo "Building in: $PROJECT_DIR"
+            cd "$PROJECT_DIR"
+          fi
+          
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+            ./gradlew assembleDebug --no-daemon --stacktrace
+          else
+            gradle assembleDebug --no-daemon --stacktrace
+          fi
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: DailyExpenseManager-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: "**/app/build/outputs/apk/debug/*.apk"
           retention-days: 14
