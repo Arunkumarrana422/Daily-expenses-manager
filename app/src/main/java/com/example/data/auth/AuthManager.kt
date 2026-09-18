@@ -41,41 +41,36 @@ class AuthManager(
         }
 
         try {
-            val auth = firebaseAuth
-            if (auth != null) {
-                try {
-                    val authResult = auth.createUserWithEmailAndPassword(trimmedEmail, password).await()
-                    val user = authResult.user
-                    if (user != null) {
-                        val profileUpdate = UserProfileChangeRequest.Builder()
-                            .setDisplayName(trimmedName)
-                            .build()
-                        user.updateProfile(profileUpdate).await()
+            val auth = firebaseAuth ?: return Result.failure(IllegalStateException("Firebase Auth service unavailable. Please check your internet connection."))
+            val authResult = auth.createUserWithEmailAndPassword(trimmedEmail, password).await()
+            val user = authResult.user ?: return Result.failure(IllegalStateException("User creation failed"))
 
-                        val authUser = AuthUser(
-                            uid = user.uid,
-                            email = trimmedEmail,
-                            displayName = trimmedName.ifEmpty { "User" }
-                        )
-                        preferencesDataStore.setLoggedInUser(authUser.uid, authUser.displayName, authUser.email)
-                        return Result.success(authUser)
-                    }
-                } catch (fe: Exception) {
-                    Log.w(TAG, "Firebase Auth register failed: ${fe.message}. Falling back to local auth.")
-                    // If network issue or configuration issue, fall back locally so user isn't stuck
-                    val localUid = "usr_" + UUID.randomUUID().toString().take(12)
-                    val authUser = AuthUser(uid = localUid, email = trimmedEmail, displayName = trimmedName.ifEmpty { "User" })
-                    preferencesDataStore.setLoggedInUser(authUser.uid, authUser.displayName, authUser.email)
-                    return Result.success(authUser)
-                }
-            }
-            // Local fallback
-            val localUid = "usr_" + UUID.randomUUID().toString().take(12)
-            val authUser = AuthUser(uid = localUid, email = trimmedEmail, displayName = trimmedName.ifEmpty { "User" })
+            val profileUpdate = UserProfileChangeRequest.Builder()
+                .setDisplayName(trimmedName.ifEmpty { "User" })
+                .build()
+            user.updateProfile(profileUpdate).await()
+
+            val authUser = AuthUser(
+                uid = user.uid,
+                email = trimmedEmail,
+                displayName = trimmedName.ifEmpty { "User" }
+            )
+            // Immediately save as logged in user
             preferencesDataStore.setLoggedInUser(authUser.uid, authUser.displayName, authUser.email)
             return Result.success(authUser)
         } catch (e: Exception) {
-            return Result.failure(e)
+            val message = when {
+                e.message?.contains("The email address is already in use", ignoreCase = true) == true ->
+                    "An account already exists with this email. Please login."
+                e.message?.contains("badly formatted", ignoreCase = true) == true ->
+                    "Invalid email address format."
+                e.message?.contains("network", ignoreCase = true) == true ->
+                    "Network error. Please check your internet connection."
+                e.message?.contains("password is invalid", ignoreCase = true) == true || e.message?.contains("at least 6 characters", ignoreCase = true) == true ->
+                    "Password must be at least 6 characters."
+                else -> e.localizedMessage ?: "Registration failed. Please check your details."
+            }
+            return Result.failure(Exception(message))
         }
     }
 
@@ -90,44 +85,29 @@ class AuthManager(
         }
 
         try {
-            val auth = firebaseAuth
-            if (auth != null) {
-                try {
-                    val authResult = auth.signInWithEmailAndPassword(trimmedEmail, password).await()
-                    val user = authResult.user
-                    if (user != null) {
-                        val authUser = AuthUser(
-                            uid = user.uid,
-                            email = user.email ?: trimmedEmail,
-                            displayName = user.displayName ?: trimmedEmail.substringBefore("@")
-                        )
-                        preferencesDataStore.setLoggedInUser(authUser.uid, authUser.displayName, authUser.email)
-                        return Result.success(authUser)
-                    }
-                } catch (fe: Exception) {
-                    Log.w(TAG, "Firebase Auth sign in failed: ${fe.message}. Falling back to local auth.")
-                    // Fallback to local session
-                    val localUid = "usr_" + UUID.nameUUIDFromBytes(trimmedEmail.toByteArray()).toString().take(12)
-                    val authUser = AuthUser(
-                        uid = localUid,
-                        email = trimmedEmail,
-                        displayName = trimmedEmail.substringBefore("@").replaceFirstChar { it.uppercase() }
-                    )
-                    preferencesDataStore.setLoggedInUser(authUser.uid, authUser.displayName, authUser.email)
-                    return Result.success(authUser)
-                }
-            }
-            // Local fallback
-            val localUid = "usr_" + UUID.nameUUIDFromBytes(trimmedEmail.toByteArray()).toString().take(12)
+            val auth = firebaseAuth ?: return Result.failure(IllegalStateException("Firebase Auth service unavailable. Please check your internet connection."))
+            val authResult = auth.signInWithEmailAndPassword(trimmedEmail, password).await()
+            val user = authResult.user ?: return Result.failure(IllegalStateException("Login failed"))
+
             val authUser = AuthUser(
-                uid = localUid,
-                email = trimmedEmail,
-                displayName = trimmedEmail.substringBefore("@").replaceFirstChar { it.uppercase() }
+                uid = user.uid,
+                email = user.email ?: trimmedEmail,
+                displayName = user.displayName ?: trimmedEmail.substringBefore("@")
             )
+            // Save logged in state
             preferencesDataStore.setLoggedInUser(authUser.uid, authUser.displayName, authUser.email)
             return Result.success(authUser)
         } catch (e: Exception) {
-            return Result.failure(e)
+            val message = when {
+                e.message?.contains("no user record", ignoreCase = true) == true || e.message?.contains("user-not-found", ignoreCase = true) == true ->
+                    "No account found with this email. Please create an account first."
+                e.message?.contains("password is invalid", ignoreCase = true) == true || e.message?.contains("wrong-password", ignoreCase = true) == true || e.message?.contains("invalid-credential", ignoreCase = true) == true ->
+                    "Incorrect email or password. Passwords must match your registered account."
+                e.message?.contains("network", ignoreCase = true) == true ->
+                    "Network error. Please check your internet connection."
+                else -> e.localizedMessage ?: "Login failed. Please check your credentials."
+            }
+            return Result.failure(Exception(message))
         }
     }
 
@@ -138,20 +118,18 @@ class AuthManager(
         }
 
         try {
-            val auth = firebaseAuth
-            if (auth != null) {
-                try {
-                    auth.sendPasswordResetEmail(trimmedEmail).await()
-                    return Result.success(Unit)
-                } catch (fe: Exception) {
-                    Log.w(TAG, "Firebase password reset: ${fe.message}")
-                    // Still show success to user so offline/local doesn't error out
-                    return Result.success(Unit)
-                }
-            }
+            val auth = firebaseAuth ?: return Result.failure(IllegalStateException("Firebase Auth service unavailable. Please check your internet connection."))
+            auth.sendPasswordResetEmail(trimmedEmail).await()
             return Result.success(Unit)
         } catch (e: Exception) {
-            return Result.failure(e)
+            val message = when {
+                e.message?.contains("no user record", ignoreCase = true) == true || e.message?.contains("user-not-found", ignoreCase = true) == true ->
+                    "No account found with this email."
+                e.message?.contains("network", ignoreCase = true) == true ->
+                    "Network error. Please check your internet connection."
+                else -> e.localizedMessage ?: "Failed to send reset email."
+            }
+            return Result.failure(Exception(message))
         }
     }
 

@@ -53,18 +53,24 @@ import com.example.ui.screens.AddTransactionScreen
 import com.example.ui.screens.ForgotPasswordScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.LoginScreen
+import com.example.ui.screens.NoInternetScreen
 import com.example.ui.screens.RegisterScreen
 import com.example.ui.screens.ReportsScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.TransactionsScreen
 import com.example.ui.theme.IndigoPrimary
 import com.example.ui.viewmodel.FinanceViewModel
+import com.example.utils.NetworkObserver
 
 @Composable
 fun MainScreen(
     viewModel: FinanceViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val networkObserver = remember { NetworkObserver(context.applicationContext) }
+    val isOnline by networkObserver.isOnline.collectAsStateWithLifecycle()
+
     val navController = rememberNavController()
     val isAppUnlocked by viewModel.isAppUnlocked.collectAsStateWithLifecycle()
     val selectedTx by viewModel.selectedTransaction.collectAsStateWithLifecycle()
@@ -84,6 +90,16 @@ fun MainScreen(
         viewModel.snackbarMessage.collect { msg ->
             snackbarHostState.showSnackbar(msg)
         }
+    }
+
+    // 0. Strict Internet Connection Check: Block access when offline
+    if (!isOnline) {
+        NoInternetScreen(
+            onRetry = {
+                networkObserver.refresh()
+            }
+        )
+        return
     }
 
     // 1. Authentication Check (Login / Register / Forgot Password)

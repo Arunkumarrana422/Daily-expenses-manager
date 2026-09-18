@@ -114,6 +114,11 @@ class FinanceViewModel(
     val syncState: StateFlow<SyncState> = repository.syncState
 
     init {
+        // Trigger cloud sync to load all data from Firebase on startup
+        viewModelScope.launch {
+            repository.syncWithCloud()
+        }
+
         // Observe preferences to see if PIN lock is active on app startup
         viewModelScope.launch {
             repository.userPreferences.collect { prefs ->

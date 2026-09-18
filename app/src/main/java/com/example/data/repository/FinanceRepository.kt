@@ -49,8 +49,14 @@ class FinanceRepository(
     // Expenses operations
     suspend fun addExpense(expense: ExpenseEntity): Long {
         val id = expenseDao.insertExpense(expense)
+        val createdExpense = expense.copy(id = id)
         // Deduct from account balance if account exists
         accountDao.adjustBalance(expense.accountId, -expense.amount)
+        // Sync directly to Firebase
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null) {
+            syncManager.uploadExpense(currentUserId, createdExpense)
+        }
         return id
     }
 
@@ -59,15 +65,27 @@ class FinanceRepository(
         // Revert old account deduction and apply new
         accountDao.adjustBalance(oldAccountId, oldAmount)
         accountDao.adjustBalance(expense.accountId, -expense.amount)
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null) {
+            syncManager.uploadExpense(currentUserId, expense)
+        }
     }
 
     suspend fun deleteExpense(expense: ExpenseEntity) {
         expenseDao.deleteExpense(expense)
         accountDao.adjustBalance(expense.accountId, expense.amount)
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null) {
+            syncManager.deleteExpense(currentUserId, expense.id)
+        }
     }
 
     suspend fun deleteExpenseById(id: Long) {
         expenseDao.deleteExpenseById(id)
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null) {
+            syncManager.deleteExpense(currentUserId, id)
+        }
     }
 
     fun getExpenseById(id: Long): Flow<ExpenseEntity?> = expenseDao.getExpenseById(id)
@@ -75,7 +93,12 @@ class FinanceRepository(
     // Incomes operations
     suspend fun addIncome(income: IncomeEntity): Long {
         val id = incomeDao.insertIncome(income)
+        val createdIncome = income.copy(id = id)
         accountDao.adjustBalance(income.accountId, income.amount)
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null) {
+            syncManager.uploadIncome(currentUserId, createdIncome)
+        }
         return id
     }
 
@@ -83,11 +106,19 @@ class FinanceRepository(
         incomeDao.updateIncome(income)
         accountDao.adjustBalance(oldAccountId, -oldAmount)
         accountDao.adjustBalance(income.accountId, income.amount)
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null) {
+            syncManager.uploadIncome(currentUserId, income)
+        }
     }
 
     suspend fun deleteIncome(income: IncomeEntity) {
         incomeDao.deleteIncome(income)
         accountDao.adjustBalance(income.accountId, -income.amount)
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null) {
+            syncManager.deleteIncome(currentUserId, income.id)
+        }
     }
 
     fun getIncomeById(id: Long): Flow<IncomeEntity?> = incomeDao.getIncomeById(id)
@@ -97,14 +128,57 @@ class FinanceRepository(
     suspend fun deleteCategory(category: CategoryEntity) = categoryDao.deleteCategory(category)
 
     // Budgets
-    suspend fun addBudget(budget: BudgetEntity): Long = budgetDao.insertBudget(budget)
-    suspend fun updateBudget(budget: BudgetEntity) = budgetDao.updateBudget(budget)
-    suspend fun deleteBudget(budget: BudgetEntity) = budgetDao.deleteBudget(budget)
-    suspend fun deleteBudgetById(id: Long) = budgetDao.deleteBudgetById(id)
+    suspend fun addBudget(budget: BudgetEntity): Long {
+        val id = budgetDao.insertBudget(budget)
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null) {
+            syncManager.uploadBudget(currentUserId, budget.copy(id = id))
+        }
+        return id
+    }
+
+    suspend fun updateBudget(budget: BudgetEntity) {
+        budgetDao.updateBudget(budget)
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null) {
+            syncManager.uploadBudget(currentUserId, budget)
+        }
+    }
+
+    suspend fun deleteBudget(budget: BudgetEntity) {
+        budgetDao.deleteBudget(budget)
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null) {
+            syncManager.deleteBudget(currentUserId, budget.id)
+        }
+    }
+
+    suspend fun deleteBudgetById(id: Long) {
+        budgetDao.deleteBudgetById(id)
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null) {
+            syncManager.deleteBudget(currentUserId, id)
+        }
+    }
 
     // Accounts
-    suspend fun addAccount(account: AccountEntity): Long = accountDao.insertAccount(account)
-    suspend fun updateAccount(account: AccountEntity) = accountDao.updateAccount(account)
+    suspend fun addAccount(account: AccountEntity): Long {
+        val id = accountDao.insertAccount(account)
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null) {
+            syncManager.uploadAccount(currentUserId, account.copy(id = id))
+        }
+        return id
+    }
+
+    suspend fun updateAccount(account: AccountEntity) {
+        accountDao.updateAccount(account)
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null) {
+            syncManager.uploadAccount(currentUserId, account)
+        }
+    }
+
     suspend fun deleteAccount(account: AccountEntity) = accountDao.deleteAccount(account)
 
     suspend fun transferBetweenAccounts(fromId: Long, toId: Long, amount: Double) {
@@ -134,10 +208,42 @@ class FinanceRepository(
     suspend fun setUserProfile(name: String, email: String) = preferencesDataStore.setUserProfile(name, email)
 
     // Auth
-    suspend fun login(email: String, pass: String): Result<AuthUser> = authManager.login(email, pass)
-    suspend fun register(name: String, email: String, pass: String): Result<AuthUser> = authManager.register(name, email, pass)
+    suspend fun login(email: String, pass: String): Result<AuthUser> {
+        val result = authManager.login(email, pass)
+        result.onSuccess { user ->
+            // Clear local transactions and fetch fresh from Firebase for this user
+            expenseDao.deleteAllExpenses()
+            incomeDao.deleteAllIncomes()
+            syncManager.fetchFromFirebase(user.uid)
+        }
+        return result
+    }
+
+    suspend fun register(name: String, email: String, pass: String): Result<AuthUser> {
+        val result = authManager.register(name, email, pass)
+        result.onSuccess { user ->
+            // Clear local transactions for new account
+            expenseDao.deleteAllExpenses()
+            incomeDao.deleteAllIncomes()
+            syncManager.fetchFromFirebase(user.uid)
+        }
+        return result
+    }
+
     suspend fun sendPasswordReset(email: String): Result<Unit> = authManager.sendPasswordReset(email)
-    suspend fun logout() = authManager.logout()
+
+    suspend fun logout() {
+        authManager.logout()
+        // Clear local user transactions on logout
+        expenseDao.deleteAllExpenses()
+        incomeDao.deleteAllIncomes()
+    }
+
+    suspend fun purgeAnyDummyData() {
+        expenseDao.deleteAllExpenses()
+        incomeDao.deleteAllIncomes()
+        budgetDao.deleteAllBudgets()
+    }
 
     // Sync
     suspend fun syncWithCloud(): Boolean {

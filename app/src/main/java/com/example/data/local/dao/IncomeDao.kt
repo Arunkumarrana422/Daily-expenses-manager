@@ -37,4 +37,7 @@ interface IncomeDao {
 
     @Query("UPDATE incomes SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
     suspend fun markSynced(ids: List<Long>)
+
+    @Query("DELETE FROM incomes")
+    suspend fun deleteAllIncomes()
 }

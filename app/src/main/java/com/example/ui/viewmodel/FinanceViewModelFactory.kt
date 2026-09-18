@@ -21,7 +21,9 @@ class FinanceViewModelFactory(private val context: Context) : ViewModelProvider.
             val syncManager = FirebaseSyncManager(
                 context.applicationContext,
                 database.expenseDao(),
-                database.incomeDao()
+                database.incomeDao(),
+                database.accountDao(),
+                database.budgetDao()
             )
             val authManager = com.example.data.auth.AuthManager(
                 context.applicationContext,

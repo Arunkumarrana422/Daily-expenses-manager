@@ -118,116 +118,12 @@ abstract class AppDatabase : RoomDatabase() {
 
             if (accountDao.count() == 0) {
                 val defaultAccounts = listOf(
-                    AccountEntity(name = "Cash", type = "Cash", balance = 5000.0),
-                    AccountEntity(name = "Bank Account", type = "Bank Account", balance = 25000.0),
-                    AccountEntity(name = "UPI", type = "UPI", balance = 8000.0),
-                    AccountEntity(name = "Credit Card", type = "Credit Card", balance = 0.0),
-                    AccountEntity(name = "Wallet", type = "Wallet", balance = 2000.0)
+                    AccountEntity(name = "Cash", type = "Cash", balance = 0.0),
+                    AccountEntity(name = "Bank Account", type = "Bank Account", balance = 0.0),
+                    AccountEntity(name = "UPI", type = "UPI", balance = 0.0)
                 )
                 accountDao.insertAccounts(defaultAccounts)
             }
-
-            // Default Budget
-            budgetDao.insertBudget(
-                BudgetEntity(
-                    categoryName = "Food",
-                    amount = 5000.0,
-                    period = "MONTHLY",
-                    warningThreshold = 0.75f
-                )
-            )
-
-            // Default Savings Goal
-            savingsGoalDao.insertGoal(
-                SavingsGoalEntity(
-                    name = "New Phone",
-                    targetAmount = 30000.0,
-                    currentAmount = 12000.0,
-                    deadline = "2026-12-31"
-                )
-            )
-
-            // Default Recurring Expense
-            recurringDao.insertRecurring(
-                RecurringExpenseEntity(
-                    title = "Home Internet",
-                    amount = 999.0,
-                    categoryId = 8,
-                    categoryName = "Internet",
-                    frequency = "MONTHLY",
-                    nextDueDate = "2026-10-01",
-                    enabled = true
-                )
-            )
-
-            // Add sample starter transactions to bring the dashboard vividly to life on first launch
-            val today = java.time.LocalDate.now().toString()
-            val yesterday = java.time.LocalDate.now().minusDays(1).toString()
-            val threeDaysAgo = java.time.LocalDate.now().minusDays(3).toString()
-
-            incomeDao.insertIncome(
-                IncomeEntity(
-                    amount = 40000.0,
-                    source = "Salary",
-                    paymentMethod = "Bank Transfer",
-                    note = "Monthly Tech Salary",
-                    date = java.time.LocalDate.now().withDayOfMonth(1).toString(),
-                    time = "10:00"
-                )
-            )
-
-            expenseDao.insertExpense(
-                ExpenseEntity(
-                    amount = 850.0,
-                    categoryId = 1,
-                    categoryName = "Food",
-                    categoryIcon = "🍔",
-                    categoryColor = 0xFFFF7043,
-                    paymentMethod = "UPI",
-                    note = "Lunch with team",
-                    date = today,
-                    time = "13:30"
-                )
-            )
-            expenseDao.insertExpense(
-                ExpenseEntity(
-                    amount = 1400.0,
-                    categoryId = 2,
-                    categoryName = "Grocery",
-                    categoryIcon = "🛒",
-                    categoryColor = 0xFF4CAF50,
-                    paymentMethod = "Debit Card",
-                    note = "Weekly supermarket veggies & fruits",
-                    date = yesterday,
-                    time = "18:45"
-                )
-            )
-            expenseDao.insertExpense(
-                ExpenseEntity(
-                    amount = 2000.0,
-                    categoryId = 4,
-                    categoryName = "Fuel",
-                    categoryIcon = "⛽",
-                    categoryColor = 0xFFFFB300,
-                    paymentMethod = "UPI",
-                    note = "Petrol tank fill",
-                    date = threeDaysAgo,
-                    time = "09:15"
-                )
-            )
-            expenseDao.insertExpense(
-                ExpenseEntity(
-                    amount = 10300.0,
-                    categoryId = 5,
-                    categoryName = "Rent",
-                    categoryIcon = "🏠",
-                    categoryColor = 0xFFAB47BC,
-                    paymentMethod = "Bank Transfer",
-                    note = "Apartment monthly rent",
-                    date = java.time.LocalDate.now().withDayOfMonth(5).toString(),
-                    time = "11:00"
-                )
-            )
         }
     }
 }
