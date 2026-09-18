@@ -526,6 +526,12 @@ fun AddTransactionScreen(
                                 time = selectedTime
                             )
                         }
+                        // Clear fields
+                        amountText = ""
+                        noteText = ""
+                        selectedDate = DateTimeUtils.getTodayString()
+                        selectedTime = DateTimeUtils.getCurrentTimeString()
+
                         onTransactionSaved()
                     }
                 },
