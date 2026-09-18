@@ -1,5 +1,7 @@
 package com.example.data.repository
 
+import com.example.data.auth.AuthManager
+import com.example.data.auth.AuthUser
 import com.example.data.local.dao.AccountDao
 import com.example.data.local.dao.BudgetDao
 import com.example.data.local.dao.CategoryDao
@@ -30,7 +32,8 @@ class FinanceRepository(
     private val recurringExpenseDao: RecurringExpenseDao,
     private val savingsGoalDao: SavingsGoalDao,
     private val preferencesDataStore: UserPreferencesDataStore,
-    private val syncManager: FirebaseSyncManager
+    private val syncManager: FirebaseSyncManager,
+    val authManager: AuthManager
 ) {
     // Flow sources
     val allExpenses: Flow<List<ExpenseEntity>> = expenseDao.getAllExpenses()
@@ -124,12 +127,17 @@ class FinanceRepository(
     suspend fun setCurrency(currency: String) = preferencesDataStore.setCurrency(currency)
     suspend fun setThemeMode(mode: String) = preferencesDataStore.setThemeMode(mode)
     suspend fun setPinLock(enabled: Boolean, hash: String = "") = preferencesDataStore.setPinLock(enabled, hash)
-    suspend fun setBiometricEnabled(enabled: Boolean) = preferencesDataStore.setBiometricEnabled(enabled)
     suspend fun setDailyReminder(enabled: Boolean) = preferencesDataStore.setDailyReminder(enabled)
     suspend fun setBudgetWarning(enabled: Boolean) = preferencesDataStore.setBudgetWarning(enabled)
     suspend fun setRecurringAlert(enabled: Boolean) = preferencesDataStore.setRecurringAlert(enabled)
     suspend fun setMonthlySummary(enabled: Boolean) = preferencesDataStore.setMonthlySummary(enabled)
     suspend fun setUserProfile(name: String, email: String) = preferencesDataStore.setUserProfile(name, email)
+
+    // Auth
+    suspend fun login(email: String, pass: String): Result<AuthUser> = authManager.login(email, pass)
+    suspend fun register(name: String, email: String, pass: String): Result<AuthUser> = authManager.register(name, email, pass)
+    suspend fun sendPasswordReset(email: String): Result<Unit> = authManager.sendPasswordReset(email)
+    suspend fun logout() = authManager.logout()
 
     // Sync
     suspend fun syncWithCloud(): Boolean {

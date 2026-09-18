@@ -23,6 +23,10 @@ class FinanceViewModelFactory(private val context: Context) : ViewModelProvider.
                 database.expenseDao(),
                 database.incomeDao()
             )
+            val authManager = com.example.data.auth.AuthManager(
+                context.applicationContext,
+                preferencesDataStore
+            )
             val repository = FinanceRepository(
                 expenseDao = database.expenseDao(),
                 incomeDao = database.incomeDao(),
@@ -32,7 +36,8 @@ class FinanceViewModelFactory(private val context: Context) : ViewModelProvider.
                 recurringExpenseDao = database.recurringExpenseDao(),
                 savingsGoalDao = database.savingsGoalDao(),
                 preferencesDataStore = preferencesDataStore,
-                syncManager = syncManager
+                syncManager = syncManager,
+                authManager = authManager
             )
             return FinanceViewModel(repository) as T
         }

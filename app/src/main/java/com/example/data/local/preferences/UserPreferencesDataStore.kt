@@ -18,13 +18,14 @@ data class AppUserPreferences(
     val themeMode: String = "SYSTEM",
     val isPinLockEnabled: Boolean = false,
     val pinCodeHash: String = "",
-    val isBiometricEnabled: Boolean = false,
+    val isLoggedIn: Boolean = false,
+    val userUid: String = "",
     val dailyReminderEnabled: Boolean = true,
     val budgetWarningEnabled: Boolean = true,
     val recurringAlertEnabled: Boolean = true,
     val monthlySummaryEnabled: Boolean = true,
-    val userDisplayName: String = "Alex Rivera",
-    val userEmail: String = "alex.rivera@example.com",
+    val userDisplayName: String = "User",
+    val userEmail: String = "",
     val lastSyncTimestamp: Long = 0L
 )
 
@@ -34,7 +35,8 @@ class UserPreferencesDataStore(private val context: Context) {
     private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
     private val KEY_PIN_LOCK_ENABLED = booleanPreferencesKey("pin_lock_enabled")
     private val KEY_PIN_HASH = stringPreferencesKey("pin_hash")
-    private val KEY_BIOMETRIC_ENABLED = booleanPreferencesKey("biometric_enabled")
+    private val KEY_IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
+    private val KEY_USER_UID = stringPreferencesKey("user_uid")
     private val KEY_DAILY_REMINDER = booleanPreferencesKey("daily_reminder")
     private val KEY_BUDGET_WARNING = booleanPreferencesKey("budget_warning")
     private val KEY_RECURRING_ALERT = booleanPreferencesKey("recurring_alert")
@@ -49,13 +51,14 @@ class UserPreferencesDataStore(private val context: Context) {
             themeMode = prefs[KEY_THEME_MODE] ?: "SYSTEM",
             isPinLockEnabled = prefs[KEY_PIN_LOCK_ENABLED] ?: false,
             pinCodeHash = prefs[KEY_PIN_HASH] ?: "",
-            isBiometricEnabled = prefs[KEY_BIOMETRIC_ENABLED] ?: false,
+            isLoggedIn = prefs[KEY_IS_LOGGED_IN] ?: false,
+            userUid = prefs[KEY_USER_UID] ?: "",
             dailyReminderEnabled = prefs[KEY_DAILY_REMINDER] ?: true,
             budgetWarningEnabled = prefs[KEY_BUDGET_WARNING] ?: true,
             recurringAlertEnabled = prefs[KEY_RECURRING_ALERT] ?: true,
             monthlySummaryEnabled = prefs[KEY_MONTHLY_SUMMARY] ?: true,
-            userDisplayName = prefs[KEY_USER_NAME] ?: "Alex Rivera",
-            userEmail = prefs[KEY_USER_EMAIL] ?: "alex.rivera@example.com",
+            userDisplayName = prefs[KEY_USER_NAME] ?: "User",
+            userEmail = prefs[KEY_USER_EMAIL] ?: "",
             lastSyncTimestamp = prefs[KEY_LAST_SYNC] ?: 0L
         )
     }
@@ -77,8 +80,22 @@ class UserPreferencesDataStore(private val context: Context) {
         }
     }
 
-    suspend fun setBiometricEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[KEY_BIOMETRIC_ENABLED] = enabled }
+    suspend fun setLoggedInUser(uid: String, name: String, email: String) {
+        context.dataStore.edit {
+            it[KEY_IS_LOGGED_IN] = true
+            it[KEY_USER_UID] = uid
+            it[KEY_USER_NAME] = name
+            it[KEY_USER_EMAIL] = email
+        }
+    }
+
+    suspend fun clearLoggedInUser() {
+        context.dataStore.edit {
+            it[KEY_IS_LOGGED_IN] = false
+            it[KEY_USER_UID] = ""
+            it[KEY_USER_NAME] = "User"
+            it[KEY_USER_EMAIL] = ""
+        }
     }
 
     suspend fun setDailyReminder(enabled: Boolean) {

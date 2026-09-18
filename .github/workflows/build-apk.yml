@@ -33,27 +33,38 @@ jobs:
               cat << 'EOF' > "$appdir/google-services.json"
           {
             "project_info": {
-              "project_number": "123456789012",
-              "project_id": "expense-manager-app",
-              "storage_bucket": "expense-manager-app.appspot.com"
+              "project_number": "295324687593",
+              "firebase_url": "https://expense-trecker-default-rtdb.firebaseio.com",
+              "project_id": "expense-trecker",
+              "storage_bucket": "expense-trecker.firebasestorage.app"
             },
             "client": [
               {
                 "client_info": {
-                  "mobilesdk_app_id": "1:123456789012:android:0123456789abcdef",
+                  "mobilesdk_app_id": "1:295324687593:android:e1b5dcd3fba7e5dd416478",
                   "android_client_info": {
-                    "package_name": "com.aistudio.expensemanager.dxpvrt"
+                    "package_name": "com.my.expensemanager"
                   }
                 },
-                "oauth_client": [],
+                "oauth_client": [
+                  {
+                    "client_id": "295324687593-8pscae0itb9282n02e4l3j6kieg9ungs.apps.googleusercontent.com",
+                    "client_type": 3
+                  }
+                ],
                 "api_key": [
                   {
-                    "current_key": "AIzaSyDummyKeyForBuildVerification12345"
+                    "current_key": "AIzaSyAmrnrzUStkDscWbHkjxjPslu_u_Rf7oJE"
                   }
                 ],
                 "services": {
                   "appinvite_service": {
-                    "other_platform_oauth_client": []
+                    "other_platform_oauth_client": [
+                      {
+                        "client_id": "295324687593-8pscae0itb9282n02e4l3j6kieg9ungs.apps.googleusercontent.com",
+                        "client_type": 3
+                      }
+                    ]
                   }
                 }
               }
@@ -66,13 +77,13 @@ jobs:
 
       - name: Ensure Debug Keystore exists
         run: |
-          # 1. Decode debug.keystore.base64 if present
+          # Decode debug.keystore.base64 if present
           find . -name "debug.keystore.base64" | while read kfile; do
             kdir=$(dirname "$kfile")
             base64 -d "$kfile" > "$kdir/debug.keystore" || true
           done
 
-          # 2. Automatically generate debug.keystore if missing
+          # Automatically generate debug.keystore in all project root folders if not present
           find . -name "settings.gradle.kts" -not -path "*/build/*" | while read sfile; do
             pdir=$(dirname "$sfile")
             if [ ! -f "$pdir/debug.keystore" ]; then
@@ -87,10 +98,11 @@ jobs:
 
       - name: Build Debug APK
         run: |
+          # Find directory containing settings.gradle.kts (handles root or nested folders)
           SETTINGS_FILE=$(find . -name "settings.gradle.kts" -not -path "*/build/*" | head -n 1)
           if [ -n "$SETTINGS_FILE" ]; then
             PROJECT_DIR=$(dirname "$SETTINGS_FILE")
-            echo "Building project in: $PROJECT_DIR"
+            echo "Building project in directory: $PROJECT_DIR"
             cd "$PROJECT_DIR"
           fi
           
@@ -104,6 +116,6 @@ jobs:
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: DailyExpenseManager-debug-apk
+          name: ExpenseManager-debug-apk
           path: "**/app/build/outputs/apk/debug/*.apk"
           retention-days: 14

@@ -41,7 +41,6 @@ import com.example.ui.theme.IndigoPrimary
 @Composable
 fun PinLockScreen(
     onPinEntered: (String) -> Boolean,
-    isBiometricAvailable: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     var pin by remember { mutableStateOf("") }
@@ -153,7 +152,7 @@ fun PinLockScreen(
                 listOf("1", "2", "3"),
                 listOf("4", "5", "6"),
                 listOf("7", "8", "9"),
-                listOf("BIO", "0", "DEL")
+                listOf("", "0", "DEL")
             )
 
             for (row in keypad) {
@@ -165,24 +164,8 @@ fun PinLockScreen(
                 ) {
                     for (key in row) {
                         when (key) {
-                            "BIO" -> {
-                                Box(
-                                    modifier = Modifier
-                                        .size(64.dp)
-                                        .clip(CircleShape)
-                                        .clickable {
-                                            // Biometric unlock bypass simulation
-                                            onPinEntered("1234")
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Fingerprint,
-                                        contentDescription = "Biometric",
-                                        tint = IndigoPrimary,
-                                        modifier = Modifier.size(28.dp)
-                                    )
-                                }
+                            "" -> {
+                                Spacer(modifier = Modifier.size(64.dp))
                             }
                             "DEL" -> {
                                 Box(

@@ -510,8 +510,47 @@ class FinanceViewModel(
         }
     }
 
-    fun setBiometricEnabled(enabled: Boolean) {
-        viewModelScope.launch { repository.setBiometricEnabled(enabled) }
+    fun login(email: String, pass: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.login(email, pass)
+            result.onSuccess { user ->
+                _snackbarMessage.emit("Welcome back, ${user.displayName}!")
+                onResult(true, null)
+            }.onFailure { err ->
+                onResult(false, err.message ?: "Authentication failed")
+            }
+        }
+    }
+
+    fun register(name: String, email: String, pass: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.register(name, email, pass)
+            result.onSuccess { user ->
+                _snackbarMessage.emit("Account created for ${user.displayName}!")
+                onResult(true, null)
+            }.onFailure { err ->
+                onResult(false, err.message ?: "Registration failed")
+            }
+        }
+    }
+
+    fun sendPasswordReset(email: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.sendPasswordReset(email)
+            result.onSuccess {
+                _snackbarMessage.emit("Password reset instructions sent to $email")
+                onResult(true, null)
+            }.onFailure { err ->
+                onResult(false, err.message ?: "Could not send reset email")
+            }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            repository.logout()
+            _snackbarMessage.emit("You have been signed out")
+        }
     }
 
     fun setNotificationSetting(type: String, enabled: Boolean) {

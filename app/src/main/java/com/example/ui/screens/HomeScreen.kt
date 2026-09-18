@@ -203,21 +203,22 @@ fun HomeScreen(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Add Expense (Most prominent)
+                    // Add Expense
                     Button(
                         onClick = onNavigateToAddExpense,
                         modifier = Modifier
-                            .weight(1.3f)
-                            .height(52.dp)
+                            .weight(1f)
+                            .height(48.dp)
                             .testTag("quick_action_add_expense"),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary)
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = "Add Expense", modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Add Expense", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Add Expense", modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Expense", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1, softWrap = false)
                     }
 
                     // Add Income
@@ -225,13 +226,14 @@ fun HomeScreen(
                         onClick = onNavigateToAddIncome,
                         modifier = Modifier
                             .weight(1f)
-                            .height(52.dp)
+                            .height(48.dp)
                             .testTag("quick_action_add_income"),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(14.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
                     ) {
                         Icon(imageVector = Icons.Default.Payments, contentDescription = "Add Income", tint = FinanceSuccess, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Income", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Income", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, softWrap = false)
                     }
 
                     // Transfer
@@ -239,13 +241,14 @@ fun HomeScreen(
                         onClick = onOpenTransferDialog,
                         modifier = Modifier
                             .weight(1f)
-                            .height(52.dp)
+                            .height(48.dp)
                             .testTag("quick_action_transfer"),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(14.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
                     ) {
                         Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = "Transfer", tint = IndigoPrimary, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Transfer", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Transfer", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, softWrap = false)
                     }
                 }
             }
@@ -315,55 +318,7 @@ fun HomeScreen(
             }
         }
 
-        // 6. Savings Goal Highlight
-        if (goals.isNotEmpty()) {
-            item {
-                val goal = goals.first()
-                val goalRatio = (goal.currentAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f)
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "🎯 Goal: ${goal.name}",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "${CurrencyFormatter.format(goal.currentAmount, currency)} / ${CurrencyFormatter.format(goal.targetAmount, currency)}",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = FinanceSuccess
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        LinearProgressIndicator(
-                            progress = { goalRatio },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(8.dp)
-                                .clip(RoundedCornerShape(4.dp)),
-                            color = FinanceSuccess,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    }
-                }
-            }
-        }
-
-        // 7. Recent Transactions Header
+        // 6. Recent Transactions Header
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -182,16 +183,17 @@ fun TransactionDetailDialog(
                 // Actions: Duplicate, Share, Delete
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedButton(
                         onClick = onDuplicate,
                         modifier = Modifier.weight(1f).testTag("duplicate_transaction_button"),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.ContentCopy, contentDescription = "Duplicate", modifier = Modifier.size(16.dp))
+                        Icon(imageVector = Icons.Default.ContentCopy, contentDescription = "Duplicate", modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Copy", fontSize = 12.sp)
+                        Text("Copy", fontSize = 12.sp, maxLines = 1, softWrap = false)
                     }
 
                     OutlinedButton(
@@ -200,22 +202,24 @@ fun TransactionDetailDialog(
                             ExportUtils.shareReport(context, "Transaction Details", shareText)
                         },
                         modifier = Modifier.weight(1f).testTag("share_transaction_button"),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(16.dp))
+                        Icon(imageVector = Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Share", fontSize = 12.sp)
+                        Text("Share", fontSize = 12.sp, maxLines = 1, softWrap = false)
                     }
 
                     Button(
                         onClick = { showDeleteConfirm = true },
                         modifier = Modifier.weight(1f).testTag("delete_transaction_button"),
-                        colors = ButtonDefaults.buttonColors(containerColor = FinanceError.copy(alpha = 0.9f)),
-                        shape = RoundedCornerShape(12.dp)
+                        colors = ButtonDefaults.buttonColors(containerColor = FinanceError),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp))
+                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Delete", fontSize = 12.sp)
+                        Text("Delete", fontSize = 12.sp, maxLines = 1, softWrap = false)
                     }
                 }
             }

@@ -45,14 +45,15 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.ui.components.AddAccountDialog
 import com.example.ui.components.AddBudgetDialog
-import com.example.ui.components.AddGoalDialog
-import com.example.ui.components.AddRecurringDialog
 import com.example.ui.components.PinLockScreen
 import com.example.ui.components.TransactionDetailDialog
 import com.example.ui.components.TransferMoneyDialog
 import com.example.ui.navigation.Screen
 import com.example.ui.screens.AddTransactionScreen
+import com.example.ui.screens.ForgotPasswordScreen
 import com.example.ui.screens.HomeScreen
+import com.example.ui.screens.LoginScreen
+import com.example.ui.screens.RegisterScreen
 import com.example.ui.screens.ReportsScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.TransactionsScreen
@@ -76,8 +77,6 @@ fun MainScreen(
     // Dialog Visibility states
     var showAddBudgetDialog by remember { mutableStateOf(false) }
     var showAddAccountDialog by remember { mutableStateOf(false) }
-    var showAddGoalDialog by remember { mutableStateOf(false) }
-    var showAddRecurringDialog by remember { mutableStateOf(false) }
     var showTransferDialog by remember { mutableStateOf(false) }
 
     // Collect snackbar messages
@@ -87,12 +86,39 @@ fun MainScreen(
         }
     }
 
-    if (!isAppUnlocked) {
+    // 1. Authentication Check (Login / Register / Forgot Password)
+    if (!prefs.isLoggedIn) {
+        var authRoute by remember { mutableStateOf(Screen.Login.route) }
+        when (authRoute) {
+            Screen.Login.route -> {
+                LoginScreen(
+                    viewModel = viewModel,
+                    onNavigateToRegister = { authRoute = Screen.Register.route },
+                    onNavigateToForgotPassword = { authRoute = Screen.ForgotPassword.route }
+                )
+            }
+            Screen.Register.route -> {
+                RegisterScreen(
+                    viewModel = viewModel,
+                    onNavigateToLogin = { authRoute = Screen.Login.route }
+                )
+            }
+            Screen.ForgotPassword.route -> {
+                ForgotPasswordScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { authRoute = Screen.Login.route }
+                )
+            }
+        }
+        return
+    }
+
+    // 2. PIN Lock Protection
+    if (prefs.isPinLockEnabled && !isAppUnlocked) {
         PinLockScreen(
             onPinEntered = { pin ->
                 viewModel.unlockWithPin(pin)
-            },
-            isBiometricAvailable = prefs.isBiometricEnabled
+            }
         )
         return
     }
@@ -129,26 +155,6 @@ fun MainScreen(
             onConfirm = { name, type, bal ->
                 viewModel.addAccount(name, type, bal)
                 showAddAccountDialog = false
-            }
-        )
-    }
-
-    if (showAddGoalDialog) {
-        AddGoalDialog(
-            onDismiss = { showAddGoalDialog = false },
-            onConfirm = { name, target, deadline ->
-                viewModel.addSavingsGoal(name, target, deadline)
-                showAddGoalDialog = false
-            }
-        )
-    }
-
-    if (showAddRecurringDialog) {
-        AddRecurringDialog(
-            onDismiss = { showAddRecurringDialog = false },
-            onConfirm = { title, amount, freq, due ->
-                viewModel.addRecurringExpense(title, amount, freq, due)
-                showAddRecurringDialog = false
             }
         )
     }
@@ -293,8 +299,11 @@ fun MainScreen(
                         viewModel = viewModel,
                         onOpenAddBudgetDialog = { showAddBudgetDialog = true },
                         onOpenAddAccountDialog = { showAddAccountDialog = true },
-                        onOpenAddGoalDialog = { showAddGoalDialog = true },
-                        onOpenAddRecurringDialog = { showAddRecurringDialog = true }
+                        onLogout = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Home.route) { inclusive = true }
+                            }
+                        }
                     )
                 }
             }

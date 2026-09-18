@@ -20,16 +20,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.PieChart
-import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -41,6 +39,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -62,6 +61,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ui.theme.FinanceError
 import com.example.ui.theme.FinanceSuccess
 import com.example.ui.theme.IndigoPrimary
 import com.example.ui.viewmodel.FinanceViewModel
@@ -77,8 +77,7 @@ fun SettingsScreen(
     viewModel: FinanceViewModel,
     onOpenAddBudgetDialog: () -> Unit,
     onOpenAddAccountDialog: () -> Unit,
-    onOpenAddGoalDialog: () -> Unit,
-    onOpenAddRecurringDialog: () -> Unit,
+    onLogout: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -179,26 +178,41 @@ fun SettingsScreen(
                         Text(
                             text = prefs.userDisplayName,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 17.sp,
+                            fontSize = 16.sp,
+                            maxLines = 1,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = prefs.userEmail,
-                            fontSize = 13.sp,
+                            text = if (prefs.userEmail.isNotBlank()) prefs.userEmail else "Personal Account",
+                            fontSize = 12.sp,
+                            maxLines = 1,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
-                    Surface(
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.logout()
+                            onLogout()
+                        },
                         shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.testTag("settings_logout_button")
                     ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = "Sign Out",
+                            tint = FinanceError,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Local / Sync",
-                            fontSize = 11.sp,
+                            text = "Sign Out",
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = IndigoPrimary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            color = FinanceError,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }
@@ -290,31 +304,6 @@ fun SettingsScreen(
                             checked = prefs.isPinLockEnabled,
                             onCheckedChange = { showPinDialog = true },
                             modifier = Modifier.testTag("pin_lock_switch")
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Biometric Unlock
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Fingerprint, contentDescription = "Biometrics", tint = IndigoPrimary, modifier = Modifier.size(22.dp))
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text("Fingerprint / Biometrics", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                Text("Quick unlock with biometric sensor", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                        Switch(
-                            checked = prefs.isBiometricEnabled,
-                            onCheckedChange = { viewModel.setBiometricEnabled(it) },
-                            modifier = Modifier.testTag("biometric_switch")
                         )
                     }
                 }
@@ -458,151 +447,7 @@ fun SettingsScreen(
             }
         }
 
-        // 6. Savings Goals
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Savings, contentDescription = "Savings Goals", tint = FinanceSuccess, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Savings Goals",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        TextButton(
-                            onClick = onOpenAddGoalDialog,
-                            modifier = Modifier.testTag("add_savings_goal_button")
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("New", fontSize = 12.sp)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    if (goals.isEmpty()) {
-                        Text(
-                            text = "No active savings goals. Tap '+ New' to set a target.",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else {
-                        goals.forEach { g ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(g.name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                    Text("Saved: ${CurrencyFormatter.format(g.currentAmount, prefs.currency)} of ${CurrencyFormatter.format(g.targetAmount, prefs.currency)}", fontSize = 11.sp, color = FinanceSuccess)
-                                }
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = IndigoPrimary.copy(alpha = 0.1f),
-                                    modifier = Modifier.clickable { viewModel.contributeToGoal(g.id, 500.0) }
-                                ) {
-                                    Text(
-                                        text = "+${prefs.currency}500",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = IndigoPrimary,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 7. Recurring Expenses / Subscriptions
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Payments, contentDescription = "Recurring", tint = IndigoPrimary, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Recurring Bills & Subs",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        TextButton(
-                            onClick = onOpenAddRecurringDialog,
-                            modifier = Modifier.testTag("add_recurring_button")
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("New", fontSize = 12.sp)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    if (recurringList.isEmpty()) {
-                        Text(
-                            text = "No recurring bills set yet.",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else {
-                        recurringList.forEach { rec ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(rec.title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                    Text("${rec.frequency} • Due: ${rec.nextDueDate}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Text(
-                                    text = CurrencyFormatter.format(rec.amount, prefs.currency),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 8. Notifications Preferences
+        // 6. Notifications Preferences
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
