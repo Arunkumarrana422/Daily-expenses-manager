@@ -64,19 +64,33 @@ jobs:
             fi
           done
 
-      - name: Decode Debug Keystore (Optional)
+      - name: Ensure Debug Keystore exists
         run: |
+          # 1. Decode debug.keystore.base64 if present
           find . -name "debug.keystore.base64" | while read kfile; do
             kdir=$(dirname "$kfile")
             base64 -d "$kfile" > "$kdir/debug.keystore" || true
           done
+
+          # 2. Automatically generate debug.keystore if missing
+          find . -name "settings.gradle.kts" -not -path "*/build/*" | while read sfile; do
+            pdir=$(dirname "$sfile")
+            if [ ! -f "$pdir/debug.keystore" ]; then
+              echo "Generating debug.keystore in $pdir"
+              keytool -genkey -v -keystore "$pdir/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            fi
+          done
+
+          if [ ! -f "debug.keystore" ]; then
+            keytool -genkey -v -keystore "debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
 
       - name: Build Debug APK
         run: |
           SETTINGS_FILE=$(find . -name "settings.gradle.kts" -not -path "*/build/*" | head -n 1)
           if [ -n "$SETTINGS_FILE" ]; then
             PROJECT_DIR=$(dirname "$SETTINGS_FILE")
-            echo "Building in: $PROJECT_DIR"
+            echo "Building project in: $PROJECT_DIR"
             cd "$PROJECT_DIR"
           fi
           
