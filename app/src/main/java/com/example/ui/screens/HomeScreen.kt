@@ -117,46 +117,15 @@ fun HomeScreen(
                     )
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Sync Status pill
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        tonalElevation = 2.dp,
-                        modifier = Modifier.testTag("sync_status_button")
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = if (syncState is SyncState.Success) Icons.Default.CloudDone else Icons.Default.CloudOff,
-                                contentDescription = "Sync",
-                                tint = if (syncState is SyncState.Success) FinanceSuccess else IndigoPrimary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Offline-First",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    // Profile Avatar
-                    ProfileAvatar(
-                        name = prefs.userDisplayName,
-                        profilePhotoBase64 = prefs.profilePhotoBase64,
-                        size = 40.dp,
-                        fontSize = 16.sp,
-                        onClick = { onNavigateToSettings() },
-                        modifier = Modifier.testTag("profile_avatar_button")
-                    )
-                }
+                // Profile Avatar
+                ProfileAvatar(
+                    name = prefs.userDisplayName,
+                    profilePhotoBase64 = prefs.profilePhotoBase64,
+                    size = 40.dp,
+                    fontSize = 16.sp,
+                    onClick = { onNavigateToSettings() },
+                    modifier = Modifier.testTag("profile_avatar_button")
+                )
             }
         }
 

@@ -1,5 +1,6 @@
 package com.example.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -30,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,13 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import kotlinx.coroutines.launch
 import com.example.ui.components.AddAccountDialog
 import com.example.ui.components.AddBudgetDialog
 import com.example.ui.components.PinLockScreen
@@ -75,7 +73,6 @@ fun MainScreen(
     val networkObserver = remember { NetworkObserver(context.applicationContext) }
     val isOnline by networkObserver.isOnline.collectAsStateWithLifecycle()
 
-    val navController = rememberNavController()
     val isAppUnlocked by viewModel.isAppUnlocked.collectAsStateWithLifecycle()
     val selectedTx by viewModel.selectedTransaction.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
@@ -202,8 +199,15 @@ fun MainScreen(
         )
     }
 
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route ?: Screen.Home.route
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 5 })
+    val coroutineScope = rememberCoroutineScope()
+    var addScreenIsExpense by remember { mutableStateOf(true) }
+
+    BackHandler(enabled = pagerState.currentPage != 0) {
+        coroutineScope.launch {
+            pagerState.animateScrollToPage(0)
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -223,34 +227,16 @@ fun MainScreen(
                     Triple(Screen.Settings, Icons.Default.Settings, "Settings")
                 )
 
-                navItems.forEach { (screen, icon, label) ->
-                    val isSelected = currentRoute == screen.route || (screen == Screen.Add && currentRoute?.startsWith("add") == true)
+                navItems.forEachIndexed { index, (screen, icon, label) ->
+                    val isSelected = pagerState.currentPage == index
                     NavigationBarItem(
                         selected = isSelected,
                         onClick = {
-                            if (screen.route == Screen.Home.route) {
-                                navController.navigate(Screen.Home.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        inclusive = false
-                                    }
-                                    launchSingleTop = true
-                                }
-                            } else if (screen == Screen.Add) {
-                                navController.navigate(Screen.Add.createRoute(true)) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            } else if (currentRoute != screen.route) {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                            if (screen == Screen.Add) {
+                                addScreenIsExpense = true
+                            }
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
                             }
                         },
                         icon = {
@@ -275,12 +261,17 @@ fun MainScreen(
         },
         floatingActionButton = {
             AnimatedVisibility(
-                visible = currentRoute == Screen.Home.route,
+                visible = pagerState.currentPage == 0,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
                 FloatingActionButton(
-                    onClick = { navController.navigate(Screen.Add.createRoute(true)) },
+                    onClick = {
+                        addScreenIsExpense = true
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(2)
+                        }
+                    },
                     containerColor = IndigoPrimary,
                     contentColor = Color.White,
                     shape = CircleShape,
@@ -301,65 +292,54 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            NavHost(
-                navController = navController,
-                startDestination = Screen.Home.route,
+            HorizontalPager(
+                state = pagerState,
+                beyondViewportPageCount = 1,
                 modifier = Modifier.fillMaxSize()
-            ) {
-                composable(Screen.Home.route) {
-                    HomeScreen(
+            ) { page ->
+                when (page) {
+                    0 -> HomeScreen(
                         viewModel = viewModel,
-                        onNavigateToAddExpense = { navController.navigate(Screen.Add.createRoute(true)) },
-                        onNavigateToAddIncome = { navController.navigate(Screen.Add.createRoute(false)) },
-                        onNavigateToTransactions = { navController.navigate(Screen.Transactions.route) },
-                        onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                        onNavigateToAddExpense = {
+                            addScreenIsExpense = true
+                            coroutineScope.launch { pagerState.animateScrollToPage(2) }
+                        },
+                        onNavigateToAddIncome = {
+                            addScreenIsExpense = false
+                            coroutineScope.launch { pagerState.animateScrollToPage(2) }
+                        },
+                        onNavigateToTransactions = {
+                            coroutineScope.launch { pagerState.animateScrollToPage(1) }
+                        },
+                        onNavigateToSettings = {
+                            coroutineScope.launch { pagerState.animateScrollToPage(4) }
+                        },
                         onOpenTransferDialog = { showTransferDialog = true },
                         onOpenAddBudgetDialog = { showAddBudgetDialog = true },
                         onTransactionClick = { tx -> viewModel.selectTransaction(tx) }
                     )
-                }
 
-                composable(Screen.Transactions.route) {
-                    TransactionsScreen(
+                    1 -> TransactionsScreen(
                         viewModel = viewModel,
                         onTransactionClick = { tx -> viewModel.selectTransaction(tx) }
                     )
-                }
 
-                composable(
-                    route = "add?isExpense={isExpense}",
-                    arguments = listOf(
-                        navArgument("isExpense") {
-                            type = NavType.BoolType
-                            defaultValue = true
-                        }
-                    )
-                ) { backStackEntry ->
-                    val isExpenseArg = backStackEntry.arguments?.getBoolean("isExpense") ?: true
-                    AddTransactionScreen(
+                    2 -> AddTransactionScreen(
                         viewModel = viewModel,
-                        initialIsExpense = isExpenseArg,
+                        initialIsExpense = addScreenIsExpense,
                         onTransactionSaved = {
-                            navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Home.route) { inclusive = true }
-                            }
+                            coroutineScope.launch { pagerState.animateScrollToPage(0) }
                         }
                     )
-                }
 
-                composable(Screen.Reports.route) {
-                    ReportsScreen(viewModel = viewModel)
-                }
+                    3 -> ReportsScreen(viewModel = viewModel)
 
-                composable(Screen.Settings.route) {
-                    SettingsScreen(
+                    4 -> SettingsScreen(
                         viewModel = viewModel,
                         onOpenAddBudgetDialog = { showAddBudgetDialog = true },
                         onOpenAddAccountDialog = { showAddAccountDialog = true },
                         onLogout = {
-                            navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Home.route) { inclusive = true }
-                            }
+                            coroutineScope.launch { pagerState.animateScrollToPage(0) }
                         }
                     )
                 }

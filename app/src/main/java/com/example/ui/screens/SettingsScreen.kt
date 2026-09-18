@@ -773,7 +773,7 @@ fun SettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Version 1.0.0 • True Native Android (Kotlin + Room)",
+                    text = "Version 1.0.0",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

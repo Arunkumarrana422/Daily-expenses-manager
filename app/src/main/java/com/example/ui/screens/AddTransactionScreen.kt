@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -319,8 +320,9 @@ fun AddTransactionScreen(
                         label = { Text(if (isExpense) "Expense Title / Item Name" else "Income Title / Source") },
                         placeholder = {
                             Text(
-                                if (isExpense) "e.g. Milk & Eggs, Petrol, Coffee, Vegetables, Dinner"
-                                else "e.g. Monthly Salary, Freelance project, Gift"
+                                text = if (isExpense) "e.g. Milk, Petrol, Coffee" else "e.g. Salary, Freelance",
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         },
                         leadingIcon = {
