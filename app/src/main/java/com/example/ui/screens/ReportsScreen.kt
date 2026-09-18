@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ui.components.CategoryIconHelper
 import com.example.ui.components.ChartCategorySlice
 import com.example.ui.components.DonutChart
 import com.example.ui.components.SpendingTrendBar
@@ -323,7 +324,12 @@ fun ReportsScreen(
                                         modifier = Modifier.size(36.dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
-                                            Text(slice.icon, fontSize = 16.sp)
+                                            Icon(
+                                                imageVector = CategoryIconHelper.getIcon(slice.categoryName, slice.icon),
+                                                contentDescription = slice.categoryName,
+                                                tint = slice.color,
+                                                modifier = Modifier.size(20.dp)
+                                            )
                                         }
                                     }
                                     Spacer(modifier = Modifier.width(10.dp))

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -142,12 +143,19 @@ fun DonutChart(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(10.dp)
+                                    .size(8.dp)
                                     .background(slice.color, CircleShape)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = CategoryIconHelper.getIcon(slice.categoryName, slice.icon),
+                                contentDescription = slice.categoryName,
+                                tint = slice.color,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
                             Text(
-                                text = "${slice.icon} ${slice.categoryName}",
+                                text = slice.categoryName,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface
