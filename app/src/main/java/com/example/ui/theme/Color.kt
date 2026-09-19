@@ -16,22 +16,21 @@ val LightPrimaryText = Color(0xFF171923)
 val LightSecondaryText = Color(0xFF6B7280)
 val LightDivider = Color(0xFFE5E7EB)
 
-// Dark Theme Palette
-val DarkBackground = Color(0xFF0B0F19)
-val DarkSurface = Color(0xFF151A24)
-val DarkSurfaceVariant = Color(0xFF1E2533)
-val DarkPrimary = Color(0xFF7986CB)
-val DarkSecondary = Color(0xFF4DB6AC)
-val DarkSuccess = Color(0xFF66BB6A)
-val DarkWarning = Color(0xFFFFCA28)
-val DarkError = Color(0xFFEF5350)
-val DarkPrimaryText = Color(0xFFF8FAFC)
-val DarkSecondaryText = Color(0xAFA7AFBF)
-val DarkDivider = Color(0xFF262E3D)
+// Dark Theme Palette - High Contrast & Enhanced Visibility
+val DarkBackground = Color(0xFF090D16)
+val DarkSurface = Color(0xFF111827)
+val DarkSurfaceVariant = Color(0xFF1F2937)
+val DarkPrimary = Color(0xFF818CF8) // Vibrant high-visibility Indigo/Blue for dark mode
+val DarkSecondary = Color(0xFF2DD4BF) // Vibrant Teal
+val DarkSuccess = Color(0xFF4ADE80)
+val DarkWarning = Color(0xFFFACC15)
+val DarkError = Color(0xFFF87171)
+val DarkPrimaryText = Color(0xFFF8FAFC) // Crisp white text
+val DarkSecondaryText = Color(0xFF94A3B8) // Clear visible secondary text
+val DarkDivider = Color(0xFF334155)
 
 // Brand Gradients & Accents
 val IndigoGradientStart = Color(0xFF3949AB)
 val IndigoGradientEnd = Color(0xFF1A237E)
 val EmeraldGradientStart = Color(0xFF00897B)
 val EmeraldGradientEnd = Color(0xFF004D40)
-

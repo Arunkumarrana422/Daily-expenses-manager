@@ -160,7 +160,7 @@ fun TransactionsScreen(
                     Icon(
                         imageVector = Icons.Default.FilterList,
                         contentDescription = "Filter",
-                        tint = if (hasActiveFilter) IndigoPrimary else MaterialTheme.colorScheme.onSurface
+                        tint = if (hasActiveFilter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -201,7 +201,7 @@ fun TransactionsScreen(
                     text = "Filtered Results (${filteredTransactions.size} transactions)",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
-                    color = IndigoPrimary
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Surface(
                     shape = RoundedCornerShape(8.dp),

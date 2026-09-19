@@ -159,7 +159,7 @@ fun ReportsScreen(
                     },
                     modifier = Modifier.testTag("share_report_button")
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = "Share Report PDF", tint = IndigoPrimary)
+                    Icon(Icons.Default.Share, contentDescription = "Share Report PDF", tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -181,8 +181,8 @@ fun ReportsScreen(
                         onClick = { viewModel.setReportsPeriod(period) },
                         label = { Text(label, fontWeight = FontWeight.SemiBold) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = IndigoPrimary.copy(alpha = 0.15f),
-                            selectedLabelColor = IndigoPrimary
+                            selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            selectedLabelColor = MaterialTheme.colorScheme.primary
                         ),
                         modifier = Modifier.weight(1f).testTag("period_chip_$period")
                     )

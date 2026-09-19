@@ -463,7 +463,7 @@ fun SettingsScreen(
                                     Icon(
                                         imageVector = Icons.Default.Edit,
                                         contentDescription = "Edit Name",
-                                        tint = IndigoPrimary,
+                                        tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(15.dp)
                                     )
                                 }
@@ -477,7 +477,7 @@ fun SettingsScreen(
                             Text(
                                 text = if (prefs.profilePhotoBase64.isNotBlank()) "Tap photo to change" else "Tap photo to upload",
                                 fontSize = 10.sp,
-                                color = IndigoPrimary,
+                                color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier
                                     .clickable {
                                         photoPickerLauncher.launch(
@@ -590,7 +590,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Lock, contentDescription = "PIN", tint = IndigoPrimary, modifier = Modifier.size(22.dp))
+                            Icon(Icons.Default.Lock, contentDescription = "PIN", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text("4-Digit PIN Lock", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
@@ -621,7 +621,7 @@ fun SettingsScreen(
                             Icon(
                                 imageVector = Icons.Default.Key,
                                 contentDescription = "Update Password",
-                                tint = IndigoPrimary,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(22.dp)
                             )
                             Spacer(modifier = Modifier.width(10.dp))
@@ -656,7 +656,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.PieChart, contentDescription = "Budgets", tint = IndigoPrimary, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.PieChart, contentDescription = "Budgets", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Budgets",

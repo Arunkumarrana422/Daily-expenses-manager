@@ -220,7 +220,7 @@ fun HomeScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(imageVector = Icons.Default.PieChart, contentDescription = "Budget", tint = if (isWarning) FinanceWarning else IndigoPrimary, modifier = Modifier.size(20.dp))
+                                Icon(imageVector = Icons.Default.PieChart, contentDescription = "Budget", tint = if (isWarning) FinanceWarning else MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "${budget.categoryName ?: "Monthly"} Budget",
@@ -245,7 +245,7 @@ fun HomeScreen(
                                 .fillMaxWidth()
                                 .height(8.dp)
                                 .clip(RoundedCornerShape(4.dp)),
-                            color = if (isWarning) FinanceWarning else IndigoPrimary,
+                            color = if (isWarning) FinanceWarning else MaterialTheme.colorScheme.primary,
                             trackColor = MaterialTheme.colorScheme.surfaceVariant
                         )
 
@@ -281,7 +281,7 @@ fun HomeScreen(
                     onClick = onNavigateToTransactions,
                     modifier = Modifier.testTag("see_all_transactions_button")
                 ) {
-                    Text("See All", color = IndigoPrimary, fontWeight = FontWeight.SemiBold)
+                    Text("See All", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -303,7 +303,7 @@ fun HomeScreen(
                         Icon(
                             imageVector = Icons.Default.PieChart,
                             contentDescription = null,
-                            tint = IndigoPrimary,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(44.dp)
                         )
                         Spacer(modifier = Modifier.height(10.dp))
