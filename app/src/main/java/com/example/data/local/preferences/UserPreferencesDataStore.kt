@@ -20,10 +20,10 @@ data class AppUserPreferences(
     val pinCodeHash: String = "",
     val isLoggedIn: Boolean = false,
     val userUid: String = "",
-    val dailyReminderEnabled: Boolean = true,
-    val budgetWarningEnabled: Boolean = true,
-    val recurringAlertEnabled: Boolean = true,
-    val monthlySummaryEnabled: Boolean = true,
+    val dailyReminderEnabled: Boolean = false,
+    val budgetWarningEnabled: Boolean = false,
+    val recurringAlertEnabled: Boolean = false,
+    val monthlySummaryEnabled: Boolean = false,
     val userDisplayName: String = "User",
     val userEmail: String = "",
     val profilePhotoBase64: String = "",
@@ -55,10 +55,10 @@ class UserPreferencesDataStore(private val context: Context) {
             pinCodeHash = prefs[KEY_PIN_HASH] ?: "",
             isLoggedIn = prefs[KEY_IS_LOGGED_IN] ?: false,
             userUid = prefs[KEY_USER_UID] ?: "",
-            dailyReminderEnabled = prefs[KEY_DAILY_REMINDER] ?: true,
-            budgetWarningEnabled = prefs[KEY_BUDGET_WARNING] ?: true,
-            recurringAlertEnabled = prefs[KEY_RECURRING_ALERT] ?: true,
-            monthlySummaryEnabled = prefs[KEY_MONTHLY_SUMMARY] ?: true,
+            dailyReminderEnabled = prefs[KEY_DAILY_REMINDER] ?: false,
+            budgetWarningEnabled = prefs[KEY_BUDGET_WARNING] ?: false,
+            recurringAlertEnabled = prefs[KEY_RECURRING_ALERT] ?: false,
+            monthlySummaryEnabled = prefs[KEY_MONTHLY_SUMMARY] ?: false,
             userDisplayName = prefs[KEY_USER_NAME] ?: "User",
             userEmail = prefs[KEY_USER_EMAIL] ?: "",
             profilePhotoBase64 = prefs[KEY_PROFILE_PHOTO] ?: "",
@@ -131,6 +131,15 @@ class UserPreferencesDataStore(private val context: Context) {
 
     suspend fun setMonthlySummary(enabled: Boolean) {
         context.dataStore.edit { it[KEY_MONTHLY_SUMMARY] = enabled }
+    }
+
+    suspend fun enableAllNotifications() {
+        context.dataStore.edit {
+            it[KEY_DAILY_REMINDER] = true
+            it[KEY_BUDGET_WARNING] = true
+            it[KEY_RECURRING_ALERT] = true
+            it[KEY_MONTHLY_SUMMARY] = true
+        }
     }
 
     suspend fun setUserProfile(name: String, email: String) {

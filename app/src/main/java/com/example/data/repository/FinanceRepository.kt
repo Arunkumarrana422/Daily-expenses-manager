@@ -205,6 +205,7 @@ class FinanceRepository(
     suspend fun setBudgetWarning(enabled: Boolean) = preferencesDataStore.setBudgetWarning(enabled)
     suspend fun setRecurringAlert(enabled: Boolean) = preferencesDataStore.setRecurringAlert(enabled)
     suspend fun setMonthlySummary(enabled: Boolean) = preferencesDataStore.setMonthlySummary(enabled)
+    suspend fun enableAllNotifications() = preferencesDataStore.enableAllNotifications()
     suspend fun setUserProfile(name: String, email: String) = preferencesDataStore.setUserProfile(name, email)
 
     // Auth

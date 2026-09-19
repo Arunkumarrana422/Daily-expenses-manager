@@ -1,6 +1,12 @@
 package com.example.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,6 +59,7 @@ import com.example.ui.components.ToastType
 import com.example.ui.components.TopToastHost
 import com.example.ui.components.rememberTopToastState
 import com.example.ui.components.showSystemTopToast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
@@ -74,8 +81,30 @@ fun RegisterScreen(
     onRegisterSuccess: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            viewModel.enableAllNotifications()
+        }
+        onRegisterSuccess()
+    }
+
     RegisterScreen(
-        onRegisterSuccess = onRegisterSuccess,
+        onRegisterSuccess = {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                    viewModel.enableAllNotifications()
+                    onRegisterSuccess()
+                } else {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            } else {
+                viewModel.enableAllNotifications()
+                onRegisterSuccess()
+            }
+        },
         onNavigateToLogin = onNavigateToLogin,
         onRegister = { name, email, password, callback ->
             viewModel.register(name, email, password, callback)

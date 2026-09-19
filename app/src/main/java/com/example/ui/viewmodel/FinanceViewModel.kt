@@ -629,6 +629,13 @@ class FinanceViewModel(
         }
     }
 
+    fun enableAllNotifications(onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.enableAllNotifications()
+            onComplete()
+        }
+    }
+
     fun triggerCloudSync() {
         viewModelScope.launch {
             repository.syncWithCloud()
