@@ -68,10 +68,11 @@ fun ExpenseManagerTheme(
   }
 
   val colorScheme = if (isDark) DarkColorScheme else LightColorScheme
+  val typography = getAppTypography(fontFamily)
 
   MaterialTheme(
     colorScheme = colorScheme,
-    typography = Typography,
+    typography = typography,
     content = content
   )
 }
