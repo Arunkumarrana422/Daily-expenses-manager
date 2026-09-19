@@ -234,14 +234,7 @@ class AuthManager(
             user.reauthenticate(credential).await()
             return Result.success(Unit)
         } catch (e: Exception) {
-            val msg = when {
-                e.message?.contains("wrong-password", ignoreCase = true) == true ||
-                e.message?.contains("invalid-credential", ignoreCase = true) == true ||
-                e.message?.contains("password is invalid", ignoreCase = true) == true ->
-                    "Incorrect account password"
-                else -> e.localizedMessage ?: "Password verification failed"
-            }
-            return Result.failure(Exception(msg))
+            return Result.failure(Exception("Enter correct Password"))
         }
     }
 

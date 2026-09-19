@@ -214,7 +214,7 @@ fun MainScreen(
                                     showForgotPinDialog = false
                                     accountPasswordInput = ""
                                 } else {
-                                    accountPasswordError = error ?: "Incorrect password"
+                                    accountPasswordError = "Enter correct Password"
                                 }
                             }
                         },
