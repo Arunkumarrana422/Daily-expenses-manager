@@ -209,7 +209,7 @@ fun PinLockScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Forgot PIN? Reset via Account Email",
+                text = "Forgot PIN? Enter Account Password",
                 color = IndigoPrimary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,

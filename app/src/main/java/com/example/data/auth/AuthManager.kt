@@ -226,6 +226,25 @@ class AuthManager(
         }
     }
 
+    suspend fun verifyPassword(password: String): Result<Unit> {
+        val user = firebaseAuth?.currentUser ?: return Result.failure(IllegalStateException("User not logged in"))
+        val email = user.email ?: return Result.failure(IllegalStateException("No email associated with user"))
+        try {
+            val credential = EmailAuthProvider.getCredential(email, password)
+            user.reauthenticate(credential).await()
+            return Result.success(Unit)
+        } catch (e: Exception) {
+            val msg = when {
+                e.message?.contains("wrong-password", ignoreCase = true) == true ||
+                e.message?.contains("invalid-credential", ignoreCase = true) == true ||
+                e.message?.contains("password is invalid", ignoreCase = true) == true ->
+                    "Incorrect account password"
+                else -> e.localizedMessage ?: "Password verification failed"
+            }
+            return Result.failure(Exception(msg))
+        }
+    }
+
     suspend fun sendPasswordReset(email: String): Result<Unit> {
         val trimmedEmail = email.trim()
         if (trimmedEmail.isEmpty() || !trimmedEmail.contains("@")) {

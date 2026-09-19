@@ -301,18 +301,15 @@ class FinanceViewModel(
         return false
     }
 
-    fun resetPinViaEmail(onResult: (Boolean, String?) -> Unit) {
-        val email = userPreferences.value.userEmail
-        if (email.isBlank()) {
-            onResult(false, "No account email found.")
-            return
-        }
+    fun verifyPasswordAndResetPin(password: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
-            repository.sendPasswordReset(email).onSuccess {
-                _snackbarMessage.emit("PIN reset instructions sent to $email")
-                onResult(true, "PIN reset instructions sent to $email")
+            repository.verifyPassword(password).onSuccess {
+                repository.setPinLock(false, "")
+                _isAppUnlocked.value = true
+                _snackbarMessage.emit("PIN lock removed successfully via account password")
+                onResult(true, null)
             }.onFailure { err ->
-                onResult(false, err.message ?: "Could not send reset email")
+                onResult(false, err.message ?: "Incorrect account password")
             }
         }
     }

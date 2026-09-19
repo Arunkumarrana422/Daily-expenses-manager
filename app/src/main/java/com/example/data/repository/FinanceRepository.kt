@@ -238,6 +238,8 @@ class FinanceRepository(
 
     suspend fun updatePassword(currentPass: String, newPass: String): Result<Unit> = authManager.updatePassword(currentPass, newPass)
 
+    suspend fun verifyPassword(password: String): Result<Unit> = authManager.verifyPassword(password)
+
     suspend fun logout() {
         authManager.logout()
         // Clear local user transactions on logout
