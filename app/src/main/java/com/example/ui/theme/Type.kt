@@ -8,9 +8,9 @@ import androidx.compose.ui.unit.sp
 
 fun getAppTypography(fontFamilyPreference: String): Typography {
     val chosenFamily = if (fontFamilyPreference == "SYSTEM") {
-        FontFamily.Default // Device system font
+        FontFamily.Default // Phone's native system font
     } else {
-        FontFamily.Cursive // App's distinctive custom font
+        FontFamily.Serif // App's distinctive signature custom font style
     }
 
     return Typography(
