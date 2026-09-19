@@ -54,6 +54,7 @@ import com.example.ui.components.rememberTopToastState
 import com.example.ui.components.showSystemTopToast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -101,9 +102,12 @@ fun LoginScreen(
     val topToastState = rememberTopToastState()
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val scrollState = rememberScrollState()
 
     fun attemptLogin() {
+        focusManager.clearFocus()
+        keyboardController?.hide()
         if (email.isBlank()) {
             val msg = "Please enter your email"
             topToastState.show(msg, ToastType.ERROR)
