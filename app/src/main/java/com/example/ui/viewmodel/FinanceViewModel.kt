@@ -233,7 +233,7 @@ class FinanceViewModel(
                 tx.amount.toString().contains(filter.searchQuery)
 
             // Category filter
-            val matchesCategory = filter.categoryFilter == "All" || tx.title.equals(filter.categoryFilter, ignoreCase = true)
+            val matchesCategory = filter.categoryFilter == "All" || tx.categoryName.equals(filter.categoryFilter, ignoreCase = true)
 
             // Payment method filter
             val matchesPayment = filter.paymentMethodFilter == "All" || tx.paymentMethod.equals(filter.paymentMethodFilter, ignoreCase = true)

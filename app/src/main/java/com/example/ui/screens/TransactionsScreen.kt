@@ -127,7 +127,7 @@ fun TransactionsScreen(
             OutlinedTextField(
                 value = filterCriteria.searchQuery,
                 onValueChange = { viewModel.updateSearchQuery(it) },
-                placeholder = { Text("Search transactions, notes...", fontSize = 14.sp) },
+                placeholder = { Text("Search...", fontSize = 14.sp, maxLines = 1) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                 trailingIcon = {
                     if (filterCriteria.searchQuery.isNotEmpty()) {
