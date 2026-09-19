@@ -16,8 +16,6 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "ex
 data class AppUserPreferences(
     val currency: String = "₹",
     val themeMode: String = "SYSTEM",
-    val isPinLockEnabled: Boolean = false,
-    val pinCodeHash: String = "",
     val isLoggedIn: Boolean = false,
     val userUid: String = "",
     val dailyReminderEnabled: Boolean = false,
@@ -34,8 +32,6 @@ class UserPreferencesDataStore(private val context: Context) {
 
     private val KEY_CURRENCY = stringPreferencesKey("currency")
     private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
-    private val KEY_PIN_LOCK_ENABLED = booleanPreferencesKey("pin_lock_enabled")
-    private val KEY_PIN_HASH = stringPreferencesKey("pin_hash")
     private val KEY_IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
     private val KEY_USER_UID = stringPreferencesKey("user_uid")
     private val KEY_DAILY_REMINDER = booleanPreferencesKey("daily_reminder")
@@ -51,8 +47,6 @@ class UserPreferencesDataStore(private val context: Context) {
         AppUserPreferences(
             currency = prefs[KEY_CURRENCY] ?: "₹",
             themeMode = prefs[KEY_THEME_MODE] ?: "SYSTEM",
-            isPinLockEnabled = prefs[KEY_PIN_LOCK_ENABLED] ?: false,
-            pinCodeHash = prefs[KEY_PIN_HASH] ?: "",
             isLoggedIn = prefs[KEY_IS_LOGGED_IN] ?: false,
             userUid = prefs[KEY_USER_UID] ?: "",
             dailyReminderEnabled = prefs[KEY_DAILY_REMINDER] ?: false,
@@ -72,15 +66,6 @@ class UserPreferencesDataStore(private val context: Context) {
 
     suspend fun setThemeMode(mode: String) {
         context.dataStore.edit { it[KEY_THEME_MODE] = mode }
-    }
-
-    suspend fun setPinLock(enabled: Boolean, pinHash: String = "") {
-        context.dataStore.edit {
-            it[KEY_PIN_LOCK_ENABLED] = enabled
-            if (pinHash.isNotEmpty()) {
-                it[KEY_PIN_HASH] = pinHash
-            }
-        }
     }
 
     suspend fun setLoggedInUser(uid: String, name: String, email: String, profilePhoto: String = "") {

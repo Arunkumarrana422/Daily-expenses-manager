@@ -200,7 +200,6 @@ class FinanceRepository(
     // Settings
     suspend fun setCurrency(currency: String) = preferencesDataStore.setCurrency(currency)
     suspend fun setThemeMode(mode: String) = preferencesDataStore.setThemeMode(mode)
-    suspend fun setPinLock(enabled: Boolean, hash: String = "") = preferencesDataStore.setPinLock(enabled, hash)
     suspend fun setDailyReminder(enabled: Boolean) = preferencesDataStore.setDailyReminder(enabled)
     suspend fun setBudgetWarning(enabled: Boolean) = preferencesDataStore.setBudgetWarning(enabled)
     suspend fun setRecurringAlert(enabled: Boolean) = preferencesDataStore.setRecurringAlert(enabled)

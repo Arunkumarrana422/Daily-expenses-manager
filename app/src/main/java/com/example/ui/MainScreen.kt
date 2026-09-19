@@ -60,7 +60,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import com.example.ui.components.AddAccountDialog
 import com.example.ui.components.AddBudgetDialog
-import com.example.ui.components.PinLockScreen
 import com.example.ui.components.ToastType
 import com.example.ui.components.TopToastHost
 import com.example.ui.components.TransactionDetailDialog
@@ -158,97 +157,7 @@ fun MainScreen(
         return
     }
 
-    // 2. PIN Lock Protection
-    var showForgotPinDialog by remember { mutableStateOf(false) }
-    var accountPasswordInput by remember { mutableStateOf("") }
-    var accountPasswordError by remember { mutableStateOf<String?>(null) }
-    var isVerifyingPassword by remember { mutableStateOf(false) }
 
-    if (prefs.isPinLockEnabled && !isAppUnlocked) {
-        PinLockScreen(
-            onPinEntered = { pin ->
-                viewModel.unlockWithPin(pin)
-            },
-            onForgotPin = {
-                showForgotPinDialog = true
-                accountPasswordInput = ""
-                accountPasswordError = null
-                isVerifyingPassword = false
-            }
-        )
-
-        if (showForgotPinDialog) {
-            AlertDialog(
-                onDismissRequest = { if (!isVerifyingPassword) showForgotPinDialog = false },
-                title = { Text("Reset PIN via Account Password") },
-                text = {
-                    Column {
-                        Text("Enter your account login password to verify your identity and remove the PIN lock:")
-                        Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedTextField(
-                            value = accountPasswordInput,
-                            onValueChange = { accountPasswordInput = it; accountPasswordError = null },
-                            placeholder = { Text("Account Password") },
-                            singleLine = true,
-                            enabled = !isVerifyingPassword,
-                            visualTransformation = PasswordVisualTransformation(),
-                            modifier = Modifier.fillMaxWidth().testTag("account_password_input")
-                        )
-                        if (accountPasswordError != null) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(accountPasswordError!!, color = FinanceError, fontSize = 12.sp)
-                        }
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            if (accountPasswordInput.isBlank()) {
-                                accountPasswordError = "Please enter your password"
-                                return@Button
-                            }
-                            isVerifyingPassword = true
-                            viewModel.verifyPasswordAndResetPin(accountPasswordInput) { success, error ->
-                                isVerifyingPassword = false
-                                if (success) {
-                                    showForgotPinDialog = false
-                                    accountPasswordInput = ""
-                                } else {
-                                    accountPasswordError = "Enter correct Password"
-                                }
-                            }
-                        },
-                        enabled = !isVerifyingPassword,
-                        colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
-                        modifier = Modifier.testTag("verify_account_password_button")
-                    ) {
-                        if (isVerifyingPassword) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    color = Color.White,
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Verifying...")
-                            }
-                        } else {
-                            Text("Verify & Unlock")
-                        }
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = { showForgotPinDialog = false },
-                        enabled = !isVerifyingPassword
-                    ) {
-                        Text("Cancel")
-                    }
-                }
-            )
-        }
-        return
-    }
 
     // Detail Dialog Overlay
     selectedTx?.let { tx ->

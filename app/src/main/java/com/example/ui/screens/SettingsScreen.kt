@@ -107,9 +107,6 @@ fun SettingsScreen(
     val allExpenses by viewModel.expenses.collectAsStateWithLifecycle()
     val allIncomes by viewModel.incomes.collectAsStateWithLifecycle()
 
-    var showPinDialog by remember { mutableStateOf(false) }
-    var pinInput by remember { mutableStateOf("") }
-
     val topToastState = rememberTopToastState()
     var showLogoutConfirmDialog by remember { mutableStateOf(false) }
     var showEditNameDialog by remember { mutableStateOf(false) }
@@ -358,71 +355,7 @@ fun SettingsScreen(
         )
     }
 
-    // PIN Setup Dialog
-    var pinError by remember { mutableStateOf(false) }
-    if (showPinDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                showPinDialog = false
-                pinInput = ""
-                pinError = false
-            },
-            title = { Text(if (prefs.isPinLockEnabled) "Disable PIN Lock" else "Set 4-Digit App PIN") },
-            text = {
-                Column {
-                    Text(if (prefs.isPinLockEnabled) "Enter your current 4-digit PIN to disable:" else "Enter 4-digit numeric code to protect your financial data:")
-                    Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedTextField(
-                        value = pinInput,
-                        onValueChange = { if (it.length <= 4 && it.all { ch -> ch.isDigit() }) pinInput = it },
-                        placeholder = { Text("Enter PIN") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().testTag("pin_setup_input")
-                    )
-                    if (pinError) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("Incorrect PIN. Try again.", color = FinanceError, fontSize = 12.sp)
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (prefs.isPinLockEnabled) {
-                            if (pinInput == prefs.pinCodeHash) {
-                                viewModel.setPinLock(false, "")
-                                showPinDialog = false
-                                pinInput = ""
-                                pinError = false
-                            } else {
-                                pinError = true
-                            }
-                        } else {
-                            if (pinInput.length == 4) {
-                                viewModel.setPinLock(true, pinInput)
-                                showPinDialog = false
-                                pinInput = ""
-                                pinError = false
-                            }
-                        }
-                    },
-                    modifier = Modifier.testTag("save_pin_setup_button"),
-                    colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary)
-                ) {
-                    Text(if (prefs.isPinLockEnabled) "Verify & Disable" else "Save")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showPinDialog = false
-                    pinInput = ""
-                    pinError = false
-                }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
+
 
     Box(
         modifier = modifier.fillMaxSize()
@@ -454,7 +387,7 @@ fun SettingsScreen(
                             profilePhotoBase64 = prefs.profilePhotoBase64,
                             size = 56.dp,
                             fontSize = 22.sp,
-                            showEditBadge = true,
+                            showEditBadge = false,
                             onClick = {
                                 photoPickerLauncher.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -608,28 +541,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // 4-digit PIN toggle
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Lock, contentDescription = "PIN", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text("4-Digit PIN Lock", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                Text("Require PIN to open app", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                        Switch(
-                            checked = prefs.isPinLockEnabled,
-                            onCheckedChange = { showPinDialog = true },
-                            modifier = Modifier.testTag("pin_lock_switch")
-                        )
-                    }
 
-                    Divider(modifier = Modifier.padding(vertical = 12.dp))
 
                     // Update Password Option
                     Row(

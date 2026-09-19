@@ -119,18 +119,6 @@ class FinanceViewModel(
         viewModelScope.launch {
             repository.syncWithCloud()
         }
-
-        // Observe preferences to see if PIN lock is active on app startup
-        viewModelScope.launch {
-            repository.userPreferences.collect { prefs ->
-                if (prefs.isPinLockEnabled && prefs.pinCodeHash.isNotEmpty()) {
-                    // lock app initially until user inputs PIN
-                    _isAppUnlocked.value = false
-                } else {
-                    _isAppUnlocked.value = true
-                }
-            }
-        }
     }
 
     // Combined Dashboard summary
@@ -290,28 +278,6 @@ class FinanceViewModel(
 
     fun selectTransaction(transaction: TransactionItem?) {
         _selectedTransaction.value = transaction
-    }
-
-    fun unlockWithPin(pin: String): Boolean {
-        val currentHash = userPreferences.value.pinCodeHash
-        if (pin == currentHash) {
-            _isAppUnlocked.value = true
-            return true
-        }
-        return false
-    }
-
-    fun verifyPasswordAndResetPin(password: String, onResult: (Boolean, String?) -> Unit) {
-        viewModelScope.launch {
-            repository.verifyPassword(password).onSuccess {
-                repository.setPinLock(false, "")
-                _isAppUnlocked.value = true
-                _snackbarMessage.emit("PIN lock removed successfully via account password")
-                onResult(true, null)
-            }.onFailure { err ->
-                onResult(false, err.message ?: "Incorrect account password")
-            }
-        }
     }
 
     fun addExpense(
@@ -522,13 +488,6 @@ class FinanceViewModel(
 
     fun setThemeMode(mode: String) {
         viewModelScope.launch { repository.setThemeMode(mode) }
-    }
-
-    fun setPinLock(enabled: Boolean, pin: String) {
-        viewModelScope.launch {
-            repository.setPinLock(enabled, pin)
-            _snackbarMessage.emit(if (enabled) "PIN Lock activated" else "PIN Lock disabled")
-        }
     }
 
     fun login(email: String, pass: String, onResult: (Boolean, String?) -> Unit) {
