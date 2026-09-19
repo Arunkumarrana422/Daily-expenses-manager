@@ -147,6 +147,9 @@ fun MainScreen(
         PinLockScreen(
             onPinEntered = { pin ->
                 viewModel.unlockWithPin(pin)
+            },
+            onForgotPin = {
+                viewModel.resetPinViaEmail { _, _ -> }
             }
         )
         return

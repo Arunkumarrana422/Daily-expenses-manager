@@ -359,42 +359,65 @@ fun SettingsScreen(
     }
 
     // PIN Setup Dialog
+    var pinError by remember { mutableStateOf(false) }
     if (showPinDialog) {
         AlertDialog(
-            onDismissRequest = { showPinDialog = false },
+            onDismissRequest = {
+                showPinDialog = false
+                pinInput = ""
+                pinError = false
+            },
             title = { Text(if (prefs.isPinLockEnabled) "Disable PIN Lock" else "Set 4-Digit App PIN") },
             text = {
                 Column {
-                    Text("Enter 4-digit numeric code to protect your financial data:")
+                    Text(if (prefs.isPinLockEnabled) "Enter your current 4-digit PIN to disable:" else "Enter 4-digit numeric code to protect your financial data:")
                     Spacer(modifier = Modifier.height(10.dp))
                     OutlinedTextField(
                         value = pinInput,
                         onValueChange = { if (it.length <= 4 && it.all { ch -> ch.isDigit() }) pinInput = it },
-                        placeholder = { Text("1234") },
+                        placeholder = { Text("Enter PIN") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().testTag("pin_setup_input")
                     )
+                    if (pinError) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Incorrect PIN. Try again.", color = FinanceError, fontSize = 12.sp)
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
                         if (prefs.isPinLockEnabled) {
-                            viewModel.setPinLock(false, "")
-                        } else if (pinInput.length == 4) {
-                            viewModel.setPinLock(true, pinInput)
+                            if (pinInput == prefs.pinCodeHash) {
+                                viewModel.setPinLock(false, "")
+                                showPinDialog = false
+                                pinInput = ""
+                                pinError = false
+                            } else {
+                                pinError = true
+                            }
+                        } else {
+                            if (pinInput.length == 4) {
+                                viewModel.setPinLock(true, pinInput)
+                                showPinDialog = false
+                                pinInput = ""
+                                pinError = false
+                            }
                         }
-                        showPinDialog = false
-                        pinInput = ""
                     },
                     modifier = Modifier.testTag("save_pin_setup_button"),
                     colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary)
                 ) {
-                    Text("Save")
+                    Text(if (prefs.isPinLockEnabled) "Verify & Disable" else "Save")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showPinDialog = false }) {
+                TextButton(onClick = {
+                    showPinDialog = false
+                    pinInput = ""
+                    pinError = false
+                }) {
                     Text("Cancel")
                 }
             }

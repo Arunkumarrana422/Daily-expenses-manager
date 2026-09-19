@@ -41,6 +41,7 @@ import com.example.ui.theme.IndigoPrimary
 @Composable
 fun PinLockScreen(
     onPinEntered: (String) -> Boolean,
+    onForgotPin: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var pin by remember { mutableStateOf("") }
@@ -138,14 +139,14 @@ fun PinLockScreen(
 
             AnimatedVisibility(visible = hasError) {
                 Text(
-                    text = "Incorrect PIN. Try default (1234)",
+                    text = "Incorrect PIN. Please try again.",
                     color = FinanceError,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
             // Keypad Grid
             val keypad = listOf(
@@ -204,6 +205,19 @@ fun PinLockScreen(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Forgot PIN? Reset via Account Email",
+                color = IndigoPrimary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .clickable { onForgotPin() }
+                    .padding(8.dp)
+                    .testTag("forgot_pin_button")
+            )
         }
     }
 }

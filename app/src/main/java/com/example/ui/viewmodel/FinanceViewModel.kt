@@ -294,11 +294,27 @@ class FinanceViewModel(
 
     fun unlockWithPin(pin: String): Boolean {
         val currentHash = userPreferences.value.pinCodeHash
-        if (pin == currentHash || pin == "1234") { // 1234 safe fallback for user testing
+        if (pin == currentHash) {
             _isAppUnlocked.value = true
             return true
         }
         return false
+    }
+
+    fun resetPinViaEmail(onResult: (Boolean, String?) -> Unit) {
+        val email = userPreferences.value.userEmail
+        if (email.isBlank()) {
+            onResult(false, "No account email found.")
+            return
+        }
+        viewModelScope.launch {
+            repository.sendPasswordReset(email).onSuccess {
+                _snackbarMessage.emit("PIN reset instructions sent to $email")
+                onResult(true, "PIN reset instructions sent to $email")
+            }.onFailure { err ->
+                onResult(false, err.message ?: "Could not send reset email")
+            }
+        }
     }
 
     fun addExpense(
