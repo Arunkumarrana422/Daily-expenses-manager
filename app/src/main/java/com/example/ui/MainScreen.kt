@@ -43,6 +43,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.Column
@@ -159,6 +162,7 @@ fun MainScreen(
     var showForgotPinDialog by remember { mutableStateOf(false) }
     var accountPasswordInput by remember { mutableStateOf("") }
     var accountPasswordError by remember { mutableStateOf<String?>(null) }
+    var isVerifyingPassword by remember { mutableStateOf(false) }
 
     if (prefs.isPinLockEnabled && !isAppUnlocked) {
         PinLockScreen(
@@ -169,12 +173,13 @@ fun MainScreen(
                 showForgotPinDialog = true
                 accountPasswordInput = ""
                 accountPasswordError = null
+                isVerifyingPassword = false
             }
         )
 
         if (showForgotPinDialog) {
             AlertDialog(
-                onDismissRequest = { showForgotPinDialog = false },
+                onDismissRequest = { if (!isVerifyingPassword) showForgotPinDialog = false },
                 title = { Text("Reset PIN via Account Password") },
                 text = {
                     Column {
@@ -185,6 +190,7 @@ fun MainScreen(
                             onValueChange = { accountPasswordInput = it; accountPasswordError = null },
                             placeholder = { Text("Account Password") },
                             singleLine = true,
+                            enabled = !isVerifyingPassword,
                             visualTransformation = PasswordVisualTransformation(),
                             modifier = Modifier.fillMaxWidth().testTag("account_password_input")
                         )
@@ -201,7 +207,9 @@ fun MainScreen(
                                 accountPasswordError = "Please enter your password"
                                 return@Button
                             }
+                            isVerifyingPassword = true
                             viewModel.verifyPasswordAndResetPin(accountPasswordInput) { success, error ->
+                                isVerifyingPassword = false
                                 if (success) {
                                     showForgotPinDialog = false
                                     accountPasswordInput = ""
@@ -210,14 +218,30 @@ fun MainScreen(
                                 }
                             }
                         },
+                        enabled = !isVerifyingPassword,
                         colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
                         modifier = Modifier.testTag("verify_account_password_button")
                     ) {
-                        Text("Verify & Unlock")
+                        if (isVerifyingPassword) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Verifying...")
+                            }
+                        } else {
+                            Text("Verify & Unlock")
+                        }
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showForgotPinDialog = false }) {
+                    TextButton(
+                        onClick = { showForgotPinDialog = false },
+                        enabled = !isVerifyingPassword
+                    ) {
                         Text("Cancel")
                     }
                 }

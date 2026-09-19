@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.FinanceError
 import com.example.ui.theme.IndigoPrimary
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun PinLockScreen(
@@ -44,20 +47,24 @@ fun PinLockScreen(
     onForgotPin: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val scope = rememberCoroutineScope()
     var pin by remember { mutableStateOf("") }
     var hasError by remember { mutableStateOf(false) }
 
     fun handleDigit(digit: String) {
-        if (pin.length < 4) {
+        if (pin.length < 4 && !hasError) {
             val newPin = pin + digit
             pin = newPin
-            hasError = false
 
             if (newPin.length == 4) {
                 val ok = onPinEntered(newPin)
                 if (!ok) {
                     hasError = true
-                    pin = ""
+                    scope.launch {
+                        delay(600)
+                        pin = ""
+                        hasError = false
+                    }
                 }
             }
         }
