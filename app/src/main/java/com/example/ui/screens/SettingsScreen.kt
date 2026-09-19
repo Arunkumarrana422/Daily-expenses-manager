@@ -754,21 +754,6 @@ fun SettingsScreen(
                         checked = prefs.recurringAlertEnabled,
                         onCheckedChange = { viewModel.setNotificationSetting("RECURRING", it) }
                     )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedButton(
-                        onClick = { NotificationUtils.showTestNotification(context) },
-                        modifier = Modifier.fillMaxWidth().testTag("test_notification_button"),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Test Notification")
-                    }
                 }
             }
         }
