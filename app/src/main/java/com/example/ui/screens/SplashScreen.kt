@@ -84,7 +84,7 @@ fun SplashScreen(
             }
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Finance Manager",
+                text = "Expenses Manager",
                 color = Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,

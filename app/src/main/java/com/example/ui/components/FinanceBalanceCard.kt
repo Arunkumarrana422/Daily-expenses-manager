@@ -1,6 +1,8 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -119,12 +121,13 @@ fun FinanceBalanceCard(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Income & Expense Breakdown Row
+                // Income & Expense Breakdown Row with Glass Effect Border
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
                         .background(Color.White.copy(alpha = 0.12f))
+                        .border(BorderStroke(1.5.dp, Color.White.copy(alpha = 0.35f)), RoundedCornerShape(16.dp))
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -156,7 +159,7 @@ fun FinanceBalanceCard(
                                 text = CurrencyFormatter.format(totalIncome, currencySymbol, showDecimals = false),
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFA7F3D0) // Light mint emerald
+                                color = Color.White // Clear bright white for visibility in both light & dark modes
                             )
                         }
                     }
@@ -189,7 +192,7 @@ fun FinanceBalanceCard(
                                 text = CurrencyFormatter.format(totalExpense, currencySymbol, showDecimals = false),
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFECACA) // Light red
+                                color = Color(0xFFEF4444) // Distinct clear red for expenses
                             )
                         }
                     }
