@@ -10,7 +10,7 @@ fun getAppTypography(fontFamilyPreference: String): Typography {
     val chosenFamily = if (fontFamilyPreference == "SYSTEM") {
         FontFamily.Default // Phone's native system font
     } else {
-        FontFamily.Serif // App's distinctive signature custom font style
+        FontFamily.Monospace // App's distinctive custom font (Monospace / Typewriter style)
     }
 
     return Typography(
