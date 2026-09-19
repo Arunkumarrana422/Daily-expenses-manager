@@ -453,7 +453,10 @@ fun AddTransactionScreen(
                                 color = if (isSelected) IndigoPrimary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                 border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, IndigoPrimary) else null,
                                 modifier = Modifier
-                                    .clickable { selectedCategory = category }
+                                    .clickable(
+                                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                        indication = null
+                                    ) { selectedCategory = category }
                                     .testTag("category_chip_${category.name}")
                             ) {
                                 Row(
@@ -539,7 +542,10 @@ fun AddTransactionScreen(
                         Box(
                             modifier = Modifier
                                 .weight(1.2f)
-                                .clickable { showDatePicker = true }
+                                .clickable(
+                                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                    indication = null
+                                ) { showDatePicker = true }
                         ) {
                             OutlinedTextField(
                                 value = selectedDate,
@@ -555,7 +561,8 @@ fun AddTransactionScreen(
                                     disabledTextColor = MaterialTheme.colorScheme.onSurface,
                                     disabledBorderColor = MaterialTheme.colorScheme.outline,
                                     disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    disabledContainerColor = Color.Transparent
                                 )
                             )
                         }
@@ -563,7 +570,10 @@ fun AddTransactionScreen(
                         Box(
                             modifier = Modifier
                                 .weight(0.8f)
-                                .clickable { showTimePicker = true }
+                                .clickable(
+                                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                    indication = null
+                                ) { showTimePicker = true }
                         ) {
                             OutlinedTextField(
                                 value = selectedTime,
@@ -577,7 +587,8 @@ fun AddTransactionScreen(
                                 colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                                     disabledTextColor = MaterialTheme.colorScheme.onSurface,
                                     disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    disabledContainerColor = Color.Transparent
                                 )
                             )
                         }

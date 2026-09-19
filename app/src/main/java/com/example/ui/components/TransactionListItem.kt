@@ -140,17 +140,6 @@ fun TransactionListItem(
                     fontSize = 16.sp,
                     color = if (isIncome) FinanceSuccess else MaterialTheme.colorScheme.onSurface
                 )
-
-                if (item.note.isNotBlank()) {
-                    Text(
-                        text = item.note,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 11.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
             }
         }
     }
