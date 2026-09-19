@@ -58,7 +58,6 @@ private val DarkColorScheme = darkColorScheme(
 @Composable
 fun ExpenseManagerTheme(
   themeMode: String = "SYSTEM", // "LIGHT", "DARK", "SYSTEM"
-  fontFamily: String = "DEFAULT",
   content: @Composable () -> Unit
 ) {
   val isDark = when (themeMode) {
@@ -68,11 +67,10 @@ fun ExpenseManagerTheme(
   }
 
   val colorScheme = if (isDark) DarkColorScheme else LightColorScheme
-  val typography = getAppTypography(fontFamily)
 
   MaterialTheme(
     colorScheme = colorScheme,
-    typography = typography,
+    typography = Typography,
     content = content
   )
 }

@@ -511,10 +511,6 @@ class FinanceViewModel(
         viewModelScope.launch { repository.setThemeMode(mode) }
     }
 
-    fun setFontFamily(font: String) {
-        viewModelScope.launch { repository.setFontFamily(font) }
-    }
-
     fun setPinLock(enabled: Boolean, pin: String) {
         viewModelScope.launch {
             repository.setPinLock(enabled, pin)

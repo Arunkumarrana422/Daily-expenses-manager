@@ -16,7 +16,6 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "ex
 data class AppUserPreferences(
     val currency: String = "₹",
     val themeMode: String = "SYSTEM",
-    val fontFamily: String = "DEFAULT",
     val isPinLockEnabled: Boolean = false,
     val pinCodeHash: String = "",
     val isLoggedIn: Boolean = false,
@@ -35,7 +34,6 @@ class UserPreferencesDataStore(private val context: Context) {
 
     private val KEY_CURRENCY = stringPreferencesKey("currency")
     private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
-    private val KEY_FONT_FAMILY = stringPreferencesKey("font_family")
     private val KEY_PIN_LOCK_ENABLED = booleanPreferencesKey("pin_lock_enabled")
     private val KEY_PIN_HASH = stringPreferencesKey("pin_hash")
     private val KEY_IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
@@ -53,7 +51,6 @@ class UserPreferencesDataStore(private val context: Context) {
         AppUserPreferences(
             currency = prefs[KEY_CURRENCY] ?: "₹",
             themeMode = prefs[KEY_THEME_MODE] ?: "SYSTEM",
-            fontFamily = prefs[KEY_FONT_FAMILY] ?: "DEFAULT",
             isPinLockEnabled = prefs[KEY_PIN_LOCK_ENABLED] ?: false,
             pinCodeHash = prefs[KEY_PIN_HASH] ?: "",
             isLoggedIn = prefs[KEY_IS_LOGGED_IN] ?: false,
@@ -75,10 +72,6 @@ class UserPreferencesDataStore(private val context: Context) {
 
     suspend fun setThemeMode(mode: String) {
         context.dataStore.edit { it[KEY_THEME_MODE] = mode }
-    }
-
-    suspend fun setFontFamily(font: String) {
-        context.dataStore.edit { it[KEY_FONT_FAMILY] = font }
     }
 
     suspend fun setPinLock(enabled: Boolean, pinHash: String = "") {

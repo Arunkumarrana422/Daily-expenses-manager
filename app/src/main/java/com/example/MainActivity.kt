@@ -29,8 +29,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val userPrefs by viewModel.userPreferences.collectAsStateWithLifecycle()
             ExpenseManagerTheme(
-                themeMode = userPrefs.themeMode,
-                fontFamily = userPrefs.fontFamily
+                themeMode = userPrefs.themeMode
             ) {
                 MainScreen(viewModel = viewModel)
             }

@@ -221,7 +221,7 @@ fun MainScreen(
             ) {
                 val navItems = listOf(
                     Triple(Screen.Home, Icons.Default.Home, "Home"),
-                    Triple(Screen.Transactions, Icons.Default.ReceiptLong, "Transactions"),
+                    Triple(Screen.Transactions, Icons.Default.ReceiptLong, "Expenses"),
                     Triple(Screen.Add, Icons.Default.Add, "Add"),
                     Triple(Screen.Reports, Icons.Default.BarChart, "Reports"),
                     Triple(Screen.Settings, Icons.Default.Settings, "Settings")
