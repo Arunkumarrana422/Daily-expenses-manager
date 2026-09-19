@@ -81,30 +81,8 @@ fun RegisterScreen(
     onRegisterSuccess: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            viewModel.enableAllNotifications()
-        }
-        onRegisterSuccess()
-    }
-
     RegisterScreen(
-        onRegisterSuccess = {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-                    viewModel.enableAllNotifications()
-                    onRegisterSuccess()
-                } else {
-                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            } else {
-                viewModel.enableAllNotifications()
-                onRegisterSuccess()
-            }
-        },
+        onRegisterSuccess = onRegisterSuccess,
         onNavigateToLogin = onNavigateToLogin,
         onRegister = { name, email, password, callback ->
             viewModel.register(name, email, password, callback)
