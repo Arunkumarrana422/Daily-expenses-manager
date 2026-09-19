@@ -77,6 +77,7 @@ import com.example.ui.components.ProfileImageHelper
 import com.example.ui.components.ToastType
 import com.example.ui.components.TopToastHost
 import com.example.ui.components.rememberTopToastState
+import com.example.data.local.entity.BudgetEntity
 import com.example.ui.theme.FinanceError
 import com.example.ui.theme.FinanceSuccess
 import com.example.ui.theme.IndigoPrimary
@@ -114,6 +115,7 @@ fun SettingsScreen(
     var showEditNameDialog by remember { mutableStateOf(false) }
     var newNameInput by remember { mutableStateOf("") }
     var showUpdatePasswordDialog by remember { mutableStateOf(false) }
+    var budgetToDelete by remember { mutableStateOf<BudgetEntity?>(null) }
     var isUploadingPhoto by remember { mutableStateOf(false) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -704,7 +706,7 @@ fun SettingsScreen(
                                         fontSize = 14.sp
                                     )
                                     IconButton(
-                                        onClick = { viewModel.deleteBudget(b) },
+                                        onClick = { budgetToDelete = b },
                                         modifier = Modifier.size(28.dp).testTag("delete_budget_${b.id}")
                                     ) {
                                         Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Gray, modifier = Modifier.size(16.dp))
@@ -787,6 +789,32 @@ fun SettingsScreen(
         state = topToastState,
         modifier = Modifier.align(Alignment.TopCenter)
     )
+
+    // Budget Delete Confirmation Dialog
+    if (budgetToDelete != null) {
+        val budget = budgetToDelete!!
+        AlertDialog(
+            onDismissRequest = { budgetToDelete = null },
+            title = { Text("Delete Budget") },
+            text = { Text("Are you sure you want to delete the budget for '${budget.categoryName}'?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteBudget(budget)
+                        budgetToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = FinanceError)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { budgetToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 }
 

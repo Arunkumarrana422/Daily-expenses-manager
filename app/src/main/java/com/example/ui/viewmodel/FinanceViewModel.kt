@@ -585,7 +585,15 @@ class FinanceViewModel(
                 _snackbarMessage.emit("Password updated successfully")
                 onResult(true, null)
             }.onFailure { err ->
-                onResult(false, err.message ?: "Failed to update password")
+                val errorMsg = if (err.message?.contains("credential", ignoreCase = true) == true ||
+                                   err.message?.contains("password", ignoreCase = true) == true ||
+                                   err.message?.contains("mismatch", ignoreCase = true) == true ||
+                                   err.message?.contains("expired", ignoreCase = true) == true) {
+                    "Current password incorrect"
+                } else {
+                    err.message ?: "Failed to update password"
+                }
+                onResult(false, errorMsg)
             }
         }
     }
