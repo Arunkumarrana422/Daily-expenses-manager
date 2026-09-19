@@ -74,6 +74,7 @@ import com.example.ui.screens.NoInternetScreen
 import com.example.ui.screens.RegisterScreen
 import com.example.ui.screens.ReportsScreen
 import com.example.ui.screens.SettingsScreen
+import com.example.ui.screens.SplashScreen
 import com.example.ui.screens.TransactionsScreen
 import com.example.ui.theme.IndigoPrimary
 import com.example.ui.viewmodel.FinanceViewModel
@@ -88,11 +89,12 @@ fun MainScreen(
     val networkObserver = remember { NetworkObserver(context.applicationContext) }
     val isOnline by networkObserver.isOnline.collectAsStateWithLifecycle()
 
-    val isAppUnlocked by viewModel.isAppUnlocked.collectAsStateWithLifecycle()
     val selectedTx by viewModel.selectedTransaction.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val prefs by viewModel.userPreferences.collectAsStateWithLifecycle()
+
+    var showSplash by remember { mutableStateOf(true) }
 
     val topToastState = rememberTopToastState()
 
@@ -120,7 +122,17 @@ fun MainScreen(
         }
     }
 
-    // 0. Strict Internet Connection Check: Block access when offline
+    // 0. Splash Screen on App Launch
+    if (showSplash) {
+        SplashScreen(
+            onTimeout = {
+                showSplash = false
+            }
+        )
+        return
+    }
+
+    // 1. Strict Internet Connection Check: Block access when offline
     if (!isOnline) {
         NoInternetScreen(
             onRetry = {
@@ -130,7 +142,7 @@ fun MainScreen(
         return
     }
 
-    // 1. Authentication Check (Login / Register / Forgot Password)
+    // 2. Authentication Check (Login / Register / Forgot Password)
     if (!prefs.isLoggedIn) {
         var authRoute by remember { mutableStateOf(Screen.Login.route) }
         when (authRoute) {

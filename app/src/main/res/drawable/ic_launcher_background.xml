@@ -13,20 +13,15 @@
                 android:endX="108"
                 android:endY="108"
                 android:type="linear">
-                <item android:offset="0.0" android:color="#3949AB" />
-                <item android:offset="1.0" android:color="#1A237E" />
+                <item android:offset="0.0" android:color="#2ECC71" />
+                <item android:offset="1.0" android:color="#16A085" />
             </gradient>
         </aapt:attr>
     </path>
-    <!-- Subtle financial grid / rings -->
+    <!-- Subtle financial rings -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#1FFFFFFF"
-        android:strokeWidth="1"
+        android:strokeColor="#26FFFFFF"
+        android:strokeWidth="1.5"
         android:pathData="M54,18 A36,36 0 1 0 54,90 A36,36 0 1 0 54,18" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#12FFFFFF"
-        android:strokeWidth="1"
-        android:pathData="M54,27 A27,27 0 1 0 54,81 A27,27 0 1 0 54,27" />
 </vector>

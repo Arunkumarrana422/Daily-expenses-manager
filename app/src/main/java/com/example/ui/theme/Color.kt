@@ -2,35 +2,45 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Light Theme Palette
-val IndigoPrimary = Color(0xFF3949AB)
-val IndigoPrimaryDark = Color(0xFF283593)
-val TealSecondary = Color(0xFF00897B)
-val FinanceSuccess = Color(0xFF2E7D32)
-val FinanceWarning = Color(0xFFF9A825)
-val FinanceError = Color(0xFFD32F2F)
-val LightBackground = Color(0xFFF6F7FB)
+// Light Theme Palette - Matching Accounting Icon (Mint Green, Blue, Amber, Red)
+val MintGreenPrimary = Color(0xFF2ECC71)
+val MintGreenPrimaryDark = Color(0xFF27AE60)
+val VibrantBlue = Color(0xFF3498DB)
+val FinanceSuccess = Color(0xFF2ECC71)
+val FinanceWarning = Color(0xFFF39C12)
+val FinanceError = Color(0xFFE74C3C)
+val LightBackground = Color(0xFFF4F9F6)
 val LightSurface = Color(0xFFFFFFFF)
-val LightSurfaceVariant = Color(0xFFEEF1F6)
-val LightPrimaryText = Color(0xFF171923)
-val LightSecondaryText = Color(0xFF6B7280)
-val LightDivider = Color(0xFFE5E7EB)
+val LightSurfaceVariant = Color(0xFFE8F8F0)
+val LightPrimaryText = Color(0xFF1B2A22)
+val LightSecondaryText = Color(0xFF5A6B62)
+val LightDivider = Color(0xFFDCE8E1)
+
+// For backward compatibility with existing code referencing IndigoPrimary
+val IndigoPrimary = MintGreenPrimary
+val IndigoPrimaryDark = MintGreenPrimaryDark
+val TealSecondary = VibrantBlue
 
 // Dark Theme Palette - High Contrast & Enhanced Visibility
-val DarkBackground = Color(0xFF090D16)
-val DarkSurface = Color(0xFF111827)
-val DarkSurfaceVariant = Color(0xFF1F2937)
-val DarkPrimary = Color(0xFF818CF8) // Vibrant high-visibility Indigo/Blue for dark mode
-val DarkSecondary = Color(0xFF2DD4BF) // Vibrant Teal
+val DarkBackground = Color(0xFF0D1611)
+val DarkSurface = Color(0xFF14231B)
+val DarkSurfaceVariant = Color(0xFF1E3328)
+val DarkPrimary = Color(0xFF4ADE80) // Vibrant mint green for dark mode
+val DarkSecondary = Color(0xFF38BDF8) // Vibrant blue
 val DarkSuccess = Color(0xFF4ADE80)
 val DarkWarning = Color(0xFFFACC15)
 val DarkError = Color(0xFFF87171)
-val DarkPrimaryText = Color(0xFFF8FAFC) // Crisp white text
-val DarkSecondaryText = Color(0xFF94A3B8) // Clear visible secondary text
-val DarkDivider = Color(0xFF334155)
+val DarkPrimaryText = Color(0xFFF1F5F9)
+val DarkSecondaryText = Color(0xFF94A3B8)
+val DarkDivider = Color(0xFF263C30)
 
 // Brand Gradients & Accents
-val IndigoGradientStart = Color(0xFF3949AB)
-val IndigoGradientEnd = Color(0xFF1A237E)
-val EmeraldGradientStart = Color(0xFF00897B)
-val EmeraldGradientEnd = Color(0xFF004D40)
+val MintGradientStart = Color(0xFF2ECC71)
+val MintGradientEnd = Color(0xFF16A085)
+val BlueGradientStart = Color(0xFF3498DB)
+val BlueGradientEnd = Color(0xFF2980B9)
+val IndigoGradientStart = MintGradientStart
+val IndigoGradientEnd = MintGradientEnd
+val EmeraldGradientStart = MintGradientStart
+val EmeraldGradientEnd = MintGradientEnd
+
