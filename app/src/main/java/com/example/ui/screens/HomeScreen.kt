@@ -201,10 +201,11 @@ fun HomeScreen(
 
         // 5. Budget Status Highlight
         if (budgets.isNotEmpty()) {
-            item {
-                val budget = budgets.first()
-                val spent = summary.thisMonthExpense
-                val ratio = (spent / budget.amount).toFloat().coerceIn(0f, 1f)
+            items(budgets, key = { "budget_${it.id}" }) { budget ->
+                val spent = allTransactions
+                    .filter { it.isExpense && it.categoryName.equals(budget.categoryName, ignoreCase = true) }
+                    .sumOf { it.amount }
+                val ratio = if (budget.amount > 0) (spent / budget.amount).toFloat().coerceIn(0f, 1f) else 0f
                 val isWarning = ratio >= budget.warningThreshold
 
                 Card(
@@ -223,7 +224,7 @@ fun HomeScreen(
                                 Icon(imageVector = Icons.Default.PieChart, contentDescription = "Budget", tint = if (isWarning) FinanceWarning else MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "${budget.categoryName ?: "Monthly"} Budget",
+                                    text = "${budget.categoryName} Budget",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp,
                                     color = MaterialTheme.colorScheme.onSurface
