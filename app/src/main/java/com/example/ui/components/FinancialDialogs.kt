@@ -34,13 +34,21 @@ import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
 import com.example.ui.theme.IndigoPrimary
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddBudgetDialog(
     categories: List<CategoryEntity>,
     onDismiss: () -> Unit,
     onConfirm: (categoryName: String, amount: Double, period: String, threshold: Float) -> Unit
 ) {
-    var selectedCategory by remember { mutableStateOf(categories.firstOrNull()?.name ?: "Food") }
+    val categoryNames = if (categories.isNotEmpty()) {
+        categories.map { it.name }
+    } else {
+        listOf("Food", "Groceries", "Bills", "Transport", "Shopping", "Entertainment", "Health", "Education", "Other")
+    }
+
+    var selectedCategory by remember { mutableStateOf(categoryNames.firstOrNull() ?: "Food") }
+    var expanded by remember { mutableStateOf(false) }
     var amountText by remember { mutableStateOf("") }
     var period by remember { mutableStateOf("MONTHLY") }
     var threshold by remember { mutableFloatStateOf(0.75f) }
@@ -50,12 +58,34 @@ fun AddBudgetDialog(
         title = { Text("Set Category Budget") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = selectedCategory,
-                    onValueChange = { selectedCategory = it },
-                    label = { Text("Category (e.g. Food, Grocery, Bills)") },
-                    modifier = Modifier.fillMaxWidth().testTag("budget_category_name_input")
-                )
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = selectedCategory,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Category") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth().testTag("budget_category_name_input")
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        categoryNames.forEach { catName ->
+                            DropdownMenuItem(
+                                text = { Text(catName) },
+                                onClick = {
+                                    selectedCategory = catName
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
 
                 OutlinedTextField(
                     value = amountText,
