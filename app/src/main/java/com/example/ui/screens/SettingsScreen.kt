@@ -1,6 +1,10 @@
 package com.example.ui.screens
 
 import android.net.Uri
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.PickVisualMediaRequest
@@ -119,6 +123,27 @@ fun SettingsScreen(
     val allIncomes by viewModel.incomes.collectAsStateWithLifecycle()
 
     val topToastState = rememberTopToastState()
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            topToastState.show("Notification permission allowed!", ToastType.SUCCESS)
+        } else {
+            topToastState.show("Notification permission denied", ToastType.ERROR)
+        }
+    }
+
+    fun checkAndRequestNotificationPermission(onGranted: () -> Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                onGranted()
+            } else {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        } else {
+            onGranted()
+        }
+    }
     var showLogoutConfirmDialog by remember { mutableStateOf(false) }
     var showEditNameDialog by remember { mutableStateOf(false) }
     var newNameInput by remember { mutableStateOf("") }
@@ -699,11 +724,14 @@ fun SettingsScreen(
                         subtitle = "Alert at 9:00 PM to log daily expenses",
                         checked = prefs.dailyReminderEnabled,
                         onCheckedChange = { enabled ->
-                            viewModel.setNotificationSetting("DAILY", enabled)
                             if (enabled) {
-                                NotificationUtils.showTestNotification(context)
-                                topToastState.show("Daily Reminder activated & test sent!", ToastType.SUCCESS)
+                                checkAndRequestNotificationPermission {
+                                    viewModel.setNotificationSetting("DAILY", true)
+                                    NotificationUtils.showTestNotification(context)
+                                    topToastState.show("Daily Reminder activated & test sent!", ToastType.SUCCESS)
+                                }
                             } else {
+                                viewModel.setNotificationSetting("DAILY", false)
                                 topToastState.show("Daily Reminder disabled", ToastType.INFO)
                             }
                         }
@@ -714,8 +742,15 @@ fun SettingsScreen(
                         subtitle = "Notify when reaching warning threshold",
                         checked = prefs.budgetWarningEnabled,
                         onCheckedChange = { enabled ->
-                            viewModel.setNotificationSetting("BUDGET", enabled)
-                            topToastState.show(if (enabled) "Budget Overspending Alert activated!" else "Budget Overspending Alert disabled", ToastType.SUCCESS)
+                            if (enabled) {
+                                checkAndRequestNotificationPermission {
+                                    viewModel.setNotificationSetting("BUDGET", true)
+                                    topToastState.show("Budget Overspending Alert activated!", ToastType.SUCCESS)
+                                }
+                            } else {
+                                viewModel.setNotificationSetting("BUDGET", false)
+                                topToastState.show("Budget Overspending Alert disabled", ToastType.SUCCESS)
+                            }
                         }
                     )
                 }
