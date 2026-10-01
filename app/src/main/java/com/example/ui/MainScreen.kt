@@ -133,16 +133,18 @@ fun MainScreen(
         return
     }
 
+    // Global Internet Check: block application if offline
+    if (!isOnline) {
+        NoInternetScreen(
+            onRetry = {
+                networkObserver.refresh()
+            }
+        )
+        return
+    }
+
     // 1. Authentication Check (Login / Register / Forgot Password)
     if (!prefs.isLoggedIn) {
-        if (!isOnline) {
-            NoInternetScreen(
-                onRetry = {
-                    networkObserver.refresh()
-                }
-            )
-            return
-        }
 
         var authRoute by remember { mutableStateOf(Screen.Login.route) }
         when (authRoute) {
