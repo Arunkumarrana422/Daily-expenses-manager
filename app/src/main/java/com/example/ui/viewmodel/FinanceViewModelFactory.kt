@@ -41,7 +41,7 @@ class FinanceViewModelFactory(private val context: Context) : ViewModelProvider.
                 syncManager = syncManager,
                 authManager = authManager
             )
-            return FinanceViewModel(repository) as T
+            return FinanceViewModel(repository, context.applicationContext) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }

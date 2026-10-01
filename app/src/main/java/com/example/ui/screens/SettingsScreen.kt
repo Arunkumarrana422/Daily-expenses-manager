@@ -698,21 +698,25 @@ fun SettingsScreen(
                         title = "Daily Evening Reminder",
                         subtitle = "Alert at 9:00 PM to log daily expenses",
                         checked = prefs.dailyReminderEnabled,
-                        onCheckedChange = { viewModel.setNotificationSetting("DAILY", it) }
+                        onCheckedChange = { enabled ->
+                            viewModel.setNotificationSetting("DAILY", enabled)
+                            if (enabled) {
+                                NotificationUtils.showTestNotification(context)
+                                topToastState.show("Daily Reminder activated & test sent!", ToastType.SUCCESS)
+                            } else {
+                                topToastState.show("Daily Reminder disabled", ToastType.INFO)
+                            }
+                        }
                     )
 
                     NotificationSettingRow(
                         title = "Budget Overspending Alert",
                         subtitle = "Notify when reaching warning threshold",
                         checked = prefs.budgetWarningEnabled,
-                        onCheckedChange = { viewModel.setNotificationSetting("BUDGET", it) }
-                    )
-
-                    NotificationSettingRow(
-                        title = "Recurring Payment Due Alerts",
-                        subtitle = "Alerts 2 days before bills are due",
-                        checked = prefs.recurringAlertEnabled,
-                        onCheckedChange = { viewModel.setNotificationSetting("RECURRING", it) }
+                        onCheckedChange = { enabled ->
+                            viewModel.setNotificationSetting("BUDGET", enabled)
+                            topToastState.show(if (enabled) "Budget Overspending Alert activated!" else "Budget Overspending Alert disabled", ToastType.SUCCESS)
+                        }
                     )
                 }
             }

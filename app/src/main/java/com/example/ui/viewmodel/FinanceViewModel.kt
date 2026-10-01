@@ -13,6 +13,7 @@ import com.example.data.local.preferences.AppUserPreferences
 import com.example.data.remote.SyncState
 import com.example.data.repository.FinanceRepository
 import com.example.utils.DateTimeUtils
+import com.example.utils.NotificationHelper
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -69,7 +70,8 @@ data class FinanceDashboardSummary(
 )
 
 class FinanceViewModel(
-    private val repository: FinanceRepository
+    private val repository: FinanceRepository,
+    private val context: android.content.Context
 ) : ViewModel() {
 
     // Filter and search state
@@ -355,6 +357,25 @@ class FinanceViewModel(
             )
             repository.addExpense(expense)
             _snackbarMessage.emit("Expense of $amount saved successfully!")
+
+            val prefs = userPreferences.value
+            if (prefs.budgetWarningEnabled) {
+                val currentBudgets = budgets.value
+                val categoryBudget = currentBudgets.find { it.categoryName.equals(categoryName, ignoreCase = true) }
+                if (categoryBudget != null) {
+                    val currentMonthExpenses = expenses.value.filter { it.categoryName.equals(categoryName, ignoreCase = true) && DateTimeUtils.isDateInCurrentMonth(it.date) }
+                    val totalCategorySpent = currentMonthExpenses.sumOf { it.amount }
+                    val thresholdAmount = categoryBudget.amount * categoryBudget.warningThreshold
+                    if (totalCategorySpent >= thresholdAmount) {
+                        NotificationHelper.showNotification(
+                            context,
+                            "Budget Overspending Alert!",
+                            "Warning: ${categoryName} spent $totalCategorySpent / limit ${categoryBudget.amount}!"
+                        )
+                        _snackbarMessage.emit("Warning: Budget threshold reached for $categoryName!")
+                    }
+                }
+            }
         }
     }
 
