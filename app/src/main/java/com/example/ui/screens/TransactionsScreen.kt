@@ -42,6 +42,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -204,18 +205,19 @@ fun TransactionsScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Surface(
+                    onClick = { viewModel.resetFilters() },
                     shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.testTag("clear_filter_chip")
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .testTag("clear_filter_chip")
                 ) {
                     Text(
                         text = "Reset All",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                            .clickable { viewModel.resetFilters() }
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
             }

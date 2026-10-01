@@ -339,13 +339,14 @@ fun AddTransactionScreen(
                     ) {
                         for (quick in quickAmounts) {
                             Surface(
+                                onClick = {
+                                    val currentVal = amountText.toDoubleOrNull() ?: 0.0
+                                    amountText = (currentVal + quick).toInt().toString()
+                                },
                                 shape = RoundedCornerShape(12.dp),
                                 color = MaterialTheme.colorScheme.surfaceVariant,
                                 modifier = Modifier
-                                    .clickable {
-                                        val currentVal = amountText.toDoubleOrNull() ?: 0.0
-                                        amountText = (currentVal + quick).toInt().toString()
-                                    }
+                                    .clip(RoundedCornerShape(12.dp))
                                     .testTag("quick_amount_$quick")
                             ) {
                                 Text(
