@@ -151,7 +151,7 @@ fun ReportsScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .testTag("reports_screen"),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Top Header
