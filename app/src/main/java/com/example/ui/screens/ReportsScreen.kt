@@ -52,6 +52,8 @@ import com.example.ui.components.SpendingTrendBar
 import com.example.ui.components.SpendingTrendChart
 import com.example.ui.theme.FinanceSuccess
 import com.example.ui.theme.IndigoPrimary
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.example.ui.viewmodel.FinanceViewModel
 import com.example.utils.CurrencyFormatter
 import com.example.utils.DateTimeUtils
@@ -64,6 +66,7 @@ import java.util.Locale
 @Composable
 fun ReportsScreen(
     viewModel: FinanceViewModel,
+    listState: LazyListState = rememberLazyListState(),
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -101,7 +104,7 @@ fun ReportsScreen(
             "DAILY" -> incomes.filter { it.date == DateTimeUtils.getTodayString() }
             "WEEKLY" -> incomes.filter { DateTimeUtils.isDateInCurrentWeek(it.date) }
             "LAST_MONTH" -> incomes.filter { DateTimeUtils.isDateInPreviousMonth(it.date) }
-            "YEARLY" -> incomes.filter { it.date.startsWith(LocalDate.now().year.toString()) }
+            "YEARLY" -> incomes.filter { incomes.let { _ -> true } && it.date.startsWith(LocalDate.now().year.toString()) }
             else -> incomes.filter {
                 DateTimeUtils.isDateInMonth(it.date, targetMonthDate.year, targetMonthDate.monthValue)
             }
@@ -143,11 +146,12 @@ fun ReportsScreen(
     }
 
     LazyColumn(
+        state = listState,
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .testTag("reports_screen"),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 110.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Top Header

@@ -1,5 +1,6 @@
 package com.example.ui
 
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -220,6 +221,27 @@ fun MainScreen(
     val coroutineScope = rememberCoroutineScope()
     var addScreenIsExpense by remember { mutableStateOf(true) }
 
+    val homeListState = rememberLazyListState()
+    val transactionsListState = rememberLazyListState()
+    val reportsListState = rememberLazyListState()
+    val settingsListState = rememberLazyListState()
+
+    var fabVisible by remember { mutableStateOf(true) }
+    var previousPagerPage by remember { mutableStateOf(0) }
+
+    LaunchedEffect(pagerState.currentPage) {
+        val current = pagerState.currentPage
+        if (current != previousPagerPage) {
+            when (current) {
+                0 -> homeListState.scrollToItem(0)
+                1 -> transactionsListState.scrollToItem(0)
+                3 -> reportsListState.scrollToItem(0)
+                4 -> settingsListState.scrollToItem(0)
+            }
+        }
+        previousPagerPage = current
+    }
+
     BackHandler(enabled = pagerState.currentPage != 0) {
         coroutineScope.launch {
             pagerState.animateScrollToPage(0)
@@ -278,7 +300,7 @@ fun MainScreen(
         },
         floatingActionButton = {
             AnimatedVisibility(
-                visible = pagerState.currentPage == 0,
+                visible = pagerState.currentPage == 0 && fabVisible,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
@@ -333,12 +355,15 @@ fun MainScreen(
                         },
                         onOpenTransferDialog = { showTransferDialog = true },
                         onOpenAddBudgetDialog = { showAddBudgetDialog = true },
-                        onTransactionClick = { tx -> viewModel.selectTransaction(tx) }
+                        onTransactionClick = { tx -> viewModel.selectTransaction(tx) },
+                        listState = homeListState,
+                        onScrollDirectionChanged = { isDown -> fabVisible = !isDown }
                     )
 
                     1 -> TransactionsScreen(
                         viewModel = viewModel,
-                        onTransactionClick = { tx -> viewModel.selectTransaction(tx) }
+                        onTransactionClick = { tx -> viewModel.selectTransaction(tx) },
+                        listState = transactionsListState
                     )
 
                     2 -> AddTransactionScreen(
@@ -349,7 +374,10 @@ fun MainScreen(
                         }
                     )
 
-                    3 -> ReportsScreen(viewModel = viewModel)
+                    3 -> ReportsScreen(
+                        viewModel = viewModel,
+                        listState = reportsListState
+                    )
 
                     4 -> SettingsScreen(
                         viewModel = viewModel,
@@ -357,7 +385,8 @@ fun MainScreen(
                         onOpenAddAccountDialog = { showAddAccountDialog = true },
                         onLogout = {
                             coroutineScope.launch { pagerState.animateScrollToPage(0) }
-                        }
+                        },
+                        listState = settingsListState
                     )
                 }
             }

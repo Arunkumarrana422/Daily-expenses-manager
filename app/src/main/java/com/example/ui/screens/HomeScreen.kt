@@ -17,6 +17,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -75,6 +82,8 @@ fun HomeScreen(
     onOpenTransferDialog: () -> Unit,
     onOpenAddBudgetDialog: () -> Unit,
     onTransactionClick: (TransactionItem) -> Unit,
+    listState: LazyListState = rememberLazyListState(),
+    onScrollDirectionChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val summary by viewModel.dashboardSummary.collectAsStateWithLifecycle()
@@ -87,12 +96,36 @@ fun HomeScreen(
     val currency = prefs.currency
     val recentTransactions = allTransactions.take(5)
 
+    var previousIndex by remember { mutableStateOf(listState.firstVisibleItemIndex) }
+    var previousOffset by remember { mutableStateOf(listState.firstVisibleItemScrollOffset) }
+
+    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+        val currentIndex = listState.firstVisibleItemIndex
+        val currentOffset = listState.firstVisibleItemScrollOffset
+        if (currentIndex == 0 && currentOffset == 0) {
+            onScrollDirectionChanged(false)
+        } else if (currentIndex > previousIndex) {
+            onScrollDirectionChanged(true)
+        } else if (currentIndex == previousIndex) {
+            if (currentOffset > previousOffset + 10) {
+                onScrollDirectionChanged(true)
+            } else if (currentOffset < previousOffset - 10) {
+                onScrollDirectionChanged(false)
+            }
+        } else {
+            onScrollDirectionChanged(false)
+        }
+        previousIndex = currentIndex
+        previousOffset = currentOffset
+    }
+
     LazyColumn(
+        state = listState,
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .testTag("home_screen"),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 110.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 1. Top Section: Greeting, Date, Profile, Notification/Sync
