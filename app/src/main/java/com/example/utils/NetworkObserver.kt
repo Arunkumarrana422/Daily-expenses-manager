@@ -95,7 +95,14 @@ class NetworkObserver(private val context: Context) {
             val cm = connectivityManager ?: return false
             val activeNetwork = cm.activeNetwork ?: return false
             val caps = cm.getNetworkCapabilities(activeNetwork) ?: return false
-            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            val hasInternetCap = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            if (!hasInternetCap) return false
+
+            // Verify actual internet packet reachability (fails if SIM has no active recharge / data pack or Wi-Fi has no internet)
+            val socket = java.net.Socket()
+            socket.connect(java.net.InetSocketAddress("8.8.8.8", 53), 1500)
+            socket.close()
+            true
         } catch (e: Exception) {
             false
         }
