@@ -550,21 +550,7 @@ fun SettingsScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Theme Selector
-                    Text("Theme Appearance", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("SYSTEM" to "System", "LIGHT" to "Light", "DARK" to "Dark").forEach { (theme, label) ->
-                            FilterChip(
-                                selected = prefs.themeMode == theme,
-                                onClick = { viewModel.setThemeMode(theme) },
-                                label = { Text(label, fontSize = 12.sp) },
-                                modifier = Modifier.testTag("theme_chip_$theme")
-                            )
-                        }
-                    }
+                    // Theme selector removed - app follows system theme automatically
                 }
             }
         }

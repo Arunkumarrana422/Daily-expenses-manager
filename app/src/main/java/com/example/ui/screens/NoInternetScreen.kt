@@ -88,7 +88,7 @@ fun NoInternetScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "An active internet connection is required to use Expense Manager and securely sync your transactions with Firebase.",
+                text = "An active internet connection is required to use Expense Manager.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
