@@ -69,6 +69,40 @@ object DateTimeUtils {
         }
     }
 
+    fun isDateInPreviousMonth(dateStr: String): Boolean {
+        return try {
+            val date = LocalDate.parse(dateStr, dateFormatter)
+            val prevMonth = LocalDate.now().minusMonths(1)
+            date.year == prevMonth.year && date.month == prevMonth.month
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun isDateInMonth(dateStr: String, year: Int, month: Int): Boolean {
+        return try {
+            val date = LocalDate.parse(dateStr, dateFormatter)
+            date.year == year && date.monthValue == month
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun getPreviousMonthDisplay(): String {
+        val prev = LocalDate.now().minusMonths(1)
+        return prev.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault()))
+    }
+
+    fun getPreviousMonthShortName(): String {
+        val prev = LocalDate.now().minusMonths(1)
+        return prev.format(DateTimeFormatter.ofPattern("MMM", Locale.getDefault()))
+    }
+
+    fun getCurrentMonthDisplay(): String {
+        val now = LocalDate.now()
+        return now.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault()))
+    }
+
     fun isDateInCurrentWeek(dateStr: String): Boolean {
         return try {
             val date = LocalDate.parse(dateStr, dateFormatter)

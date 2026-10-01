@@ -107,9 +107,10 @@ fun FilterBottomSheet(
             ) {
                 listOf(
                     "ALL" to "Any Time",
-                    "TODAY" to "Today",
+                    "THIS_MONTH" to "This Month (${com.example.utils.DateTimeUtils.getCurrentMonthDisplay()})",
+                    "LAST_MONTH" to "Previous Month (${com.example.utils.DateTimeUtils.getPreviousMonthShortName()})",
                     "THIS_WEEK" to "This Week",
-                    "THIS_MONTH" to "This Month"
+                    "TODAY" to "Today"
                 ).forEach { (range, label) ->
                     FilterChip(
                         selected = criteria.dateRange == range,

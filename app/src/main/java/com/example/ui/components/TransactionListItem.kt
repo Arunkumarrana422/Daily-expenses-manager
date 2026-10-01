@@ -45,13 +45,15 @@ fun TransactionListItem(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
             .testTag("transaction_item_${item.id}"),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 4.dp
+        )
     ) {
         Row(
             modifier = Modifier

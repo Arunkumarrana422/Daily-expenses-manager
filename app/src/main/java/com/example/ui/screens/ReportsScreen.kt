@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,9 +16,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -53,6 +58,8 @@ import com.example.utils.DateTimeUtils
 import com.example.utils.ExportUtils
 import com.example.utils.PdfExportUtils
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun ReportsScreen(
@@ -63,26 +70,41 @@ fun ReportsScreen(
     val expenses by viewModel.expenses.collectAsStateWithLifecycle()
     val incomes by viewModel.incomes.collectAsStateWithLifecycle()
     val reportsPeriod by viewModel.reportsPeriod.collectAsStateWithLifecycle()
+    val reportsMonthOffset by viewModel.reportsMonthOffset.collectAsStateWithLifecycle()
     val prefs by viewModel.userPreferences.collectAsStateWithLifecycle()
 
     val currency = prefs.currency
 
+    // Calculate targeted month based on offset
+    val targetMonthDate = remember(reportsMonthOffset) {
+        LocalDate.now().plusMonths(reportsMonthOffset.toLong())
+    }
+
+    val monthFormatter = remember { DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault()) }
+    val currentFormattedMonth = remember(targetMonthDate) { targetMonthDate.format(monthFormatter) }
+
     // Filter expenses based on period
-    val periodExpenses = remember(expenses, reportsPeriod) {
+    val periodExpenses = remember(expenses, reportsPeriod, reportsMonthOffset) {
         when (reportsPeriod) {
             "DAILY" -> expenses.filter { it.date == DateTimeUtils.getTodayString() }
             "WEEKLY" -> expenses.filter { DateTimeUtils.isDateInCurrentWeek(it.date) }
+            "LAST_MONTH" -> expenses.filter { DateTimeUtils.isDateInPreviousMonth(it.date) }
             "YEARLY" -> expenses.filter { it.date.startsWith(LocalDate.now().year.toString()) }
-            else -> expenses.filter { DateTimeUtils.isDateInCurrentMonth(it.date) }
+            else -> expenses.filter {
+                DateTimeUtils.isDateInMonth(it.date, targetMonthDate.year, targetMonthDate.monthValue)
+            }
         }
     }
 
-    val periodIncomes = remember(incomes, reportsPeriod) {
+    val periodIncomes = remember(incomes, reportsPeriod, reportsMonthOffset) {
         when (reportsPeriod) {
             "DAILY" -> incomes.filter { it.date == DateTimeUtils.getTodayString() }
             "WEEKLY" -> incomes.filter { DateTimeUtils.isDateInCurrentWeek(it.date) }
+            "LAST_MONTH" -> incomes.filter { DateTimeUtils.isDateInPreviousMonth(it.date) }
             "YEARLY" -> incomes.filter { it.date.startsWith(LocalDate.now().year.toString()) }
-            else -> incomes.filter { DateTimeUtils.isDateInCurrentMonth(it.date) }
+            else -> incomes.filter {
+                DateTimeUtils.isDateInMonth(it.date, targetMonthDate.year, targetMonthDate.monthValue)
+            }
         }
     }
 
@@ -145,9 +167,16 @@ fun ReportsScreen(
                 IconButton(
                     onClick = {
                         val breakdown = categorySlices.map { Triple(it.categoryName, it.amount, it.percentage.toDouble()) }
+                        val reportTitle = when (reportsPeriod) {
+                            "DAILY" -> "Daily Report - ${DateTimeUtils.getFormattedToday()}"
+                            "WEEKLY" -> "Weekly Report"
+                            "LAST_MONTH" -> "Previous Month Report (${DateTimeUtils.getPreviousMonthDisplay()})"
+                            "YEARLY" -> "Yearly Report - ${LocalDate.now().year}"
+                            else -> "Monthly Report - $currentFormattedMonth"
+                        }
                         val file = PdfExportUtils.generateFinancialReportPdf(
                             context = context,
-                            title = "Financial Report Summary",
+                            title = reportTitle,
                             period = reportsPeriod,
                             totalIncome = totalIncome,
                             totalExpenses = totalSpent,
@@ -168,28 +197,37 @@ fun ReportsScreen(
         // Timeframe Selector Chips
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 listOf(
                     "DAILY" to "Daily",
                     "WEEKLY" to "Weekly",
-                    "MONTHLY" to "Monthly",
+                    "MONTHLY" to "This Month",
+                    "LAST_MONTH" to "Previous Month (${DateTimeUtils.getPreviousMonthShortName()})",
                     "YEARLY" to "Yearly"
                 ).forEach { (period, label) ->
                     val isSelected = reportsPeriod == period
                     Surface(
-                        onClick = { viewModel.setReportsPeriod(period) },
+                        onClick = {
+                            viewModel.setReportsPeriod(period)
+                            if (period == "MONTHLY") {
+                                viewModel.resetReportMonth()
+                            }
+                        },
                         shape = RoundedCornerShape(12.dp),
                         color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                        border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
                         modifier = Modifier
-                            .weight(1f)
                             .height(40.dp)
                             .testTag("period_chip_$period")
                     ) {
                         Box(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 14.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
@@ -197,6 +235,88 @@ fun ReportsScreen(
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 13.sp,
                                 color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Month Navigator (When viewing Monthly reports)
+        if (reportsPeriod == "MONTHLY") {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = { viewModel.previousReportMonth() },
+                            modifier = Modifier.testTag("prev_month_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ChevronLeft,
+                                contentDescription = "Previous Month",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.CalendarMonth,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = currentFormattedMonth,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            if (reportsMonthOffset == 0) {
+                                Text(
+                                    text = "Current Month",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            } else if (reportsMonthOffset == -1) {
+                                Text(
+                                    text = "Previous Month",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            } else {
+                                Text(
+                                    text = "${-reportsMonthOffset} months ago",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        IconButton(
+                            onClick = { viewModel.nextReportMonth() },
+                            enabled = reportsMonthOffset < 0,
+                            modifier = Modifier.testTag("next_month_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = "Next Month",
+                                tint = if (reportsMonthOffset < 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                             )
                         }
                     }

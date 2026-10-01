@@ -50,7 +50,9 @@ data class FilterCriteria(
     val sortOrder: String = "NEWEST", // "NEWEST", "OLDEST", "HIGHEST", "LOWEST"
     val minAmount: Double? = null,
     val maxAmount: Double? = null,
-    val dateRange: String = "ALL" // "ALL", "TODAY", "THIS_WEEK", "THIS_MONTH"
+    val dateRange: String = "ALL", // "ALL", "TODAY", "THIS_WEEK", "THIS_MONTH", "LAST_MONTH", "CUSTOM_MONTH"
+    val customYear: Int? = null,
+    val customMonth: Int? = null
 )
 
 data class FinanceDashboardSummary(
@@ -60,6 +62,8 @@ data class FinanceDashboardSummary(
     val todayExpense: Double = 0.0,
     val thisWeekExpense: Double = 0.0,
     val thisMonthExpense: Double = 0.0,
+    val lastMonthExpense: Double = 0.0,
+    val lastMonthIncome: Double = 0.0,
     val savings: Double = 0.0,
     val savingsPercentage: Double = 0.0
 )
@@ -72,9 +76,13 @@ class FinanceViewModel(
     private val _filterCriteria = MutableStateFlow(FilterCriteria())
     val filterCriteria: StateFlow<FilterCriteria> = _filterCriteria.asStateFlow()
 
-    // Reports timeframe
-    private val _reportsPeriod = MutableStateFlow("MONTHLY") // DAILY, WEEKLY, MONTHLY, YEARLY
+    // Reports timeframe: DAILY, WEEKLY, MONTHLY, LAST_MONTH, YEARLY
+    private val _reportsPeriod = MutableStateFlow("MONTHLY")
     val reportsPeriod: StateFlow<String> = _reportsPeriod.asStateFlow()
+
+    // Reports Month Offset (0 = Current Month, -1 = Previous Month, -2 = 2 months ago, etc.)
+    private val _reportsMonthOffset = MutableStateFlow(0)
+    val reportsMonthOffset: StateFlow<Int> = _reportsMonthOffset.asStateFlow()
 
     // Selected transaction for details dialog
     private val _selectedTransaction = MutableStateFlow<TransactionItem?>(null)
@@ -83,6 +91,14 @@ class FinanceViewModel(
     // App Lock PIN Verification state
     private val _isAppUnlocked = MutableStateFlow(true)
     val isAppUnlocked: StateFlow<Boolean> = _isAppUnlocked.asStateFlow()
+
+    // Splash screen state (shown once on app launch, survives theme/dark mode changes)
+    private val _isSplashDismissed = MutableStateFlow(false)
+    val isSplashDismissed: StateFlow<Boolean> = _isSplashDismissed.asStateFlow()
+
+    fun dismissSplash() {
+        _isSplashDismissed.value = true
+    }
 
     // Feedback message channel
     private val _snackbarMessage = MutableSharedFlow<String>()
@@ -135,6 +151,8 @@ class FinanceViewModel(
         val weekExp = expList.filter { DateTimeUtils.isDateInCurrentWeek(it.date) }.sumOf { it.amount }
         val monthExp = expList.filter { DateTimeUtils.isDateInCurrentMonth(it.date) }.sumOf { it.amount }
         val monthInc = incList.filter { DateTimeUtils.isDateInCurrentMonth(it.date) }.sumOf { it.amount }
+        val lastMonthExp = expList.filter { DateTimeUtils.isDateInPreviousMonth(it.date) }.sumOf { it.amount }
+        val lastMonthInc = incList.filter { DateTimeUtils.isDateInPreviousMonth(it.date) }.sumOf { it.amount }
 
         val netSavings = if (monthInc > monthExp) monthInc - monthExp else 0.0
         val savingsPct = if (monthInc > 0) (netSavings / monthInc) * 100.0 else 0.0
@@ -146,6 +164,8 @@ class FinanceViewModel(
             todayExpense = todayExp,
             thisWeekExpense = weekExp,
             thisMonthExpense = monthExp,
+            lastMonthExpense = lastMonthExp,
+            lastMonthIncome = lastMonthInc,
             savings = netSavings,
             savingsPercentage = savingsPct
         )
@@ -242,6 +262,14 @@ class FinanceViewModel(
                 "TODAY" -> tx.date == DateTimeUtils.getTodayString()
                 "THIS_WEEK" -> DateTimeUtils.isDateInCurrentWeek(tx.date)
                 "THIS_MONTH" -> DateTimeUtils.isDateInCurrentMonth(tx.date)
+                "LAST_MONTH", "PREVIOUS_MONTH" -> DateTimeUtils.isDateInPreviousMonth(tx.date)
+                "CUSTOM_MONTH" -> {
+                    if (filter.customYear != null && filter.customMonth != null) {
+                        DateTimeUtils.isDateInMonth(tx.date, filter.customYear, filter.customMonth)
+                    } else {
+                        true
+                    }
+                }
                 else -> true
             }
 
@@ -268,12 +296,30 @@ class FinanceViewModel(
         _filterCriteria.value = criteria
     }
 
+    fun setQuickDateFilter(range: String) {
+        _filterCriteria.value = _filterCriteria.value.copy(dateRange = range, customYear = null, customMonth = null)
+    }
+
     fun resetFilters() {
         _filterCriteria.value = FilterCriteria()
     }
 
     fun setReportsPeriod(period: String) {
         _reportsPeriod.value = period
+    }
+
+    fun previousReportMonth() {
+        _reportsMonthOffset.value -= 1
+    }
+
+    fun nextReportMonth() {
+        if (_reportsMonthOffset.value < 0) {
+            _reportsMonthOffset.value += 1
+        }
+    }
+
+    fun resetReportMonth() {
+        _reportsMonthOffset.value = 0
     }
 
     fun selectTransaction(transaction: TransactionItem?) {

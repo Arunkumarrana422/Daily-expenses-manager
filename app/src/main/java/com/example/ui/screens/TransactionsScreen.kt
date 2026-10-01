@@ -1,7 +1,9 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,8 +18,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.IosShare
@@ -189,6 +193,118 @@ fun TransactionsScreen(
             }
         }
 
+        // Quick Period Filter Chips (All, This Month, Previous Month, This Week, Today)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val quickFilters = listOf(
+                "ALL" to "All",
+                "THIS_MONTH" to "This Month",
+                "LAST_MONTH" to "Previous Month (${DateTimeUtils.getPreviousMonthShortName()})",
+                "THIS_WEEK" to "This Week",
+                "TODAY" to "Today"
+            )
+
+            quickFilters.forEach { (rangeKey, label) ->
+                val isSelected = filterCriteria.dateRange == rangeKey
+                Surface(
+                    onClick = {
+                        if (isSelected && rangeKey != "ALL") {
+                            viewModel.setQuickDateFilter("ALL")
+                        } else {
+                            viewModel.setQuickDateFilter(rangeKey)
+                        }
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                    modifier = Modifier.testTag("quick_filter_$rangeKey")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (rangeKey == "LAST_MONTH" || rangeKey == "THIS_MONTH") {
+                            Icon(
+                                imageVector = Icons.Default.CalendarMonth,
+                                contentDescription = null,
+                                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
+                        Text(
+                            text = label,
+                            fontSize = 12.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Previous Month Banner when LAST_MONTH is selected
+        if (filterCriteria.dateRange == "LAST_MONTH") {
+            val lastMonthTotalExpense = filteredTransactions.filter { it.isExpense }.sumOf { it.amount }
+            val lastMonthTotalIncome = filteredTransactions.filter { !it.isExpense }.sumOf { it.amount }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Previous Month (${DateTimeUtils.getPreviousMonthDisplay()})",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "${filteredTransactions.size} total records",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "Spent: ${CurrencyFormatter.format(lastMonthTotalExpense, prefs.currency)}",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        if (lastMonthTotalIncome > 0) {
+                            Text(
+                                text = "Income: +${CurrencyFormatter.format(lastMonthTotalIncome, prefs.currency)}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         // Active filter pill indicator
         if (hasActiveFilter) {
             Row(
@@ -266,7 +382,7 @@ fun TransactionsScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 groupedTransactions.forEach { (dateStr, itemsForDate) ->
                     // Date Header

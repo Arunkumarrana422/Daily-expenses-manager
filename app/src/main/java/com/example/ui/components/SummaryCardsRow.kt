@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.example.ui.theme.FinanceSuccess
 import com.example.ui.theme.IndigoPrimary
 import com.example.utils.CurrencyFormatter
+import com.example.utils.DateTimeUtils
 
 @Composable
 fun SummaryCardsRow(
@@ -29,7 +31,12 @@ fun SummaryCardsRow(
     thisWeekExpense: Double,
     thisMonthExpense: Double,
     savings: Double,
+    lastMonthExpense: Double = 0.0,
     currencySymbol: String = "₹",
+    onTodayClick: (() -> Unit)? = null,
+    onWeekClick: (() -> Unit)? = null,
+    onMonthClick: (() -> Unit)? = null,
+    onLastMonthClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -45,6 +52,7 @@ fun SummaryCardsRow(
                 amount = todayExpense,
                 currencySymbol = currencySymbol,
                 accentColor = Color(0xFFEF5350),
+                onClick = onTodayClick,
                 modifier = Modifier
                     .weight(1f)
                     .testTag("today_expense_card")
@@ -54,6 +62,7 @@ fun SummaryCardsRow(
                 amount = thisWeekExpense,
                 currencySymbol = currencySymbol,
                 accentColor = Color(0xFFFFA726),
+                onClick = onWeekClick,
                 modifier = Modifier
                     .weight(1f)
                     .testTag("this_week_expense_card")
@@ -69,6 +78,8 @@ fun SummaryCardsRow(
                 amount = thisMonthExpense,
                 currencySymbol = currencySymbol,
                 accentColor = IndigoPrimary,
+                subtitle = "Last Month: ${CurrencyFormatter.format(lastMonthExpense, currencySymbol, showDecimals = false)}",
+                onClick = onMonthClick,
                 modifier = Modifier
                     .weight(1f)
                     .testTag("this_month_expense_card")
@@ -92,10 +103,14 @@ private fun SummaryMiniCard(
     amount: Double,
     currencySymbol: String,
     accentColor: Color,
+    subtitle: String? = null,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.then(
+            if (onClick != null) Modifier.clickable { onClick() } else Modifier
+        ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -128,6 +143,17 @@ private fun SummaryMiniCard(
                 color = accentColor,
                 fontSize = 17.sp
             )
+
+            if (subtitle != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+                    fontSize = 11.sp
+                )
+            }
         }
     }
 }
+

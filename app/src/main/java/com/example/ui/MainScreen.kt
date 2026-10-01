@@ -93,8 +93,7 @@ fun MainScreen(
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val prefs by viewModel.userPreferences.collectAsStateWithLifecycle()
-
-    var showSplash by remember { mutableStateOf(true) }
+    val isSplashDismissed by viewModel.isSplashDismissed.collectAsStateWithLifecycle()
 
     val topToastState = rememberTopToastState()
 
@@ -122,28 +121,27 @@ fun MainScreen(
         }
     }
 
-    // 0. Splash Screen on App Launch
-    if (showSplash) {
+    // 0. Splash Screen on Initial App Launch Only (survives dark/light mode switches)
+    if (!isSplashDismissed) {
         SplashScreen(
             onTimeout = {
-                showSplash = false
+                viewModel.dismissSplash()
             }
         )
         return
     }
 
-    // 1. Strict Internet Connection Check: Block access when offline
-    if (!isOnline) {
-        NoInternetScreen(
-            onRetry = {
-                networkObserver.refresh()
-            }
-        )
-        return
-    }
-
-    // 2. Authentication Check (Login / Register / Forgot Password)
+    // 1. Authentication Check (Login / Register / Forgot Password)
     if (!prefs.isLoggedIn) {
+        if (!isOnline) {
+            NoInternetScreen(
+                onRetry = {
+                    networkObserver.refresh()
+                }
+            )
+            return
+        }
+
         var authRoute by remember { mutableStateOf(Screen.Login.route) }
         when (authRoute) {
             Screen.Login.route -> {

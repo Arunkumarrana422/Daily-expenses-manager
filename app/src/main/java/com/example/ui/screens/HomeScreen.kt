@@ -145,8 +145,25 @@ fun HomeScreen(
                 todayExpense = summary.todayExpense,
                 thisWeekExpense = summary.thisWeekExpense,
                 thisMonthExpense = summary.thisMonthExpense,
+                lastMonthExpense = summary.lastMonthExpense,
                 savings = summary.savings,
-                currencySymbol = currency
+                currencySymbol = currency,
+                onTodayClick = {
+                    viewModel.setQuickDateFilter("TODAY")
+                    onNavigateToTransactions()
+                },
+                onWeekClick = {
+                    viewModel.setQuickDateFilter("THIS_WEEK")
+                    onNavigateToTransactions()
+                },
+                onMonthClick = {
+                    viewModel.setQuickDateFilter("THIS_MONTH")
+                    onNavigateToTransactions()
+                },
+                onLastMonthClick = {
+                    viewModel.setQuickDateFilter("LAST_MONTH")
+                    onNavigateToTransactions()
+                }
             )
         }
 
