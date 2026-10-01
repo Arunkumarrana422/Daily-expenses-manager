@@ -173,27 +173,7 @@ fun TransactionsScreen(
                 }
             }
 
-            // Export PDF Button
-            IconButton(
-                onClick = {
-                    val file = PdfExportUtils.generateTransactionsPdf(
-                        context = context,
-                        expenses = allExpenses,
-                        incomes = allIncomes,
-                        currency = prefs.currency
-                    )
-                    file?.let {
-                        PdfExportUtils.sharePdf(context, it, "Share Transactions PDF")
-                    }
-                },
-                modifier = Modifier.testTag("export_transactions_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.IosShare,
-                    contentDescription = "Export PDF",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
+
         }
 
         // Quick Period Filter Chips (All, This Month, Previous Month, This Week, Today)

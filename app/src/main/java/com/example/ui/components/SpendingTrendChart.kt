@@ -92,7 +92,9 @@ fun SpendingTrendChart(
 
                     Text(
                         text = bar.label,
-                        fontSize = 11.sp,
+                        fontSize = 10.sp,
+                        maxLines = 1,
+                        softWrap = false,
                         fontWeight = if (bar.isPeak) FontWeight.Bold else FontWeight.Normal,
                         color = if (bar.isPeak) IndigoPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
