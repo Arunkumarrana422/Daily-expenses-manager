@@ -51,7 +51,10 @@ import com.example.ui.components.TopToastHost
 import com.example.ui.components.rememberTopToastState
 import com.example.ui.components.showSystemTopToast
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -91,6 +94,7 @@ fun ForgotPasswordScreen(
     val topToastState = rememberTopToastState()
     val context = androidx.compose.ui.platform.LocalContext.current
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val scrollState = rememberScrollState()
 
     fun attemptReset() {
@@ -118,6 +122,12 @@ fun ForgotPasswordScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                })
+            }
             .imePadding()
     ) {
         // Back Button
