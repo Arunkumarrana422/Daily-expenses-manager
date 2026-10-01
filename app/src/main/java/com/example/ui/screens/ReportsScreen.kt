@@ -178,14 +178,16 @@ fun ReportsScreen(
                             "YEARLY" -> "Yearly Report - ${LocalDate.now().year}"
                             else -> "Monthly Report - $currentFormattedMonth"
                         }
-                        val file = PdfExportUtils.generateFinancialReportPdf(
+                        val file = PdfExportUtils.generateComprehensiveReportPdf(
                             context = context,
                             title = reportTitle,
                             period = reportsPeriod,
                             totalIncome = totalIncome,
                             totalExpenses = totalSpent,
                             currency = currency,
-                            categoryBreakdown = breakdown
+                            categoryBreakdown = breakdown,
+                            expenses = periodExpenses,
+                            incomes = periodIncomes
                         )
                         file?.let {
                             PdfExportUtils.sharePdf(context, it, "Share Financial Report PDF")

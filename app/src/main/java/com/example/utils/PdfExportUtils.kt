@@ -18,182 +18,248 @@ import java.util.Locale
 
 object PdfExportUtils {
 
-    fun generateFinancialReportPdf(
+    // App matching colors (Mint Green & Fresh Financial Palette)
+    private val MintPrimary = Color.rgb(46, 204, 113)     // #2ECC71
+    private val MintPrimaryDark = Color.rgb(39, 174, 96)  // #27AE60
+    private val VibrantBlue = Color.rgb(52, 152, 219)     // #3498DB
+    private val ExpenseRed = Color.rgb(231, 76, 60)       // #E74C3C
+    private val IncomeGreen = Color.rgb(46, 204, 113)     // #2ECC71
+    private val PageBackground = Color.rgb(244, 249, 246) // #F4F9F6
+    private val SurfaceVariant = Color.rgb(232, 248, 240) // #E8F8F0
+    private val TextPrimary = Color.rgb(27, 42, 34)       // #1B2A22
+    private val TextSecondary = Color.rgb(90, 107, 98)    // #5A6B62
+    private val GridLineColor = Color.rgb(220, 232, 225)  // #DCE8E1
+
+    fun generateComprehensiveReportPdf(
         context: Context,
         title: String,
         period: String,
         totalIncome: Double,
         totalExpenses: Double,
         currency: String,
-        categoryBreakdown: List<Triple<String, Double, Double>>
+        categoryBreakdown: List<Triple<String, Double, Double>>,
+        expenses: List<ExpenseEntity>,
+        incomes: List<IncomeEntity>
     ): File? {
         val pdfDocument = PdfDocument()
-        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
-        val page = pdfDocument.startPage(pageInfo)
-        val canvas: Canvas = page.canvas
-
-        val bgPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(250, 250, 252)
-        }
-        canvas.drawRect(0f, 0f, 595f, 842f, bgPaint)
-
-        // 1. Header Banner Background (Deep Indigo)
-        val headerBgPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(63, 81, 181) // Indigo Primary
-        }
-        canvas.drawRect(0f, 0f, 595f, 110f, headerBgPaint)
-
-        val titlePaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.WHITE
-            textSize = 22f
-            isFakeBoldText = true
-        }
-        canvas.drawText("DAILY EXPENSE MANAGER", 40f, 45f, titlePaint)
-
-        val subTitlePaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(224, 224, 224)
-            textSize = 14f
-        }
-        canvas.drawText(title, 40f, 70f, subTitlePaint)
-
-        val metaPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(200, 200, 200)
-            textSize = 10f
-        }
-        val currentDate = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date())
-        canvas.drawText("Period: $period  |  Generated: $currentDate", 40f, 92f, metaPaint)
-
-        var yPos = 135f
+        val pageWidth = 595
+        val pageHeight = 842
         val leftMargin = 40f
         val rightMargin = 555f
+        val bottomLimit = 780f
 
-        // 2. Summary Cards Section (3 cards: Income, Expenses, Net Balance)
-        val cardWidth = (rightMargin - leftMargin - 20f) / 3f
-        val cardHeight = 70f
-        val net = totalIncome - totalExpenses
+        var pageNumber = 1
+        var pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
+        var page = pdfDocument.startPage(pageInfo)
+        var canvas: Canvas = page.canvas
 
-        fun drawMetricCard(x: Float, y: Float, label: String, value: String, valueColor: Int, accentBarColor: Int) {
-            val cardRect = RectF(x, y, x + cardWidth, y + cardHeight)
-            val cardPaint = Paint().apply {
+        fun drawBackground(c: Canvas) {
+            val bgPaint = Paint().apply {
+                isAntiAlias = true
+                color = PageBackground
+            }
+            c.drawRect(0f, 0f, pageWidth.toFloat(), pageHeight.toFloat(), bgPaint)
+        }
+
+        fun drawHeader(c: Canvas, pageNum: Int) {
+            val headerBgPaint = Paint().apply {
+                isAntiAlias = true
+                color = MintPrimaryDark
+            }
+            c.drawRect(0f, 0f, pageWidth.toFloat(), if (pageNum == 1) 110f else 60f, headerBgPaint)
+
+            val titlePaint = Paint().apply {
                 isAntiAlias = true
                 color = Color.WHITE
-                style = Paint.Style.FILL
+                textSize = if (pageNum == 1) 22f else 16f
+                isFakeBoldText = true
             }
-            canvas.drawRoundRect(cardRect, 8f, 8f, cardPaint)
+            c.drawText("DAILY EXPENSE MANAGER", 40f, if (pageNum == 1) 45f else 35f, titlePaint)
 
-            val borderPaint = Paint().apply {
-                isAntiAlias = true
-                color = Color.rgb(230, 232, 238)
-                style = Paint.Style.STROKE
-                strokeWidth = 1f
+            if (pageNum == 1) {
+                val subTitlePaint = Paint().apply {
+                    isAntiAlias = true
+                    color = Color.rgb(240, 255, 245)
+                    textSize = 14f
+                }
+                c.drawText(title, 40f, 70f, subTitlePaint)
+
+                val metaPaint = Paint().apply {
+                    isAntiAlias = true
+                    color = Color.rgb(210, 240, 225)
+                    textSize = 10f
+                }
+                val currentDate = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date())
+                c.drawText("Period: $period  |  Generated: $currentDate", 40f, 92f, metaPaint)
+            } else {
+                val subTitlePaint = Paint().apply {
+                    isAntiAlias = true
+                    color = Color.rgb(240, 255, 245)
+                    textSize = 11f
+                }
+                c.drawText("$title (Continued)", 40f, 50f, subTitlePaint)
             }
-            canvas.drawRoundRect(cardRect, 8f, 8f, borderPaint)
+        }
 
-            val accentRect = RectF(x, y, x + 6f, y + cardHeight)
-            val accentPaint = Paint().apply {
+        fun drawFooter(c: Canvas, pageNum: Int) {
+            val footerPaint = Paint().apply {
                 isAntiAlias = true
-                color = accentBarColor
-                style = Paint.Style.FILL
-            }
-            canvas.drawRect(accentRect, accentPaint)
-
-            val lblPaint = Paint().apply {
-                isAntiAlias = true
-                color = Color.rgb(117, 117, 117)
+                color = TextSecondary
                 textSize = 10f
-                isFakeBoldText = true
             }
-            canvas.drawText(label.uppercase(), x + 16f, y + 22f, lblPaint)
-
-            val valPaint = Paint().apply {
-                isAntiAlias = true
-                color = valueColor
-                textSize = 14f
-                isFakeBoldText = true
-            }
-            canvas.drawText(value, x + 16f, y + 48f, valPaint)
+            c.drawText("Daily Expense Manager • Page $pageNum", leftMargin, 815f, footerPaint)
         }
 
-        drawMetricCard(leftMargin, yPos, "Total Income", CurrencyFormatter.format(totalIncome, currency), Color.rgb(56, 142, 60), Color.rgb(76, 175, 80))
-        drawMetricCard(leftMargin + cardWidth + 10f, yPos, "Total Expenses", CurrencyFormatter.format(totalExpenses, currency), Color.rgb(211, 47, 47), Color.rgb(244, 67, 54))
-        drawMetricCard(leftMargin + (cardWidth + 10f) * 2f, yPos, "Net Balance", CurrencyFormatter.format(net, currency), if (net >= 0) Color.rgb(56, 142, 60) else Color.rgb(211, 47, 47), if (net >= 0) Color.rgb(76, 175, 80) else Color.rgb(244, 67, 54))
+        drawBackground(canvas)
+        drawHeader(canvas, pageNumber)
 
-        yPos += cardHeight + 35f
+        var yPos = 135f
 
-        // 3. Category Breakdown Header
-        val sectionTitlePaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(33, 33, 33)
-            textSize = 16f
-            isFakeBoldText = true
-        }
-        canvas.drawText("Category Breakdown", leftMargin, yPos, sectionTitlePaint)
-        yPos += 15f
+        if (pageNumber == 1) {
+            // Summary Cards (Income, Expenses, Net)
+            val cardWidth = (rightMargin - leftMargin - 20f) / 3f
+            val cardHeight = 70f
+            val net = totalIncome - totalExpenses
 
-        val tableHeaderPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(238, 240, 245)
-            style = Paint.Style.FILL
-        }
-        canvas.drawRect(RectF(leftMargin, yPos, rightMargin, yPos + 28f), tableHeaderPaint)
+            fun drawMetricCard(x: Float, y: Float, lbl: String, value: String, valColor: Int, accentColor: Int) {
+                val rect = RectF(x, y, x + cardWidth, y + cardHeight)
+                canvas.drawRoundRect(rect, 8f, 8f, Paint().apply { isAntiAlias = true; color = Color.WHITE })
+                canvas.drawRoundRect(rect, 8f, 8f, Paint().apply { isAntiAlias = true; color = GridLineColor; style = Paint.Style.STROKE; strokeWidth = 1f })
+                canvas.drawRect(RectF(x, y, x + 6f, y + cardHeight), Paint().apply { isAntiAlias = true; color = accentColor })
 
-        val tableHeaderTxt = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(80, 80, 80)
-            textSize = 11f
-            isFakeBoldText = true
-        }
-        canvas.drawText("CATEGORY", leftMargin + 12f, yPos + 18f, tableHeaderTxt)
-        canvas.drawText("AMOUNT", 340f, yPos + 18f, tableHeaderTxt)
-        canvas.drawText("PERCENTAGE", 460f, yPos + 18f, tableHeaderTxt)
-
-        yPos += 28f
-
-        val rowPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(33, 33, 33)
-            textSize = 12f
-        }
-        val altRowPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(245, 247, 250)
-            style = Paint.Style.FILL
-        }
-        val gridLinePaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(230, 232, 238)
-            strokeWidth = 1f
-        }
-
-        var index = 0
-        for (item in categoryBreakdown) {
-            if (yPos > 760f) break
-
-            if (index % 2 == 1) {
-                canvas.drawRect(RectF(leftMargin, yPos, rightMargin, yPos + 26f), altRowPaint)
+                canvas.drawText(lbl.uppercase(), x + 16f, y + 22f, Paint().apply { isAntiAlias = true; color = TextSecondary; textSize = 10f; isFakeBoldText = true })
+                canvas.drawText(value, x + 16f, y + 48f, Paint().apply { isAntiAlias = true; color = valColor; textSize = 14f; isFakeBoldText = true })
             }
 
-            canvas.drawText(item.first, leftMargin + 12f, yPos + 17f, rowPaint)
-            canvas.drawText(CurrencyFormatter.format(item.second, currency), 340f, yPos + 17f, rowPaint)
-            canvas.drawText(String.format(Locale.getDefault(), "%.1f%%", item.third), 460f, yPos + 17f, rowPaint)
+            drawMetricCard(leftMargin, yPos, "Total Income", CurrencyFormatter.format(totalIncome, currency), IncomeGreen, MintPrimary)
+            drawMetricCard(leftMargin + cardWidth + 10f, yPos, "Total Expenses", CurrencyFormatter.format(totalExpenses, currency), ExpenseRed, ExpenseRed)
+            drawMetricCard(leftMargin + (cardWidth + 10f) * 2f, yPos, "Net Balance", CurrencyFormatter.format(net, currency), if (net >= 0) IncomeGreen else ExpenseRed, if (net >= 0) MintPrimary else ExpenseRed)
 
+            yPos += cardHeight + 30f
+
+            // Category Breakdown Section
+            canvas.drawText("Category Breakdown", leftMargin, yPos, Paint().apply { isAntiAlias = true; color = TextPrimary; textSize = 15f; isFakeBoldText = true })
+            yPos += 12f
+
+            // Table header
+            canvas.drawRect(RectF(leftMargin, yPos, rightMargin, yPos + 26f), Paint().apply { isAntiAlias = true; color = SurfaceVariant })
+            val thPaint = Paint().apply { isAntiAlias = true; color = TextPrimary; textSize = 11f; isFakeBoldText = true }
+            canvas.drawText("CATEGORY", leftMargin + 12f, yPos + 17f, thPaint)
+            canvas.drawText("AMOUNT", 340f, yPos + 17f, thPaint)
+            canvas.drawText("PERCENTAGE", 460f, yPos + 17f, thPaint)
             yPos += 26f
-            canvas.drawLine(leftMargin, yPos, rightMargin, yPos, gridLinePaint)
-            index++
+
+            val rowPaint = Paint().apply { isAntiAlias = true; color = TextPrimary; textSize = 11f }
+            val altRow = Paint().apply { isAntiAlias = true; color = Color.rgb(240, 252, 245) }
+            val gridLine = Paint().apply { isAntiAlias = true; color = GridLineColor; strokeWidth = 1f }
+
+            var idx = 0
+            for (item in categoryBreakdown) {
+                if (yPos > bottomLimit) {
+                    drawFooter(canvas, pageNumber)
+                    pdfDocument.finishPage(page)
+                    pageNumber++
+                    pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
+                    page = pdfDocument.startPage(pageInfo)
+                    canvas = page.canvas
+                    drawBackground(canvas)
+                    drawHeader(canvas, pageNumber)
+                    yPos = 90f
+                }
+
+                if (idx % 2 == 1) canvas.drawRect(RectF(leftMargin, yPos, rightMargin, yPos + 24f), altRow)
+                canvas.drawText(item.first, leftMargin + 12f, yPos + 16f, rowPaint)
+                canvas.drawText(CurrencyFormatter.format(item.second, currency), 340f, yPos + 16f, rowPaint)
+                canvas.drawText(String.format(Locale.getDefault(), "%.1f%%", item.third), 460f, yPos + 16f, rowPaint)
+                yPos += 24f
+                canvas.drawLine(leftMargin, yPos, rightMargin, yPos, gridLine)
+                idx++
+            }
+            yPos += 20f
         }
 
-        val footerPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(150, 150, 150)
-            textSize = 10f
+        // Transactions List Section
+        if (yPos > bottomLimit - 50f) {
+            drawFooter(canvas, pageNumber)
+            pdfDocument.finishPage(page)
+            pageNumber++
+            pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
+            page = pdfDocument.startPage(pageInfo)
+            canvas = page.canvas
+            drawBackground(canvas)
+            drawHeader(canvas, pageNumber)
+            yPos = 90f
         }
-        canvas.drawText("Daily Expense Manager • Financial Summary Report", leftMargin, 815f, footerPaint)
 
+        canvas.drawText("Transactions in this Period", leftMargin, yPos, Paint().apply { isAntiAlias = true; color = TextPrimary; textSize = 15f; isFakeBoldText = true })
+        yPos += 12f
+
+        // Tx Table Header
+        canvas.drawRect(RectF(leftMargin, yPos, rightMargin, yPos + 26f), Paint().apply { isAntiAlias = true; color = SurfaceVariant })
+        val txTh = Paint().apply { isAntiAlias = true; color = TextPrimary; textSize = 11f; isFakeBoldText = true }
+        canvas.drawText("TYPE", leftMargin + 12f, yPos + 17f, txTh)
+        canvas.drawText("DATE & TIME", 120f, yPos + 17f, txTh)
+        canvas.drawText("TITLE / CATEGORY", 260f, yPos + 17f, txTh)
+        canvas.drawText("AMOUNT", 450f, yPos + 17f, txTh)
+        yPos += 26f
+
+        data class TxItem(val type: String, val date: String, val time: String, val title: String, val amount: Double, val isExp: Boolean)
+        val allTx = mutableListOf<TxItem>()
+        incomes.forEach { allTx.add(TxItem("INCOME", it.date, it.time, it.source, it.amount, false)) }
+        expenses.forEach { allTx.add(TxItem("EXPENSE", it.date, it.time, it.categoryName + if(it.note.isNotBlank()) " (${it.note})" else "", it.amount, true)) }
+        val sortedTx = allTx.sortedByDescending { "${it.date} ${it.time}" }
+
+        val txRow = Paint().apply { isAntiAlias = true; textSize = 11f }
+        val altRow = Paint().apply { isAntiAlias = true; color = Color.rgb(240, 252, 245) }
+        val gridLine = Paint().apply { isAntiAlias = true; color = GridLineColor; strokeWidth = 1f }
+
+        var txIdx = 0
+        for (tx in sortedTx) {
+            if (yPos > bottomLimit) {
+                drawFooter(canvas, pageNumber)
+                pdfDocument.finishPage(page)
+                pageNumber++
+                pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
+                page = pdfDocument.startPage(pageInfo)
+                canvas = page.canvas
+                drawBackground(canvas)
+                drawHeader(canvas, pageNumber)
+                yPos = 90f
+
+                // Re-draw table header on new page
+                canvas.drawRect(RectF(leftMargin, yPos, rightMargin, yPos + 26f), Paint().apply { isAntiAlias = true; color = SurfaceVariant })
+                canvas.drawText("TYPE", leftMargin + 12f, yPos + 17f, txTh)
+                canvas.drawText("DATE & TIME", 120f, yPos + 17f, txTh)
+                canvas.drawText("TITLE / CATEGORY", 260f, yPos + 17f, txTh)
+                canvas.drawText("AMOUNT", 450f, yPos + 17f, txTh)
+                yPos += 26f
+            }
+
+            if (txIdx % 2 == 1) canvas.drawRect(RectF(leftMargin, yPos, rightMargin, yPos + 24f), altRow)
+
+            txRow.isFakeBoldText = true
+            txRow.color = if (tx.isExp) ExpenseRed else IncomeGreen
+            canvas.drawText(tx.type, leftMargin + 12f, yPos + 16f, txRow)
+
+            txRow.isFakeBoldText = false
+            txRow.color = TextSecondary
+            canvas.drawText("${tx.date}  ${tx.time}", 120f, yPos + 16f, txRow)
+
+            txRow.color = TextPrimary
+            val titleText = if (tx.title.length > 28) tx.title.substring(0, 25) + "..." else tx.title
+            canvas.drawText(titleText, 260f, yPos + 16f, txRow)
+
+            txRow.isFakeBoldText = true
+            txRow.color = if (tx.isExp) ExpenseRed else IncomeGreen
+            val amtStr = (if (tx.isExp) "- " else "+ ") + CurrencyFormatter.format(tx.amount, currency)
+            canvas.drawText(amtStr, 450f, yPos + 16f, txRow)
+
+            yPos += 24f
+            canvas.drawLine(leftMargin, yPos, rightMargin, yPos, gridLine)
+            txIdx++
+        }
+
+        drawFooter(canvas, pageNumber)
         pdfDocument.finishPage(page)
 
         val file = File(context.cacheDir, "Financial_Report.pdf")
@@ -214,132 +280,17 @@ object PdfExportUtils {
         incomes: List<IncomeEntity>,
         currency: String
     ): File? {
-        val pdfDocument = PdfDocument()
-        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
-        val page = pdfDocument.startPage(pageInfo)
-        val canvas: Canvas = page.canvas
-
-        val bgPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(250, 250, 252)
-        }
-        canvas.drawRect(0f, 0f, 595f, 842f, bgPaint)
-
-        val headerBgPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(63, 81, 181)
-        }
-        canvas.drawRect(0f, 0f, 595f, 100f, headerBgPaint)
-
-        val titlePaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.WHITE
-            textSize = 22f
-            isFakeBoldText = true
-        }
-        canvas.drawText("TRANSACTION HISTORY", 40f, 45f, titlePaint)
-
-        val subTitlePaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(224, 224, 224)
-            textSize = 13f
-        }
-        val currentDate = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date())
-        canvas.drawText("Complete Income & Expense Records  |  Generated: $currentDate", 40f, 72f, subTitlePaint)
-
-        var yPos = 130f
-        val leftMargin = 40f
-        val rightMargin = 555f
-
-        val tableHeaderPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(238, 240, 245)
-            style = Paint.Style.FILL
-        }
-        canvas.drawRect(RectF(leftMargin, yPos, rightMargin, yPos + 28f), tableHeaderPaint)
-
-        val tableHeaderTxt = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(80, 80, 80)
-            textSize = 11f
-            isFakeBoldText = true
-        }
-        canvas.drawText("TYPE", leftMargin + 12f, yPos + 18f, tableHeaderTxt)
-        canvas.drawText("DATE & TIME", 120f, yPos + 18f, tableHeaderTxt)
-        canvas.drawText("TITLE / CATEGORY", 260f, yPos + 18f, tableHeaderTxt)
-        canvas.drawText("AMOUNT", 450f, yPos + 18f, tableHeaderTxt)
-
-        yPos += 28f
-
-        data class TxItem(val type: String, val date: String, val time: String, val title: String, val amount: Double, val isExp: Boolean)
-        val list = mutableListOf<TxItem>()
-        incomes.forEach { list.add(TxItem("INCOME", it.date, it.time, it.source, it.amount, false)) }
-        expenses.forEach { list.add(TxItem("EXPENSE", it.date, it.time, it.categoryName + if(it.note.isNotBlank()) " (${it.note})" else "", it.amount, true)) }
-
-        val rowPaint = Paint().apply {
-            isAntiAlias = true
-            textSize = 11f
-        }
-        val altRowPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(245, 247, 250)
-            style = Paint.Style.FILL
-        }
-        val gridLinePaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(230, 232, 238)
-            strokeWidth = 1f
-        }
-
-        var index = 0
-        for (tx in list.sortedByDescending { "${it.date} ${it.time}" }) {
-            if (yPos > 770f) break
-
-            if (index % 2 == 1) {
-                canvas.drawRect(RectF(leftMargin, yPos, rightMargin, yPos + 26f), altRowPaint)
-            }
-
-            rowPaint.isFakeBoldText = true
-            rowPaint.color = if (tx.isExp) Color.rgb(211, 47, 47) else Color.rgb(56, 142, 60)
-            canvas.drawText(tx.type, leftMargin + 12f, yPos + 17f, rowPaint)
-
-            rowPaint.isFakeBoldText = false
-            rowPaint.color = Color.rgb(80, 80, 80)
-            canvas.drawText("${tx.date}  ${tx.time}", 120f, yPos + 17f, rowPaint)
-
-            rowPaint.color = Color.rgb(33, 33, 33)
-            val truncatedTitle = if (tx.title.length > 28) tx.title.substring(0, 25) + "..." else tx.title
-            canvas.drawText(truncatedTitle, 260f, yPos + 17f, rowPaint)
-
-            rowPaint.isFakeBoldText = true
-            rowPaint.color = if (tx.isExp) Color.rgb(211, 47, 47) else Color.rgb(56, 142, 60)
-            val amtStr = (if (tx.isExp) "- " else "+ ") + CurrencyFormatter.format(tx.amount, currency)
-            canvas.drawText(amtStr, 450f, yPos + 17f, rowPaint)
-
-            yPos += 26f
-            canvas.drawLine(leftMargin, yPos, rightMargin, yPos, gridLinePaint)
-            index++
-        }
-
-        val footerPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(150, 150, 150)
-            textSize = 10f
-        }
-        canvas.drawText("Daily Expense Manager • Transaction History Report", leftMargin, 815f, footerPaint)
-
-        pdfDocument.finishPage(page)
-
-        val file = File(context.cacheDir, "Transactions_Report.pdf")
-        try {
-            pdfDocument.writeTo(FileOutputStream(file))
-        } catch (e: Exception) {
-            e.printStackTrace()
-            pdfDocument.close()
-            return null
-        }
-        pdfDocument.close()
-        return file
+        return generateComprehensiveReportPdf(
+            context,
+            "Complete Transaction History",
+            "All Time",
+            incomes.sumOf { it.amount },
+            expenses.sumOf { it.amount },
+            currency,
+            emptyList(),
+            expenses,
+            incomes
+        )
     }
 
     fun sharePdf(context: Context, file: File, title: String) {
