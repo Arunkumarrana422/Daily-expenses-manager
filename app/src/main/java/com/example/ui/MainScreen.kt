@@ -243,6 +243,17 @@ fun MainScreen(
         previousPagerPage = current
     }
 
+    var backPressedTime by remember { mutableStateOf(0L) }
+    BackHandler(enabled = pagerState.currentPage == 0) {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - backPressedTime < 2000L) {
+            (context as? android.app.Activity)?.finish()
+        } else {
+            backPressedTime = currentTime
+            topToastState.show("Press back again to exit", ToastType.INFO)
+        }
+    }
+
     BackHandler(enabled = pagerState.currentPage != 0) {
         coroutineScope.launch {
             pagerState.animateScrollToPage(0)
