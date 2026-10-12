@@ -344,7 +344,8 @@ class FinanceViewModel(
         note: String,
         date: String,
         time: String,
-        receiptUri: String? = null
+        receiptUri: String? = null,
+        onComplete: (Boolean) -> Unit = {}
     ) {
         viewModelScope.launch {
             // Pre-calculate current monthly totals BEFORE adding the new expense to avoid double counting
@@ -371,12 +372,17 @@ class FinanceViewModel(
                 time = time,
                 receiptUri = receiptUri
             )
-            repository.addExpense(expense)
-            _snackbarMessage.emit("Expense of $amount saved successfully!")
-
-            val prefs = userPreferences.value
-            if (prefs.budgetWarningEnabled) {
-                checkBudgetAndNotify(categoryName, totalCatSpent, totalOverallSpent)
+            val result = repository.addExpenseWithFirestoreCheck(expense)
+            if (result.isSuccess) {
+                _snackbarMessage.emit("Expense of $amount saved successfully!")
+                val prefs = userPreferences.value
+                if (prefs.budgetWarningEnabled) {
+                    checkBudgetAndNotify(categoryName, totalCatSpent, totalOverallSpent)
+                }
+                onComplete(true)
+            } else {
+                _snackbarMessage.emit(result.exceptionOrNull()?.message ?: "Failed to save entry to Firestore")
+                onComplete(false)
             }
         }
     }
@@ -443,7 +449,8 @@ class FinanceViewModel(
         accountId: Long,
         note: String,
         date: String,
-        time: String
+        time: String,
+        onComplete: (Boolean) -> Unit = {}
     ) {
         viewModelScope.launch {
             val income = IncomeEntity(
@@ -455,8 +462,14 @@ class FinanceViewModel(
                 date = date,
                 time = time
             )
-            repository.addIncome(income)
-            _snackbarMessage.emit("Income of $amount added successfully!")
+            val result = repository.addIncomeWithFirestoreCheck(income)
+            if (result.isSuccess) {
+                _snackbarMessage.emit("Income of $amount added successfully!")
+                onComplete(true)
+            } else {
+                _snackbarMessage.emit(result.exceptionOrNull()?.message ?: "Failed to save entry to Firestore")
+                onComplete(false)
+            }
         }
     }
 

@@ -73,9 +73,9 @@ class FirebaseSyncManager(
     /**
      * Upload an expense directly to Firestore
      */
-    suspend fun uploadExpense(userId: String, expense: ExpenseEntity) = withContext(Dispatchers.IO) {
+    suspend fun uploadExpense(userId: String, expense: ExpenseEntity): Boolean = withContext(Dispatchers.IO) {
         try {
-            val fs = firestore ?: return@withContext
+            val fs = firestore ?: return@withContext false
             val data = hashMapOf(
                 "id" to expense.id,
                 "amount" to expense.amount,
@@ -95,8 +95,10 @@ class FirebaseSyncManager(
                 .collection("expenses").document(expense.id.toString())
                 .set(data).await()
             expenseDao.markSynced(listOf(expense.id))
+            true
         } catch (e: Exception) {
             Log.w(TAG, "uploadExpense error: ${e.message}")
+            false
         }
     }
 
@@ -117,9 +119,9 @@ class FirebaseSyncManager(
     /**
      * Upload an income directly to Firestore
      */
-    suspend fun uploadIncome(userId: String, income: IncomeEntity) = withContext(Dispatchers.IO) {
+    suspend fun uploadIncome(userId: String, income: IncomeEntity): Boolean = withContext(Dispatchers.IO) {
         try {
-            val fs = firestore ?: return@withContext
+            val fs = firestore ?: return@withContext false
             val data = hashMapOf(
                 "id" to income.id,
                 "amount" to income.amount,
@@ -136,8 +138,10 @@ class FirebaseSyncManager(
                 .collection("incomes").document(income.id.toString())
                 .set(data).await()
             incomeDao.markSynced(listOf(income.id))
+            true
         } catch (e: Exception) {
             Log.w(TAG, "uploadIncome error: ${e.message}")
+            false
         }
     }
 

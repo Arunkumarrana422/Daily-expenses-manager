@@ -34,6 +34,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -92,6 +93,7 @@ fun AddTransactionScreen(
     var selectedDate by remember { mutableStateOf(DateTimeUtils.getTodayString()) }
     var selectedTime by remember { mutableStateOf(DateTimeUtils.getCurrentTimeString()) }
     var selectedPaymentMethod by remember { mutableStateOf("UPI") }
+    var isSaving by remember { mutableStateOf(false) }
 
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
@@ -624,7 +626,8 @@ fun AddTransactionScreen(
 
             Button(
                 onClick = {
-                    if (isFormValid) {
+                    if (isFormValid && !isSaving) {
+                        isSaving = true
                         val cat = selectedCategory!!
                         if (isExpense) {
                             viewModel.addExpense(
@@ -638,7 +641,16 @@ fun AddTransactionScreen(
                                 note = noteText.trim(),
                                 date = selectedDate,
                                 time = selectedTime
-                            )
+                            ) { success ->
+                                isSaving = false
+                                if (success) {
+                                    amountText = ""
+                                    noteText = ""
+                                    selectedDate = DateTimeUtils.getTodayString()
+                                    selectedTime = DateTimeUtils.getCurrentTimeString()
+                                    onTransactionSaved()
+                                }
+                            }
                         } else {
                             viewModel.addIncome(
                                 amount = amount,
@@ -648,18 +660,20 @@ fun AddTransactionScreen(
                                 note = noteText.trim(),
                                 date = selectedDate,
                                 time = selectedTime
-                            )
+                            ) { success ->
+                                isSaving = false
+                                if (success) {
+                                    amountText = ""
+                                    noteText = ""
+                                    selectedDate = DateTimeUtils.getTodayString()
+                                    selectedTime = DateTimeUtils.getCurrentTimeString()
+                                    onTransactionSaved()
+                                }
+                            }
                         }
-                        // Clear fields
-                        amountText = ""
-                        noteText = ""
-                        selectedDate = DateTimeUtils.getTodayString()
-                        selectedTime = DateTimeUtils.getCurrentTimeString()
-
-                        onTransactionSaved()
                     }
                 },
-                enabled = isFormValid,
+                enabled = isFormValid && !isSaving,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(46.dp)
@@ -669,13 +683,21 @@ fun AddTransactionScreen(
                     containerColor = if (isExpense) IndigoPrimary else FinanceSuccess
                 )
             ) {
-                Icon(Icons.Default.Check, contentDescription = "Save")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (isExpense) "Save Expense" else "Save Income",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.5.dp
+                    )
+                } else {
+                    Icon(Icons.Default.Check, contentDescription = "Save")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isExpense) "Save Expense" else "Save Income",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(70.dp))
         }
