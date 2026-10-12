@@ -65,6 +65,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.res.painterResource
+import com.example.R
 import com.example.ui.components.ToastType
 import com.example.ui.components.TopToastHost
 import com.example.ui.components.rememberTopToastState
@@ -121,7 +125,6 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
-    var showGoogleAccountDialog by remember { mutableStateOf(false) }
 
     val topToastState = rememberTopToastState()
     val context = LocalContext.current
@@ -398,10 +401,10 @@ fun LoginScreen(
                                             onLoginSuccess()
                                         }
                                     } else {
-                                        showGoogleAccountDialog = true
+                                        Toast.makeText(context, "Could not sign in with Google", Toast.LENGTH_SHORT).show()
                                     }
                                 } catch (e: Exception) {
-                                    showGoogleAccountDialog = true
+                                    Toast.makeText(context, "Google Sign-In cancelled", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
@@ -420,28 +423,12 @@ fun LoginScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
-                            Canvas(modifier = Modifier.size(24.dp)) {
-                                val size = size.minDimension
-                                val strokeW = size * 0.28f
-                                val topLeft = androidx.compose.ui.geometry.Offset(strokeW/2f, strokeW/2f)
-                                val arcSize = androidx.compose.ui.geometry.Size(size - strokeW, size - strokeW)
-
-                                // Red segment (Top Right)
-                                drawArc(color = Color(0xFFEA4335), startAngle = 270f, sweepAngle = 90f, useCenter = false, topLeft = topLeft, size = arcSize, style = Stroke(strokeW))
-                                // Yellow segment (Top Left)
-                                drawArc(color = Color(0xFFFBBC05), startAngle = 180f, sweepAngle = 90f, useCenter = false, topLeft = topLeft, size = arcSize, style = Stroke(strokeW))
-                                // Green segment (Bottom Left)
-                                drawArc(color = Color(0xFF34A853), startAngle = 90f, sweepAngle = 90f, useCenter = false, topLeft = topLeft, size = arcSize, style = Stroke(strokeW))
-                                // Blue segment (Bottom Right)
-                                drawArc(color = Color(0xFF4285F4), startAngle = 0f, sweepAngle = 90f, useCenter = false, topLeft = topLeft, size = arcSize, style = Stroke(strokeW))
-
-                                // Blue inner horizontal bar for G
-                                drawRect(
-                                    color = Color(0xFF4285F4),
-                                    topLeft = androidx.compose.ui.geometry.Offset(size * 0.45f, size * 0.44f),
-                                    size = androidx.compose.ui.geometry.Size(size * 0.42f, strokeW * 0.95f)
-                                )
-                            }
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_google_logo),
+                                contentDescription = "Google Logo",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(24.dp)
+                            )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 text = "Sign in with Google",
@@ -480,116 +467,6 @@ fun LoginScreen(
                     )
                 }
             }
-        }
-
-        if (showGoogleAccountDialog) {
-            val googleAccounts = listOf(
-                Pair("Arun Kumar rana", "ranaarunkumar7050@gmail.com"),
-                Pair("Arun Kumar rana", "ranaarunkumar5@gmail.com"),
-                Pair("Aux Shooter", "arunr0577@gmail.com"),
-                Pair("RealAr Thumbnail", "ranakumararun83@gmail.com"),
-                Pair("Things Of Studies", "ranaarunrana691@gmail.com"),
-                Pair("Arun Kumar rana", "ranaarunkumar01@gmail.com"),
-                Pair("Arun Kumar rana", "ranaarunkumar7079@gmail.com"),
-                Pair("Ar Kumar", "ranaarunkumar2000@gmail.com"),
-                Pair("Aaaa", "aakkrr7079@gmail.com"),
-                Pair("Arun Kumar rana", "ranaarunkumar09@gmail.com")
-            )
-
-            AlertDialog(
-                onDismissRequest = { showGoogleAccountDialog = false },
-                title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(IndigoPrimary.copy(alpha = 0.15f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AccountBalanceWallet,
-                                contentDescription = "App Icon",
-                                tint = IndigoPrimary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "Choose an account",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "to continue to Expense Manager",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                text = {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(320.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(googleAccounts) { (name, emailAddr) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
-                                        showGoogleAccountDialog = false
-                                        isLoading = true
-                                        onGoogleLogin(emailAddr, name, "") { _, _ ->
-                                            isLoading = false
-                                            onLoginSuccess()
-                                        }
-                                    }
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(IndigoPrimary, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = name.take(1).uppercase(),
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(14.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = name,
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = emailAddr,
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
-                },
-                confirmButton = {},
-                dismissButton = {
-                    TextButton(onClick = { showGoogleAccountDialog = false }) {
-                        Text("Cancel", color = IndigoPrimary)
-                    }
-                },
-                shape = RoundedCornerShape(24.dp)
-            )
         }
 
         TopToastHost(
