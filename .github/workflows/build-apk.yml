@@ -33,35 +33,43 @@ jobs:
               cat << 'EOF' > "$appdir/google-services.json"
           {
             "project_info": {
-              "project_number": "295324687593",
-              "firebase_url": "https://expense-trecker-default-rtdb.firebaseio.com",
-              "project_id": "expense-trecker",
-              "storage_bucket": "expense-trecker.firebasestorage.app"
+              "project_number": "255738614645",
+              "firebase_url": "https://daily-expenses-management-default-rtdb.firebaseio.com",
+              "project_id": "daily-expenses-management",
+              "storage_bucket": "daily-expenses-management.firebasestorage.app"
             },
             "client": [
               {
                 "client_info": {
-                  "mobilesdk_app_id": "1:295324687593:android:e1b5dcd3fba7e5dd416478",
+                  "mobilesdk_app_id": "1:255738614645:android:6a8e25ac0167507a87393c",
                   "android_client_info": {
-                    "package_name": "com.my.expensemanager"
+                    "package_name": "com.arun.dailyexpensesmanagement"
                   }
                 },
                 "oauth_client": [
                   {
-                    "client_id": "295324687593-8pscae0itb9282n02e4l3j6kieg9ungs.apps.googleusercontent.com",
+                    "client_id": "255738614645-99pu1m6bjd7ic910m7mg9ng0cmmdbe5g.apps.googleusercontent.com",
+                    "client_type": 1,
+                    "android_info": {
+                      "package_name": "com.arun.dailyexpensesmanagement",
+                      "certificate_hash": "162aafff8063f3eb8ec139302aceac8131347093"
+                    }
+                  },
+                  {
+                    "client_id": "255738614645-j1reg4tppdfs3h61thoi6i4vf8kd9sjr.apps.googleusercontent.com",
                     "client_type": 3
                   }
                 ],
                 "api_key": [
                   {
-                    "current_key": "AIzaSyAmrnrzUStkDscWbHkjxjPslu_u_Rf7oJE"
+                    "current_key": "AIzaSyAadqENfexwKGOy5v8iu-f57hMb2iMKl68"
                   }
                 ],
                 "services": {
                   "appinvite_service": {
                     "other_platform_oauth_client": [
                       {
-                        "client_id": "295324687593-8pscae0itb9282n02e4l3j6kieg9ungs.apps.googleusercontent.com",
+                        "client_id": "255738614645-j1reg4tppdfs3h61thoi6i4vf8kd9sjr.apps.googleusercontent.com",
                         "client_type": 3
                       }
                     ]
@@ -96,7 +104,20 @@ jobs:
             keytool -genkey -v -keystore "debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
 
-      - name: Build Debug APK
+      - name: Ensure Release Keystore exists
+        run: |
+          find . -name "settings.gradle.kts" -not -path "*/build/*" | while read sfile; do
+            pdir=$(dirname "$sfile")
+            if [ ! -f "$pdir/my-upload-key.jks" ]; then
+              echo "Generating my-upload-key.jks in $pdir"
+              keytool -genkey -v -keystore "$pdir/my-upload-key.jks" -alias upload -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=ExpenseManager, OU=Mobile, O=AIStudio, L=City, S=State, C=IN"
+            fi
+          done
+
+      - name: Build Release APK
+        env:
+          STORE_PASSWORD: android
+          KEY_PASSWORD: android
         run: |
           # Find directory containing settings.gradle.kts (handles root or nested folders)
           SETTINGS_FILE=$(find . -name "settings.gradle.kts" -not -path "*/build/*" | head -n 1)
@@ -108,14 +129,14 @@ jobs:
           
           if [ -f "./gradlew" ]; then
             chmod +x ./gradlew
-            ./gradlew assembleDebug --no-daemon --stacktrace
+            ./gradlew assembleRelease --no-daemon --stacktrace
           else
-            gradle assembleDebug --no-daemon --stacktrace
+            gradle assembleRelease --no-daemon --stacktrace
           fi
 
-      - name: Upload Debug APK
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: ExpenseManager-debug-apk
-          path: "**/app/build/outputs/apk/debug/*.apk"
+          name: ExpenseManager-release-apk
+          path: "**/app/build/outputs/apk/release/*.apk"
           retention-days: 14

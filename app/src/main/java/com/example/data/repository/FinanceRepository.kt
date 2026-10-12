@@ -206,6 +206,7 @@ class FinanceRepository(
     suspend fun setMonthlySummary(enabled: Boolean) = preferencesDataStore.setMonthlySummary(enabled)
     suspend fun enableAllNotifications() = preferencesDataStore.enableAllNotifications()
     suspend fun setUserProfile(name: String, email: String) = preferencesDataStore.setUserProfile(name, email)
+    suspend fun setLoggedInUser(uid: String, name: String, email: String, profilePhoto: String = "") = preferencesDataStore.setLoggedInUser(uid, name, email, profilePhoto)
 
     // Auth
     suspend fun login(email: String, pass: String): Result<AuthUser> {

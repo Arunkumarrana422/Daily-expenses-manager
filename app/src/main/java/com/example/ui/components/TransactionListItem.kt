@@ -102,37 +102,34 @@ fun TransactionListItem(
 
                 Spacer(modifier = Modifier.height(3.dp))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                val subtitleText = if (item.note.isNotBlank() && item.categoryName.isNotBlank()) {
+                    "${item.categoryName} • ${DateTimeUtils.formatDisplayDate(item.date)} • ${DateTimeUtils.formatDisplayTime(item.time)}"
+                } else {
+                    "${DateTimeUtils.formatDisplayDate(item.date)} • ${DateTimeUtils.formatDisplayTime(item.time)}"
+                }
+
+                Text(
+                    text = subtitleText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant
                 ) {
-                    val subtitleText = if (item.note.isNotBlank() && item.categoryName.isNotBlank()) {
-                        "${item.categoryName} • ${DateTimeUtils.formatDisplayDate(item.date)} • ${DateTimeUtils.formatDisplayTime(item.time)}"
-                    } else {
-                        "${DateTimeUtils.formatDisplayDate(item.date)} • ${DateTimeUtils.formatDisplayTime(item.time)}"
-                    }
-
                     Text(
-                        text = subtitleText,
-                        style = MaterialTheme.typography.bodySmall,
+                        text = item.paymentMethod,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 12.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        fontSize = 10.sp,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
-
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant
-                    ) {
-                        Text(
-                            text = item.paymentMethod,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 10.sp,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
                 }
             }
 
