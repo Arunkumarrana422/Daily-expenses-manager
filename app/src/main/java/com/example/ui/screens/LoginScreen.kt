@@ -187,7 +187,7 @@ fun LoginScreen(
              ) {
                  if (isGoogleLoading) {
                      CircularProgressIndicator(
-                         color = Color.White,
+                         color = IndigoPrimary,
                          modifier = Modifier.size(24.dp),
                          strokeWidth = 2.5.dp
                      )
@@ -207,7 +207,7 @@ fun LoginScreen(
                              text = "Sign in with Google",
                              fontSize = 16.sp,
                              fontWeight = FontWeight.Bold,
-                             color = Color.White
+                             color = MaterialTheme.colorScheme.onBackground
                          )
                      }
                  }

@@ -347,6 +347,17 @@ class FinanceViewModel(
         receiptUri: String? = null
     ) {
         viewModelScope.launch {
+            // Pre-calculate current monthly totals BEFORE adding the new expense to avoid double counting
+            val currentCatExpenses = expenses.value.filter {
+                it.categoryName.equals(categoryName, ignoreCase = true) && DateTimeUtils.isDateInCurrentMonth(it.date)
+            }.sumOf { it.amount }
+            val totalCatSpent = currentCatExpenses + amount
+
+            val currentOverallExpenses = expenses.value.filter {
+                DateTimeUtils.isDateInCurrentMonth(it.date)
+            }.sumOf { it.amount }
+            val totalOverallSpent = currentOverallExpenses + amount
+
             val expense = ExpenseEntity(
                 amount = amount,
                 categoryId = categoryId,
@@ -365,22 +376,18 @@ class FinanceViewModel(
 
             val prefs = userPreferences.value
             if (prefs.budgetWarningEnabled) {
-                checkBudgetAndNotify(categoryName, amount)
+                checkBudgetAndNotify(categoryName, totalCatSpent, totalOverallSpent)
             }
         }
     }
 
-    private fun checkBudgetAndNotify(categoryName: String, addedAmount: Double) {
+    private fun checkBudgetAndNotify(categoryName: String, totalSpent: Double, totalOverall: Double) {
         val currentBudgets = budgets.value
         if (currentBudgets.isEmpty()) return
 
         // 1. Specific Category Budget
         val categoryBudget = currentBudgets.find { it.categoryName.equals(categoryName, ignoreCase = true) }
         if (categoryBudget != null) {
-            val pastExpenses = expenses.value.filter {
-                it.categoryName.equals(categoryName, ignoreCase = true) && DateTimeUtils.isDateInCurrentMonth(it.date)
-            }.sumOf { it.amount }
-            val totalSpent = pastExpenses + addedAmount
             val warningLimit = categoryBudget.amount * categoryBudget.warningThreshold
 
             if (totalSpent >= categoryBudget.amount) {
@@ -410,10 +417,6 @@ class FinanceViewModel(
             it.categoryName.equals("All", ignoreCase = true) || it.categoryName.equals("Overall", ignoreCase = true)
         }
         if (overallBudget != null) {
-            val pastOverall = expenses.value.filter {
-                DateTimeUtils.isDateInCurrentMonth(it.date)
-            }.sumOf { it.amount }
-            val totalOverall = pastOverall + addedAmount
             val warningLimit = overallBudget.amount * overallBudget.warningThreshold
 
             if (totalOverall >= overallBudget.amount) {
