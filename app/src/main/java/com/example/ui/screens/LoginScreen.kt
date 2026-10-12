@@ -126,7 +126,6 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var isGoogleLoading by remember { mutableStateOf(false) }
-    var showGoogleAccountDialog by remember { mutableStateOf(false) }
 
     val topToastState = rememberTopToastState()
     val context = LocalContext.current
@@ -406,11 +405,11 @@ fun LoginScreen(
                                         }
                                     } else {
                                         isGoogleLoading = false
-                                        showGoogleAccountDialog = true
+                                        Toast.makeText(context, "Google Sign-In unavailable", Toast.LENGTH_SHORT).show()
                                     }
                                 } catch (e: Exception) {
                                     isGoogleLoading = false
-                                    showGoogleAccountDialog = true
+                                    Toast.makeText(context, "Google Sign-In cancelled", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
@@ -473,116 +472,6 @@ fun LoginScreen(
                     )
                 }
             }
-        }
-
-        if (showGoogleAccountDialog) {
-            val googleAccounts = listOf(
-                Pair("Arun Kumar rana", "ranaarunkumar7050@gmail.com"),
-                Pair("Arun Kumar rana", "ranaarunkumar5@gmail.com"),
-                Pair("Aux Shooter", "arunr0577@gmail.com"),
-                Pair("RealAr Thumbnail", "ranakumararun83@gmail.com"),
-                Pair("Things Of Studies", "ranaarunrana691@gmail.com"),
-                Pair("Arun Kumar rana", "ranaarunkumar01@gmail.com"),
-                Pair("Arun Kumar rana", "ranaarunkumar7079@gmail.com"),
-                Pair("Ar Kumar", "ranaarunkumar2000@gmail.com"),
-                Pair("Aaaa", "aakkrr7079@gmail.com"),
-                Pair("Arun Kumar rana", "ranaarunkumar09@gmail.com")
-            )
-
-            AlertDialog(
-                onDismissRequest = { showGoogleAccountDialog = false },
-                title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(IndigoPrimary.copy(alpha = 0.15f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AccountBalanceWallet,
-                                contentDescription = "App Icon",
-                                tint = IndigoPrimary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "Choose an account",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "to continue to Expense Manager",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                text = {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(320.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(googleAccounts) { (name, emailAddr) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
-                                        showGoogleAccountDialog = false
-                                        isGoogleLoading = true
-                                        onGoogleLogin(emailAddr, name, "") { _, _ ->
-                                            isGoogleLoading = false
-                                            onLoginSuccess()
-                                        }
-                                    }
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(IndigoPrimary, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = name.take(1).uppercase(),
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(14.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = name,
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = emailAddr,
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
-                },
-                confirmButton = {},
-                dismissButton = {
-                    TextButton(onClick = { showGoogleAccountDialog = false }) {
-                        Text("Cancel", color = IndigoPrimary)
-                    }
-                },
-                shape = RoundedCornerShape(24.dp)
-            )
         }
 
         if (isGoogleLoading) {
