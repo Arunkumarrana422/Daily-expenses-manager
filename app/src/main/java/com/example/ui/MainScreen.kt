@@ -74,6 +74,8 @@ import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.IntroScreen
 import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.NoInternetScreen
+import com.example.ui.screens.PrivacyPolicyScreen
+import com.example.ui.screens.TermsAndConditionsScreen
 import com.example.ui.screens.RegisterScreen
 import com.example.ui.screens.ReportsScreen
 import com.example.ui.screens.SettingsScreen
@@ -104,6 +106,7 @@ fun MainScreen(
     var showAddBudgetDialog by remember { mutableStateOf(false) }
     var showAddAccountDialog by remember { mutableStateOf(false) }
     var showTransferDialog by remember { mutableStateOf(false) }
+    var activeLegalScreen by remember { mutableStateOf<String?>(null) }
 
     // Collect snackbar messages
     LaunchedEffect(Unit) {
@@ -155,11 +158,23 @@ fun MainScreen(
         return
     }
 
+    // 0.1 Legal Screens Overlay
+    if (activeLegalScreen == "privacy") {
+        PrivacyPolicyScreen(onBack = { activeLegalScreen = null })
+        return
+    }
+    if (activeLegalScreen == "terms") {
+        TermsAndConditionsScreen(onBack = { activeLegalScreen = null })
+        return
+    }
+
     // 1. Authentication Check (Google Sign-In Only)
     if (!prefs.isLoggedIn) {
         LoginScreen(
             viewModel = viewModel,
-            onLoginSuccess = {}
+            onLoginSuccess = {},
+            onOpenPrivacyPolicy = { activeLegalScreen = "privacy" },
+            onOpenTermsAndConditions = { activeLegalScreen = "terms" }
         )
         return
     }
@@ -393,6 +408,8 @@ fun MainScreen(
                         onLogout = {
                             coroutineScope.launch { pagerState.animateScrollToPage(0) }
                         },
+                        onOpenPrivacyPolicy = { activeLegalScreen = "privacy" },
+                        onOpenTermsAndConditions = { activeLegalScreen = "terms" },
                         listState = settingsListState
                     )
                 }

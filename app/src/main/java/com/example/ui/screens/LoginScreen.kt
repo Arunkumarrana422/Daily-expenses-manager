@@ -48,6 +48,8 @@ import com.example.ui.viewmodel.FinanceViewModel
 fun LoginScreen(
     viewModel: FinanceViewModel,
     onLoginSuccess: () -> Unit = {},
+    onOpenPrivacyPolicy: () -> Unit = {},
+    onOpenTermsAndConditions: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var isGoogleLoading by remember { mutableStateOf(false) }
@@ -106,8 +108,96 @@ fun LoginScreen(
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
+            // 1. Quick Instructions Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("login_instruction_card"),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.GppGood,
+                            contentDescription = "Security Instructions",
+                            tint = IndigoPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Instructions & Security",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "• Tap 'Sign in with Google' below to log in securely without passwords.\n• Your financial entries are synced to your Google Account on Firebase Cloud.\n• You can edit, export, or delete your account anytime in Settings.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 18.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 2. Legal Terms & Privacy Policy Disclaimer
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "By continuing, you agree to our",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.wrapContentWidth()
+                ) {
+                    TextButton(
+                        onClick = onOpenTermsAndConditions,
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                        modifier = Modifier.testTag("open_terms_button")
+                    ) {
+                        Text(
+                            text = "Terms & Conditions",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = IndigoPrimary
+                        )
+                    }
+                    Text(
+                        text = " and ",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    TextButton(
+                        onClick = onOpenPrivacyPolicy,
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                        modifier = Modifier.testTag("open_privacy_button")
+                    ) {
+                        Text(
+                            text = "Privacy Policy",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = IndigoPrimary
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 3. Primary Action: Google Sign-In Button
              OutlinedButton(
                  onClick = {
                      isGoogleLoading = true
@@ -213,7 +303,7 @@ fun LoginScreen(
                  }
              }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
