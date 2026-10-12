@@ -9,6 +9,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
@@ -174,14 +175,34 @@ class AuthManager(
             val resolvedName = user.displayName ?: displayName.ifEmpty { resolvedEmail.substringBefore("@") }
             val resolvedPhoto = user.photoUrl?.toString() ?: photoUrl
 
-            // Store user in Firestore under /users/{user.uid}
+            var finalName = resolvedName
+            var finalPhoto = resolvedPhoto
+
+            // Fetch existing Firestore profile first so custom photo and name are preserved across data clears
+            try {
+                val doc = firestore?.collection("users")?.document(user.uid)?.get()?.await()
+                if (doc != null && doc.exists()) {
+                    val existingName = doc.getString("name")
+                    if (!existingName.isNullOrBlank()) {
+                        finalName = existingName
+                    }
+                    val existingPhoto = doc.getString("profilePhotoBase64")
+                    if (!existingPhoto.isNullOrBlank()) {
+                        finalPhoto = existingPhoto
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to load existing firestore profile: ${e.message}")
+            }
+
+            // Store user in Firestore under /users/{user.uid} with preserved custom photo and name
             try {
                 val userDoc = hashMapOf<String, Any>(
                     "uid" to user.uid,
-                    "name" to resolvedName,
+                    "name" to finalName,
                     "email" to resolvedEmail,
-                    "photoUrl" to resolvedPhoto,
-                    "profilePhotoBase64" to resolvedPhoto,
+                    "googlePhotoUrl" to resolvedPhoto,
+                    "profilePhotoBase64" to finalPhoto,
                     "provider" to "google",
                     "updatedAt" to System.currentTimeMillis()
                 )
@@ -193,10 +214,10 @@ class AuthManager(
             val authUser = AuthUser(
                 uid = user.uid,
                 email = resolvedEmail,
-                displayName = resolvedName,
-                profilePhotoBase64 = resolvedPhoto
+                displayName = finalName,
+                profilePhotoBase64 = finalPhoto
             )
-            preferencesDataStore.setLoggedInUser(authUser.uid, authUser.displayName, authUser.email, resolvedPhoto)
+            preferencesDataStore.setLoggedInUser(authUser.uid, authUser.displayName, authUser.email, finalPhoto)
             return Result.success(authUser)
         } catch (e: Exception) {
             Log.e(TAG, "Google sign-in error", e)
@@ -206,15 +227,22 @@ class AuthManager(
     }
 
     suspend fun updateProfilePhoto(base64Photo: String): Result<Unit> {
-        val user = firebaseAuth?.currentUser ?: return Result.failure(IllegalStateException("User not logged in"))
+        val currentUid = firebaseAuth?.currentUser?.uid?.takeIf { it.isNotBlank() }
+        val uid = currentUid ?: preferencesDataStore.preferencesFlow.first().userUid.takeIf { it.isNotBlank() }
+            ?: return Result.failure(IllegalStateException("User not logged in"))
         try {
-            firestore?.collection("users")?.document(user.uid)?.set(
-                mapOf("profilePhotoBase64" to base64Photo),
+            firestore?.collection("users")?.document(uid)?.set(
+                mapOf(
+                    "profilePhotoBase64" to base64Photo,
+                    "updatedAt" to System.currentTimeMillis()
+                ),
                 SetOptions.merge()
             )?.await()
+            Log.d(TAG, "Profile photo updated in Firestore for user $uid")
             preferencesDataStore.setProfilePhoto(base64Photo)
             return Result.success(Unit)
         } catch (e: Exception) {
+            Log.e(TAG, "Firestore updateProfilePhoto error: ${e.message}")
             // Even if offline/transient failure, save locally
             preferencesDataStore.setProfilePhoto(base64Photo)
             return Result.success(Unit)
@@ -226,19 +254,28 @@ class AuthManager(
         if (trimmed.isEmpty()) {
             return Result.failure(IllegalArgumentException("Name cannot be empty"))
         }
-        val user = firebaseAuth?.currentUser ?: return Result.failure(IllegalStateException("User not logged in"))
+        val user = firebaseAuth?.currentUser
+        val currentUid = user?.uid?.takeIf { it.isNotBlank() }
+        val uid = currentUid ?: preferencesDataStore.preferencesFlow.first().userUid.takeIf { it.isNotBlank() }
+            ?: return Result.failure(IllegalStateException("User not logged in"))
         try {
-            val profileUpdate = UserProfileChangeRequest.Builder()
-                .setDisplayName(trimmed)
-                .build()
-            user.updateProfile(profileUpdate).await()
-            firestore?.collection("users")?.document(user.uid)?.set(
-                mapOf("name" to trimmed),
+            if (user != null) {
+                val profileUpdate = UserProfileChangeRequest.Builder()
+                    .setDisplayName(trimmed)
+                    .build()
+                user.updateProfile(profileUpdate).await()
+            }
+            firestore?.collection("users")?.document(uid)?.set(
+                mapOf(
+                    "name" to trimmed,
+                    "updatedAt" to System.currentTimeMillis()
+                ),
                 SetOptions.merge()
             )?.await()
             preferencesDataStore.setUserName(trimmed)
             return Result.success(Unit)
         } catch (e: Exception) {
+            Log.e(TAG, "Firestore updateDisplayName error: ${e.message}")
             preferencesDataStore.setUserName(trimmed)
             return Result.success(Unit)
         }

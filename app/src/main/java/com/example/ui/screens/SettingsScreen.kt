@@ -96,6 +96,7 @@ import com.example.ui.theme.IndigoPrimary
 import com.example.ui.viewmodel.FinanceViewModel
 import com.example.utils.CurrencyFormatter
 import com.example.utils.ExportUtils
+import com.example.utils.NotificationHelper
 import com.example.utils.NotificationUtils
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -489,31 +490,6 @@ fun SettingsScreen(
                                     .padding(top = 2.dp)
                             )
                         }
-
-                        OutlinedButton(
-                            onClick = {
-                                showLogoutConfirmDialog = true
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                            modifier = Modifier.testTag("settings_logout_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Logout,
-                                contentDescription = "Sign Out",
-                                tint = FinanceError,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Sign Out",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = FinanceError,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
                     }
                 }
             }
@@ -716,11 +692,12 @@ fun SettingsScreen(
                             if (enabled) {
                                 checkAndRequestNotificationPermission {
                                     viewModel.setNotificationSetting("DAILY", true)
-                                    NotificationUtils.showTestNotification(context)
-                                    topToastState.show("Daily Reminder activated & test sent!", ToastType.SUCCESS)
+                                    NotificationHelper.scheduleDailyEveningReminder(context)
+                                    topToastState.show("Daily 9:00 PM reminder active & scheduled!", ToastType.SUCCESS)
                                 }
                             } else {
                                 viewModel.setNotificationSetting("DAILY", false)
+                                NotificationHelper.cancelDailyEveningReminder(context)
                                 topToastState.show("Daily Reminder disabled", ToastType.INFO)
                             }
                         }
@@ -738,7 +715,7 @@ fun SettingsScreen(
                                 }
                             } else {
                                 viewModel.setNotificationSetting("BUDGET", false)
-                                topToastState.show("Budget Overspending Alert disabled", ToastType.SUCCESS)
+                                topToastState.show("Budget Overspending Alert disabled", ToastType.INFO)
                             }
                         }
                     )
@@ -746,7 +723,50 @@ fun SettingsScreen(
             }
         }
 
-        // Removed About Section as requested
+        // 7. Sign Out Section (Moved to the bottom as requested)
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                border = if (isSystemInDarkTheme()) BorderStroke(1.dp, FinanceError.copy(alpha = 0.35f)) else BorderStroke(1.dp, FinanceError.copy(alpha = 0.2f))
+            ) {
+                Button(
+                    onClick = { showLogoutConfirmDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .height(50.dp)
+                        .testTag("settings_logout_button"),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = FinanceError.copy(alpha = 0.12f),
+                        contentColor = FinanceError
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = "Sign Out",
+                            tint = FinanceError,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Sign Out",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FinanceError
+                        )
+                    }
+                }
+            }
+        }
     }
 
     TopToastHost(

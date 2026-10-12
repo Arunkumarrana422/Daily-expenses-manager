@@ -23,7 +23,8 @@ class FinanceViewModelFactory(private val context: Context) : ViewModelProvider.
                 database.expenseDao(),
                 database.incomeDao(),
                 database.accountDao(),
-                database.budgetDao()
+                database.budgetDao(),
+                preferencesDataStore
             )
             val authManager = com.example.data.auth.AuthManager(
                 context.applicationContext,

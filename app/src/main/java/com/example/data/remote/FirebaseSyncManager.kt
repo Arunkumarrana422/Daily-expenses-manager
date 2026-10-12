@@ -33,7 +33,8 @@ class FirebaseSyncManager(
     private val expenseDao: ExpenseDao,
     private val incomeDao: IncomeDao,
     private val accountDao: AccountDao,
-    private val budgetDao: BudgetDao
+    private val budgetDao: BudgetDao,
+    private val preferencesDataStore: com.example.data.local.preferences.UserPreferencesDataStore? = null
 ) {
     private val TAG = "FirebaseSyncManager"
 
@@ -259,6 +260,23 @@ class FirebaseSyncManager(
         val fs = firestore ?: return@withContext false
 
         try {
+            // 0. Fetch user profile from Firestore to keep local profile photo and name restored
+            try {
+                val userDoc = fs.collection("users").document(userId).get().await()
+                if (userDoc != null && userDoc.exists()) {
+                    val name = userDoc.getString("name")
+                    val photo = userDoc.getString("profilePhotoBase64")
+                    if (!photo.isNullOrBlank()) {
+                        preferencesDataStore?.setProfilePhoto(photo)
+                    }
+                    if (!name.isNullOrBlank()) {
+                        preferencesDataStore?.setUserName(name)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "fetchFromFirebase profile sync error: ${e.message}")
+            }
+
             // 1. Fetch expenses
             val expSnapshot = fs.collection("users").document(userId)
                 .collection("expenses").get().await()

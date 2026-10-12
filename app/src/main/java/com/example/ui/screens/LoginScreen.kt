@@ -57,8 +57,10 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.CustomCredential
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.compose.ui.graphics.drawscope.Stroke
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
@@ -386,16 +388,29 @@ fun LoginScreen(
                                     } catch (e: Exception) {
                                         "255738614645-j1reg4tppdfs3h61thoi6i4vf8kd9sjr.apps.googleusercontent.com"
                                     }
-                                    val googleIdOption = GetGoogleIdOption.Builder()
-                                        .setServerClientId(serverClientId)
-                                        .setFilterByAuthorizedAccounts(false)
+
+                                    // Use GetSignInWithGoogleOption for interactive sign-in
+                                    val signInOption = GetSignInWithGoogleOption.Builder(serverClientId = serverClientId)
                                         .build()
 
                                     val request = GetCredentialRequest.Builder()
-                                        .addCredentialOption(googleIdOption)
+                                        .addCredentialOption(signInOption)
                                         .build()
 
-                                    val result = credentialManager.getCredential(context, request)
+                                    val result = try {
+                                        credentialManager.getCredential(context, request)
+                                    } catch (e: NoCredentialException) {
+                                        // Fallback to GetGoogleIdOption
+                                        val googleIdOption = GetGoogleIdOption.Builder()
+                                            .setServerClientId(serverClientId)
+                                            .setFilterByAuthorizedAccounts(false)
+                                            .build()
+                                        val fallbackRequest = GetCredentialRequest.Builder()
+                                            .addCredentialOption(googleIdOption)
+                                            .build()
+                                        credentialManager.getCredential(context, fallbackRequest)
+                                    }
+
                                     val credential = result.credential
                                     if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                                         val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
@@ -418,10 +433,13 @@ fun LoginScreen(
                                     }
                                 } catch (e: GetCredentialCancellationException) {
                                     isGoogleLoading = false
+                                } catch (e: NoCredentialException) {
+                                    isGoogleLoading = false
+                                    // Suppress raw technical toast "No credentials available" as requested
                                 } catch (e: Exception) {
                                     isGoogleLoading = false
                                     val msg = e.localizedMessage ?: ""
-                                    if (!msg.contains("cancel", ignoreCase = true)) {
+                                    if (!msg.contains("cancel", ignoreCase = true) && !msg.contains("credential", ignoreCase = true)) {
                                         Toast.makeText(context, "Google Sign-In: $msg", Toast.LENGTH_SHORT).show()
                                     }
                                 }

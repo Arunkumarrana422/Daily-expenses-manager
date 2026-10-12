@@ -87,13 +87,14 @@ fun ProfileAvatar(
     onClick: (() -> Unit)? = null
 ) {
     val isUrl = remember(profilePhotoBase64) {
-        profilePhotoBase64?.startsWith("http://") == true || profilePhotoBase64?.startsWith("https://") == true
+        val trimmed = profilePhotoBase64?.trim()
+        trimmed?.startsWith("http://") == true || trimmed?.startsWith("https://") == true
     }
 
     val bitmap = remember(profilePhotoBase64, isUrl) {
         if (!isUrl && !profilePhotoBase64.isNullOrBlank()) {
             try {
-                val bytes = Base64.decode(profilePhotoBase64, Base64.DEFAULT)
+                val bytes = Base64.decode(profilePhotoBase64.trim(), Base64.DEFAULT)
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
             } catch (e: Exception) {
                 null

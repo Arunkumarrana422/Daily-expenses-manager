@@ -136,6 +136,11 @@ class FinanceViewModel(
         // Trigger cloud sync to load all data from Firebase on startup
         viewModelScope.launch {
             repository.syncWithCloud()
+            repository.userPreferences.collect { prefs ->
+                if (prefs.dailyReminderEnabled) {
+                    NotificationHelper.scheduleDailyEveningReminder(context)
+                }
+            }
         }
     }
 
@@ -360,21 +365,70 @@ class FinanceViewModel(
 
             val prefs = userPreferences.value
             if (prefs.budgetWarningEnabled) {
-                val currentBudgets = budgets.value
-                val categoryBudget = currentBudgets.find { it.categoryName.equals(categoryName, ignoreCase = true) }
-                if (categoryBudget != null) {
-                    val currentMonthExpenses = expenses.value.filter { it.categoryName.equals(categoryName, ignoreCase = true) && DateTimeUtils.isDateInCurrentMonth(it.date) }
-                    val totalCategorySpent = currentMonthExpenses.sumOf { it.amount }
-                    val thresholdAmount = categoryBudget.amount * categoryBudget.warningThreshold
-                    if (totalCategorySpent >= thresholdAmount) {
-                        NotificationHelper.showNotification(
-                            context,
-                            "Budget Overspending Alert!",
-                            "Warning: ${categoryName} spent $totalCategorySpent / limit ${categoryBudget.amount}!"
-                        )
-                        _snackbarMessage.emit("Warning: Budget threshold reached for $categoryName!")
-                    }
+                checkBudgetAndNotify(categoryName, amount)
+            }
+        }
+    }
+
+    private fun checkBudgetAndNotify(categoryName: String, addedAmount: Double) {
+        val currentBudgets = budgets.value
+        if (currentBudgets.isEmpty()) return
+
+        // 1. Specific Category Budget
+        val categoryBudget = currentBudgets.find { it.categoryName.equals(categoryName, ignoreCase = true) }
+        if (categoryBudget != null) {
+            val pastExpenses = expenses.value.filter {
+                it.categoryName.equals(categoryName, ignoreCase = true) && DateTimeUtils.isDateInCurrentMonth(it.date)
+            }.sumOf { it.amount }
+            val totalSpent = pastExpenses + addedAmount
+            val warningLimit = categoryBudget.amount * categoryBudget.warningThreshold
+
+            if (totalSpent >= categoryBudget.amount) {
+                NotificationHelper.showNotification(
+                    context,
+                    "🚨 Budget Exceeded Alert!",
+                    "You exceeded your $categoryName budget! Spent: ₹${totalSpent.toInt()} / Limit: ₹${categoryBudget.amount.toInt()}"
+                )
+                viewModelScope.launch {
+                    _snackbarMessage.emit("Alert: $categoryName budget limit exceeded!")
                 }
+            } else if (totalSpent >= warningLimit) {
+                val pct = (categoryBudget.warningThreshold * 100).toInt()
+                NotificationHelper.showNotification(
+                    context,
+                    "⚠️ Budget Overspending Alert",
+                    "You have reached ${pct}% of your $categoryName budget! Spent: ₹${totalSpent.toInt()} / Limit: ₹${categoryBudget.amount.toInt()}"
+                )
+                viewModelScope.launch {
+                    _snackbarMessage.emit("Warning: Reached ${pct}% of $categoryName budget!")
+                }
+            }
+        }
+
+        // 2. Overall Monthly Budget (categoryName == "All" or "Overall")
+        val overallBudget = currentBudgets.find {
+            it.categoryName.equals("All", ignoreCase = true) || it.categoryName.equals("Overall", ignoreCase = true)
+        }
+        if (overallBudget != null) {
+            val pastOverall = expenses.value.filter {
+                DateTimeUtils.isDateInCurrentMonth(it.date)
+            }.sumOf { it.amount }
+            val totalOverall = pastOverall + addedAmount
+            val warningLimit = overallBudget.amount * overallBudget.warningThreshold
+
+            if (totalOverall >= overallBudget.amount) {
+                NotificationHelper.showNotification(
+                    context,
+                    "🚨 Overall Budget Exceeded!",
+                    "You have exceeded your overall monthly budget limit of ₹${overallBudget.amount.toInt()}!"
+                )
+            } else if (totalOverall >= warningLimit) {
+                val pct = (overallBudget.warningThreshold * 100).toInt()
+                NotificationHelper.showNotification(
+                    context,
+                    "⚠️ Overall Budget Warning",
+                    "You have reached ${pct}% of your monthly overall budget (₹${totalOverall.toInt()} / ₹${overallBudget.amount.toInt()})."
+                )
             }
         }
     }
@@ -678,7 +732,14 @@ class FinanceViewModel(
     fun setNotificationSetting(type: String, enabled: Boolean) {
         viewModelScope.launch {
             when (type) {
-                "DAILY" -> repository.setDailyReminder(enabled)
+                "DAILY" -> {
+                    repository.setDailyReminder(enabled)
+                    if (enabled) {
+                        NotificationHelper.scheduleDailyEveningReminder(context)
+                    } else {
+                        NotificationHelper.cancelDailyEveningReminder(context)
+                    }
+                }
                 "BUDGET" -> repository.setBudgetWarning(enabled)
                 "RECURRING" -> repository.setRecurringAlert(enabled)
                 "MONTHLY" -> repository.setMonthlySummary(enabled)
