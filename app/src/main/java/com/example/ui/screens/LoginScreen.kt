@@ -58,6 +58,7 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.CustomCredential
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.compose.ui.graphics.drawscope.Stroke
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
@@ -105,8 +106,8 @@ fun LoginScreen(
         onLogin = { email, password, callback ->
             viewModel.login(email, password, callback)
         },
-        onGoogleLogin = { email, name, photoUrl, callback ->
-            viewModel.googleLogin(email, name, photoUrl, callback)
+        onGoogleLogin = { idToken, email, name, photoUrl, callback ->
+            viewModel.googleLoginWithToken(idToken, email, name, photoUrl, callback)
         },
         modifier = modifier
     )
@@ -118,7 +119,7 @@ fun LoginScreen(
     onNavigateToRegister: () -> Unit,
     onNavigateToForgotPassword: () -> Unit,
     onLogin: (String, String, (Boolean, String?) -> Unit) -> Unit,
-    onGoogleLogin: (String, String, String, (Boolean, String?) -> Unit) -> Unit = { email, name, photoUrl, cb -> onLogin(email, "google", cb) },
+    onGoogleLogin: (String, String, String, String, (Boolean, String?) -> Unit) -> Unit = { _, email, _, _, cb -> onLogin(email, "google", cb) },
     modifier: Modifier = Modifier
 ) {
     var email by remember { mutableStateOf("") }
@@ -380,8 +381,13 @@ fun LoginScreen(
                             coroutineScope.launch {
                                 try {
                                     val credentialManager = CredentialManager.create(context)
+                                    val serverClientId = try {
+                                        context.getString(R.string.default_web_client_id)
+                                    } catch (e: Exception) {
+                                        "255738614645-j1reg4tppdfs3h61thoi6i4vf8kd9sjr.apps.googleusercontent.com"
+                                    }
                                     val googleIdOption = GetGoogleIdOption.Builder()
-                                        .setServerClientId("255738614645-j1reg4tppdfs3h61thoi6i4vf8kd9sjr.apps.googleusercontent.com")
+                                        .setServerClientId(serverClientId)
                                         .setFilterByAuthorizedAccounts(false)
                                         .build()
 
@@ -390,26 +396,34 @@ fun LoginScreen(
                                         .build()
 
                                     val result = credentialManager.getCredential(context, request)
-                                    isGoogleLoading = false
                                     val credential = result.credential
                                     if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                                         val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                                        val idToken = googleIdTokenCredential.idToken
                                         val email = googleIdTokenCredential.id
                                         val displayName = googleIdTokenCredential.displayName ?: email.substringBefore("@")
                                         val photoUrl = googleIdTokenCredential.profilePictureUri?.toString() ?: ""
                                         
-                                        isGoogleLoading = true
-                                        onGoogleLogin(email, displayName, photoUrl) { _, _ ->
+                                        onGoogleLogin(idToken, email, displayName, photoUrl) { success, error ->
                                             isGoogleLoading = false
-                                            onLoginSuccess()
+                                            if (success) {
+                                                onLoginSuccess()
+                                            } else {
+                                                Toast.makeText(context, error ?: "Google Sign-In failed", Toast.LENGTH_SHORT).show()
+                                            }
                                         }
                                     } else {
                                         isGoogleLoading = false
                                         Toast.makeText(context, "Google Sign-In unavailable", Toast.LENGTH_SHORT).show()
                                     }
+                                } catch (e: GetCredentialCancellationException) {
+                                    isGoogleLoading = false
                                 } catch (e: Exception) {
                                     isGoogleLoading = false
-                                    Toast.makeText(context, "Google Sign-In cancelled", Toast.LENGTH_SHORT).show()
+                                    val msg = e.localizedMessage ?: ""
+                                    if (!msg.contains("cancel", ignoreCase = true)) {
+                                        Toast.makeText(context, "Google Sign-In: $msg", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             }
                         },

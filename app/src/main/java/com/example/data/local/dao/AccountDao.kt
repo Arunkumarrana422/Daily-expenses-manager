@@ -32,6 +32,9 @@ interface AccountDao {
     @Query("SELECT COUNT(*) FROM accounts")
     suspend fun count(): Int
 
+    @Query("SELECT * FROM accounts ORDER BY id ASC")
+    suspend fun getAllAccountsList(): List<AccountEntity>
+
     @Query("DELETE FROM accounts")
     suspend fun deleteAllAccounts()
 }

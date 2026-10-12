@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.example.data.local.preferences.UserPreferencesDataStore
 import com.google.firebase.auth.EmailAuthProvider
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
@@ -154,6 +155,53 @@ class AuthManager(
                 else -> "Incorrect email & password"
             }
             return Result.failure(Exception(message))
+        }
+    }
+
+    suspend fun signInWithGoogle(
+        idToken: String,
+        displayName: String,
+        email: String,
+        photoUrl: String
+    ): Result<AuthUser> {
+        try {
+            val auth = firebaseAuth ?: return Result.failure(IllegalStateException("Firebase Auth service unavailable. Please check your internet connection."))
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val authResult = auth.signInWithCredential(credential).await()
+            val user = authResult.user ?: return Result.failure(IllegalStateException("Failed to sign in with Google"))
+
+            val resolvedEmail = user.email ?: email
+            val resolvedName = user.displayName ?: displayName.ifEmpty { resolvedEmail.substringBefore("@") }
+            val resolvedPhoto = user.photoUrl?.toString() ?: photoUrl
+
+            // Store user in Firestore under /users/{user.uid}
+            try {
+                val userDoc = hashMapOf<String, Any>(
+                    "uid" to user.uid,
+                    "name" to resolvedName,
+                    "email" to resolvedEmail,
+                    "photoUrl" to resolvedPhoto,
+                    "profilePhotoBase64" to resolvedPhoto,
+                    "provider" to "google",
+                    "updatedAt" to System.currentTimeMillis()
+                )
+                firestore?.collection("users")?.document(user.uid)?.set(userDoc, SetOptions.merge())?.await()
+            } catch (e: Exception) {
+                Log.w(TAG, "Firestore user document save error: ${e.message}")
+            }
+
+            val authUser = AuthUser(
+                uid = user.uid,
+                email = resolvedEmail,
+                displayName = resolvedName,
+                profilePhotoBase64 = resolvedPhoto
+            )
+            preferencesDataStore.setLoggedInUser(authUser.uid, authUser.displayName, authUser.email, resolvedPhoto)
+            return Result.success(authUser)
+        } catch (e: Exception) {
+            Log.e(TAG, "Google sign-in error", e)
+            val msg = e.localizedMessage ?: "Google Sign-In failed"
+            return Result.failure(Exception(msg))
         }
     }
 

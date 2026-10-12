@@ -26,6 +26,9 @@ interface BudgetDao {
     @Query("DELETE FROM budgets WHERE id = :id")
     suspend fun deleteBudgetById(id: Long)
 
+    @Query("SELECT * FROM budgets ORDER BY id ASC")
+    suspend fun getAllBudgetsList(): List<BudgetEntity>
+
     @Query("DELETE FROM budgets")
     suspend fun deleteAllBudgets()
 }

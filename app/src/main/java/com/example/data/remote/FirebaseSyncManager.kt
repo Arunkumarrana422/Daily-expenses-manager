@@ -212,6 +212,46 @@ class FirebaseSyncManager(
     }
 
     /**
+     * Delete an account from Firestore
+     */
+    suspend fun deleteAccount(userId: String, id: Long) = withContext(Dispatchers.IO) {
+        try {
+            val fs = firestore ?: return@withContext
+            fs.collection("users").document(userId)
+                .collection("accounts").document(id.toString())
+                .delete().await()
+        } catch (e: Exception) {
+            Log.w(TAG, "deleteAccount error: ${e.message}")
+        }
+    }
+
+    /**
+     * Upload all local data in Room to Firestore for this user
+     */
+    suspend fun uploadAllLocalDataToFirestore(userId: String) = withContext(Dispatchers.IO) {
+        try {
+            val exps = expenseDao.getAllExpensesList()
+            for (exp in exps) {
+                uploadExpense(userId, exp.copy(userId = userId))
+            }
+            val incs = incomeDao.getAllIncomesList()
+            for (inc in incs) {
+                uploadIncome(userId, inc.copy(userId = userId))
+            }
+            val accs = accountDao.getAllAccountsList()
+            for (acc in accs) {
+                uploadAccount(userId, acc.copy(userId = userId))
+            }
+            val bgs = budgetDao.getAllBudgetsList()
+            for (bg in bgs) {
+                uploadBudget(userId, bg.copy(userId = userId))
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "uploadAllLocalDataToFirestore error: ${e.message}")
+        }
+    }
+
+    /**
      * Fetch all user data from Firebase and sync to local Room database
      */
     suspend fun fetchFromFirebase(userId: String): Boolean = withContext(Dispatchers.IO) {

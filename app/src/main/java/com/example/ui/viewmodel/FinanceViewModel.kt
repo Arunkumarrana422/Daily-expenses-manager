@@ -569,6 +569,25 @@ class FinanceViewModel(
         }
     }
 
+    fun googleLoginWithToken(
+        idToken: String,
+        email: String,
+        displayName: String,
+        photoUrl: String = "",
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = repository.signInWithGoogle(idToken, displayName, email, photoUrl)
+            result.onSuccess { user ->
+                _snackbarMessage.emit("Welcome, ${user.displayName}!")
+                onResult(true, null)
+            }.onFailure { err ->
+                _snackbarMessage.emit("Google Sign-In failed: ${err.message}")
+                onResult(false, err.message ?: "Google Sign-In failed")
+            }
+        }
+    }
+
     fun googleLogin(email: String, displayName: String, photoUrl: String = "", onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             try {

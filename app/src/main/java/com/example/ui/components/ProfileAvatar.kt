@@ -28,6 +28,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -83,8 +86,12 @@ fun ProfileAvatar(
     showEditBadge: Boolean = false,
     onClick: (() -> Unit)? = null
 ) {
-    val bitmap = remember(profilePhotoBase64) {
-        if (!profilePhotoBase64.isNullOrBlank()) {
+    val isUrl = remember(profilePhotoBase64) {
+        profilePhotoBase64?.startsWith("http://") == true || profilePhotoBase64?.startsWith("https://") == true
+    }
+
+    val bitmap = remember(profilePhotoBase64, isUrl) {
+        if (!isUrl && !profilePhotoBase64.isNullOrBlank()) {
             try {
                 val bytes = Base64.decode(profilePhotoBase64, Base64.DEFAULT)
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
@@ -110,7 +117,19 @@ fun ProfileAvatar(
             ),
         contentAlignment = Alignment.Center
     ) {
-        if (bitmap != null) {
+        if (isUrl && !profilePhotoBase64.isNullOrBlank()) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(profilePhotoBase64)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Profile Photo",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+            )
+        } else if (bitmap != null) {
             Image(
                 bitmap = bitmap,
                 contentDescription = "Profile Photo",

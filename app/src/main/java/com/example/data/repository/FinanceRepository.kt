@@ -179,7 +179,13 @@ class FinanceRepository(
         }
     }
 
-    suspend fun deleteAccount(account: AccountEntity) = accountDao.deleteAccount(account)
+    suspend fun deleteAccount(account: AccountEntity) {
+        accountDao.deleteAccount(account)
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null) {
+            syncManager.deleteAccount(currentUserId, account.id)
+        }
+    }
 
     suspend fun transferBetweenAccounts(fromId: Long, toId: Long, amount: Double) {
         accountDao.adjustBalance(fromId, -amount)
@@ -209,6 +215,19 @@ class FinanceRepository(
     suspend fun setLoggedInUser(uid: String, name: String, email: String, profilePhoto: String = "") = preferencesDataStore.setLoggedInUser(uid, name, email, profilePhoto)
 
     // Auth
+    suspend fun signInWithGoogle(idToken: String, displayName: String, email: String, photoUrl: String): Result<AuthUser> {
+        val result = authManager.signInWithGoogle(idToken, displayName, email, photoUrl)
+        result.onSuccess { user ->
+            // Upload all local user data to Firestore
+            syncManager.uploadAllLocalDataToFirestore(user.uid)
+            // Fetch any existing cloud data
+            syncManager.fetchFromFirebase(user.uid)
+            // Synchronize status
+            syncManager.triggerSync()
+        }
+        return result
+    }
+
     suspend fun login(email: String, pass: String): Result<AuthUser> {
         val result = authManager.login(email, pass)
         result.onSuccess { user ->

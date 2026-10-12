@@ -38,6 +38,9 @@ interface ExpenseDao {
     @Query("UPDATE expenses SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
     suspend fun markSynced(ids: List<Long>)
 
+    @Query("SELECT * FROM expenses")
+    suspend fun getAllExpensesList(): List<ExpenseEntity>
+
     @Query("DELETE FROM expenses")
     suspend fun deleteAllExpenses()
 }
