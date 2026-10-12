@@ -156,23 +156,26 @@ class FirebaseSyncManager(
     }
 
     /**
-     * Upload an account to Firestore
+     * Upload an account to Firestore (Disabled: accounts are kept local only and not synced as a collection to Firestore)
      */
     suspend fun uploadAccount(userId: String, account: AccountEntity) = withContext(Dispatchers.IO) {
+        // Accounts are kept purely local in Room DB and not stored in Firestore
+        return@withContext
+    }
+
+    /**
+     * Clean up any residual accounts subcollection in Firestore for the user
+     */
+    suspend fun removeAccountsCollectionFromFirestore(userId: String) = withContext(Dispatchers.IO) {
         try {
             val fs = firestore ?: return@withContext
-            val data = hashMapOf(
-                "id" to account.id,
-                "name" to account.name,
-                "type" to account.type,
-                "balance" to account.balance,
-                "userId" to userId
-            )
-            fs.collection("users").document(userId)
-                .collection("accounts").document(account.id.toString())
-                .set(data).await()
+            val accSnapshot = fs.collection("users").document(userId)
+                .collection("accounts").get().await()
+            for (doc in accSnapshot.documents) {
+                doc.reference.delete().await()
+            }
         } catch (e: Exception) {
-            Log.w(TAG, "uploadAccount error: ${e.message}")
+            Log.w(TAG, "removeAccountsCollectionFromFirestore error: ${e.message}")
         }
     }
 
@@ -239,12 +242,9 @@ class FirebaseSyncManager(
             for (inc in incs) {
                 uploadIncome(userId, inc.copy(userId = userId))
             }
-            val accs = accountDao.getAllAccountsList()
-            for (acc in accs) {
-                if (!(acc.name.equals("Cash", ignoreCase = true) && acc.balance == 0.0)) {
-                    uploadAccount(userId, acc.copy(userId = userId))
-                }
-            }
+            // Ensure no accounts collection exists in Firestore
+            removeAccountsCollectionFromFirestore(userId)
+
             val bgs = budgetDao.getAllBudgetsList()
             for (bg in bgs) {
                 uploadBudget(userId, bg.copy(userId = userId))
@@ -262,6 +262,9 @@ class FirebaseSyncManager(
         val fs = firestore ?: return@withContext false
 
         try {
+            // Clean up any accounts collection if it exists in Firestore
+            removeAccountsCollectionFromFirestore(userId)
+
             // 0. Fetch user profile from Firestore to keep local profile photo and name restored
             try {
                 val userDoc = fs.collection("users").document(userId).get().await()
@@ -357,34 +360,7 @@ class FirebaseSyncManager(
                 incomeDao.insertIncome(inc)
             }
 
-            // 3. Fetch accounts
-            val accSnapshot = fs.collection("users").document(userId)
-                .collection("accounts").get().await()
-
-            val fetchedAccounts = accSnapshot.documents.mapNotNull { doc ->
-                try {
-                    val name = doc.getString("name") ?: return@mapNotNull null
-                    val type = doc.getString("type") ?: "Cash"
-                    val balance = doc.getDouble("balance") ?: 0.0
-                    val id = doc.id.toLongOrNull() ?: 0L
-
-                    AccountEntity(
-                        id = id,
-                        userId = userId,
-                        name = name,
-                        type = type,
-                        balance = balance
-                    )
-                } catch (e: Exception) {
-                    null
-                }
-            }
-
-            if (fetchedAccounts.isNotEmpty()) {
-                accountDao.insertAccounts(fetchedAccounts)
-            }
-
-            // 4. Fetch budgets
+            // 3. Fetch budgets
             val bgSnapshot = fs.collection("users").document(userId)
                 .collection("budgets").get().await()
 
