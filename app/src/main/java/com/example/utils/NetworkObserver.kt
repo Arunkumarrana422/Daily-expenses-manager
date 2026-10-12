@@ -8,12 +8,9 @@ import android.net.NetworkRequest
 import android.os.Build
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 
 class NetworkObserver(private val context: Context) {
 
@@ -30,37 +27,22 @@ class NetworkObserver(private val context: Context) {
         if (cm != null) {
             val networkCallback = object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
-                    _isOnline.value = true
+                    _isOnline.value = checkConnection()
                 }
 
                 override fun onLost(network: Network) {
-                    // Do not instantly mark offline on backgrounding; verify active connection
-                    scope.launch(Dispatchers.IO) {
-                        delay(400)
-                        _isOnline.value = checkConnection()
-                    }
+                    _isOnline.value = checkConnection()
                 }
 
                 override fun onUnavailable() {
-                    scope.launch(Dispatchers.IO) {
-                        delay(400)
-                        _isOnline.value = checkConnection()
-                    }
+                    _isOnline.value = false
                 }
 
                 override fun onCapabilitiesChanged(
                     network: Network,
                     networkCapabilities: NetworkCapabilities
                 ) {
-                    val hasInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    if (hasInternet) {
-                        _isOnline.value = true
-                    } else {
-                        scope.launch(Dispatchers.IO) {
-                            delay(400)
-                            _isOnline.value = checkConnection()
-                        }
-                    }
+                    _isOnline.value = checkConnection()
                 }
             }
 
@@ -77,34 +59,19 @@ class NetworkObserver(private val context: Context) {
                 _isOnline.value = checkConnection()
             }
         }
-
-        // Active background poller to ensure continuous sync and accurate state
-        scope.launch(Dispatchers.IO) {
-            while (isActive) {
-                delay(2000)
-                val currentStatus = checkConnection()
-                if (_isOnline.value != currentStatus) {
-                    _isOnline.value = currentStatus
-                }
-            }
-        }
     }
 
     fun checkConnection(): Boolean {
         return try {
-            val cm = connectivityManager ?: return false
+            val cm = connectivityManager ?: return true
             val activeNetwork = cm.activeNetwork ?: return false
             val caps = cm.getNetworkCapabilities(activeNetwork) ?: return false
-            val hasInternetCap = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            if (!hasInternetCap) return false
+            val hasInternet = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            val hasValidated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
 
-            // Verify actual internet packet reachability (fails if SIM has no active recharge / data pack or Wi-Fi has no internet)
-            val socket = java.net.Socket()
-            socket.connect(java.net.InetSocketAddress("8.8.8.8", 53), 1500)
-            socket.close()
-            true
+            hasInternet && (hasValidated || caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET))
         } catch (e: Exception) {
-            false
+            true
         }
     }
 
