@@ -603,6 +603,10 @@ class FinanceViewModel(
     }
 
     // Settings actions
+    fun setHasSeenIntro(seen: Boolean) {
+        viewModelScope.launch { repository.setHasSeenIntro(seen) }
+    }
+
     fun setCurrency(currency: String) {
         viewModelScope.launch { repository.setCurrency(currency) }
     }
@@ -650,6 +654,20 @@ class FinanceViewModel(
                 onResult(true, null)
             } catch (e: Exception) {
                 onResult(false, e.message ?: "Google Sign-In failed")
+            }
+        }
+    }
+
+    fun deleteAccount(onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.deleteUserAccount()
+            result.onSuccess {
+                _snackbarMessage.emit("Account deleted successfully")
+                onResult(true, null)
+            }.onFailure { err ->
+                val msg = err.message ?: "Failed to delete account"
+                _snackbarMessage.emit(msg)
+                onResult(false, msg)
             }
         }
     }

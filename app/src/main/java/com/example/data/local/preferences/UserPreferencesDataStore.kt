@@ -17,6 +17,7 @@ data class AppUserPreferences(
     val currency: String = "₹",
     val themeMode: String = "SYSTEM",
     val isLoggedIn: Boolean = false,
+    val hasSeenIntro: Boolean = false,
     val userUid: String = "",
     val dailyReminderEnabled: Boolean = false,
     val budgetWarningEnabled: Boolean = false,
@@ -33,6 +34,7 @@ class UserPreferencesDataStore(private val context: Context) {
     private val KEY_CURRENCY = stringPreferencesKey("currency")
     private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
     private val KEY_IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
+    private val KEY_HAS_SEEN_INTRO = booleanPreferencesKey("has_seen_intro")
     private val KEY_USER_UID = stringPreferencesKey("user_uid")
     private val KEY_DAILY_REMINDER = booleanPreferencesKey("daily_reminder")
     private val KEY_BUDGET_WARNING = booleanPreferencesKey("budget_warning")
@@ -48,6 +50,7 @@ class UserPreferencesDataStore(private val context: Context) {
             currency = prefs[KEY_CURRENCY] ?: "₹",
             themeMode = prefs[KEY_THEME_MODE] ?: "SYSTEM",
             isLoggedIn = prefs[KEY_IS_LOGGED_IN] ?: false,
+            hasSeenIntro = prefs[KEY_HAS_SEEN_INTRO] ?: false,
             userUid = prefs[KEY_USER_UID] ?: "",
             dailyReminderEnabled = prefs[KEY_DAILY_REMINDER] ?: false,
             budgetWarningEnabled = prefs[KEY_BUDGET_WARNING] ?: false,
@@ -100,6 +103,10 @@ class UserPreferencesDataStore(private val context: Context) {
             it[KEY_USER_EMAIL] = ""
             it[KEY_PROFILE_PHOTO] = ""
         }
+    }
+
+    suspend fun setHasSeenIntro(seen: Boolean) {
+        context.dataStore.edit { it[KEY_HAS_SEEN_INTRO] = seen }
     }
 
     suspend fun setDailyReminder(enabled: Boolean) {

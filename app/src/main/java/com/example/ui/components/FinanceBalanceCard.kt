@@ -51,8 +51,8 @@ fun FinanceBalanceCard(
         modifier = modifier
             .fillMaxWidth()
             .testTag("balance_card"),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(
             modifier = Modifier
@@ -62,7 +62,7 @@ fun FinanceBalanceCard(
                         colors = listOf(IndigoGradientStart, IndigoGradientEnd)
                     )
                 )
-                .padding(22.dp)
+                .padding(16.dp)
         ) {
             Column {
                 Row(
@@ -74,18 +74,18 @@ fun FinanceBalanceCard(
                         Surface(
                             shape = CircleShape,
                             color = Color.White.copy(alpha = 0.2f),
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AccountBalanceWallet,
                                 contentDescription = "Wallet",
                                 tint = Color.White,
                                 modifier = Modifier
-                                    .padding(8.dp)
-                                    .size(20.dp)
+                                    .padding(6.dp)
+                                    .size(18.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Total Balance",
                             style = MaterialTheme.typography.bodyMedium,
@@ -95,40 +95,40 @@ fun FinanceBalanceCard(
                     }
 
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(10.dp),
                         color = Color.White.copy(alpha = 0.18f)
                     ) {
                         Text(
                             text = "Active",
                             color = Color.White,
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
                     text = CurrencyFormatter.format(totalBalance, currencySymbol, showDecimals = false),
-                    fontSize = 34.sp,
+                    fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
                     letterSpacing = (-0.5).sp,
                     modifier = Modifier.testTag("total_balance_text")
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Income & Expense Breakdown Row with Glass Effect Border
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(Color.White.copy(alpha = 0.12f))
-                        .border(BorderStroke(1.5.dp, Color.White.copy(alpha = 0.35f)), RoundedCornerShape(16.dp))
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                        .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     // Income

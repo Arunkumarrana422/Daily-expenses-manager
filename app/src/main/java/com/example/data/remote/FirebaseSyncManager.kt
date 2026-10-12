@@ -241,7 +241,9 @@ class FirebaseSyncManager(
             }
             val accs = accountDao.getAllAccountsList()
             for (acc in accs) {
-                uploadAccount(userId, acc.copy(userId = userId))
+                if (!(acc.name.equals("Cash", ignoreCase = true) && acc.balance == 0.0)) {
+                    uploadAccount(userId, acc.copy(userId = userId))
+                }
             }
             val bgs = budgetDao.getAllBudgetsList()
             for (bg in bgs) {

@@ -71,6 +71,7 @@ import com.example.ui.navigation.Screen
 import com.example.ui.screens.AddTransactionScreen
 import com.example.ui.screens.ForgotPasswordScreen
 import com.example.ui.screens.HomeScreen
+import com.example.ui.screens.IntroScreen
 import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.NoInternetScreen
 import com.example.ui.screens.RegisterScreen
@@ -143,31 +144,23 @@ fun MainScreen(
         return
     }
 
-    // 1. Authentication Check (Login / Register / Forgot Password)
-    if (!prefs.isLoggedIn) {
+    // 0. Intro Screen for new customers
+    if (!prefs.hasSeenIntro) {
+        IntroScreen(
+            viewModel = viewModel,
+            onFinished = {
+                viewModel.setHasSeenIntro(true)
+            }
+        )
+        return
+    }
 
-        var authRoute by remember { mutableStateOf(Screen.Login.route) }
-        when (authRoute) {
-            Screen.Login.route -> {
-                LoginScreen(
-                    viewModel = viewModel,
-                    onNavigateToRegister = { authRoute = Screen.Register.route },
-                    onNavigateToForgotPassword = { authRoute = Screen.ForgotPassword.route }
-                )
-            }
-            Screen.Register.route -> {
-                RegisterScreen(
-                    viewModel = viewModel,
-                    onNavigateToLogin = { authRoute = Screen.Login.route }
-                )
-            }
-            Screen.ForgotPassword.route -> {
-                ForgotPasswordScreen(
-                    viewModel = viewModel,
-                    onNavigateBack = { authRoute = Screen.Login.route }
-                )
-            }
-        }
+    // 1. Authentication Check (Google Sign-In Only)
+    if (!prefs.isLoggedIn) {
+        LoginScreen(
+            viewModel = viewModel,
+            onLoginSuccess = {}
+        )
         return
     }
 

@@ -204,6 +204,7 @@ class FinanceRepository(
     suspend fun contributeToGoal(id: Long, amount: Double) = savingsGoalDao.addContribution(id, amount)
 
     // Settings
+    suspend fun setHasSeenIntro(seen: Boolean) = preferencesDataStore.setHasSeenIntro(seen)
     suspend fun setCurrency(currency: String) = preferencesDataStore.setCurrency(currency)
     suspend fun setThemeMode(mode: String) = preferencesDataStore.setThemeMode(mode)
     suspend fun setDailyReminder(enabled: Boolean) = preferencesDataStore.setDailyReminder(enabled)
@@ -259,6 +260,17 @@ class FinanceRepository(
     suspend fun updatePassword(currentPass: String, newPass: String): Result<Unit> = authManager.updatePassword(currentPass, newPass)
 
     suspend fun verifyPassword(password: String): Result<Unit> = authManager.verifyPassword(password)
+
+    suspend fun deleteUserAccount(): Result<Unit> {
+        val result = authManager.deleteAccount()
+        if (result.isSuccess) {
+            expenseDao.deleteAllExpenses()
+            incomeDao.deleteAllIncomes()
+            accountDao.deleteAllAccounts()
+            budgetDao.deleteAllBudgets()
+        }
+        return result
+    }
 
     suspend fun logout() {
         authManager.logout()

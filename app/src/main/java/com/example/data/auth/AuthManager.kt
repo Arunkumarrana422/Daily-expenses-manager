@@ -345,6 +345,35 @@ class AuthManager(
         }
     }
 
+    suspend fun deleteAccount(): Result<Unit> {
+        val user = firebaseAuth?.currentUser
+        val uid = user?.uid?.takeIf { it.isNotBlank() }
+            ?: preferencesDataStore.preferencesFlow.first().userUid.takeIf { it.isNotBlank() }
+            ?: return Result.failure(IllegalStateException("User not logged in"))
+
+        try {
+            val fs = firestore
+            if (uid.isNotBlank() && fs != null) {
+                val userRef = fs.collection("users").document(uid)
+                val subcollections = listOf("expenses", "incomes", "accounts", "budgets", "savings_goals", "recurring")
+                for (sub in subcollections) {
+                    val docs = userRef.collection(sub).get().await()
+                    for (doc in docs.documents) {
+                        doc.reference.delete().await()
+                    }
+                }
+                userRef.delete().await()
+            }
+
+            user?.delete()?.await()
+            preferencesDataStore.clearLoggedInUser()
+            return Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "deleteAccount error: ${e.message}")
+            return Result.failure(e)
+        }
+    }
+
     suspend fun logout() {
         try {
             firebaseAuth?.signOut()

@@ -83,12 +83,19 @@ object NotificationHelper {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
             if (timeInMillis <= System.currentTimeMillis()) {
-                add(Calendar.DAY_OF_YEAR, 1) // If 9:00 PM has already passed today, schedule for tomorrow
+                add(Calendar.DAY_OF_YEAR, 1)
             }
         }
 
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setInexactRepeating(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.timeInMillis,
+                    AlarmManager.INTERVAL_DAY,
+                    pendingIntent
+                )
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     calendar.timeInMillis,
@@ -103,10 +110,9 @@ object NotificationHelper {
                 )
             }
             Log.d("NotificationHelper", "Daily reminder scheduled for: ${calendar.time}")
-        } catch (e: SecurityException) {
-            // Fallback for devices restricting exact alarms
+        } catch (e: Exception) {
             try {
-                alarmManager.setAndAllowWhileIdle(
+                alarmManager.set(
                     AlarmManager.RTC_WAKEUP,
                     calendar.timeInMillis,
                     pendingIntent

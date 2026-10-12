@@ -112,7 +112,7 @@ private fun SummaryMiniCard(
         Card(
             onClick = onClick,
             modifier = modifier,
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
@@ -124,7 +124,7 @@ private fun SummaryMiniCard(
     } else {
         Card(
             modifier = modifier,
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
@@ -146,7 +146,7 @@ private fun CardContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(14.dp)
+            .padding(12.dp)
     ) {
         Text(
             text = label,

@@ -148,8 +148,9 @@ fun SettingsScreen(
     var showLogoutConfirmDialog by remember { mutableStateOf(false) }
     var showEditNameDialog by remember { mutableStateOf(false) }
     var newNameInput by remember { mutableStateOf("") }
-    var showUpdatePasswordDialog by remember { mutableStateOf(false) }
     var budgetToDelete by remember { mutableStateOf<BudgetEntity?>(null) }
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var deleteConfirmationInput by remember { mutableStateOf("") }
     var isUploadingPhoto by remember { mutableStateOf(false) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -271,127 +272,6 @@ fun SettingsScreen(
         )
     }
 
-    // Update Password Dialog
-    if (showUpdatePasswordDialog) {
-        var currentPassword by remember { mutableStateOf("") }
-        var newPassword by remember { mutableStateOf("") }
-        var confirmPassword by remember { mutableStateOf("") }
-        var showCurPass by remember { mutableStateOf(false) }
-        var showNewPass by remember { mutableStateOf(false) }
-        var passwordError by remember { mutableStateOf<String?>(null) }
-        var isUpdatingPassword by remember { mutableStateOf(false) }
-
-        AlertDialog(
-            onDismissRequest = { if (!isUpdatingPassword) showUpdatePasswordDialog = false },
-            title = {
-                Text("Update Password", fontWeight = FontWeight.Bold)
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    if (passwordError != null) {
-                        Text(
-                            text = passwordError!!,
-                            color = FinanceError,
-                            fontSize = 12.sp
-                        )
-                    }
-
-                    OutlinedTextField(
-                        value = currentPassword,
-                        onValueChange = {
-                            currentPassword = it
-                            passwordError = null
-                        },
-                        label = { Text("Current Password") },
-                        singleLine = true,
-                        visualTransformation = if (showCurPass) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { showCurPass = !showCurPass }) {
-                                Icon(
-                                    if (showCurPass) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                    contentDescription = "Toggle password"
-                                )
-                            }
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().testTag("current_password_input")
-                    )
-
-                    OutlinedTextField(
-                        value = newPassword,
-                        onValueChange = {
-                            newPassword = it
-                            passwordError = null
-                        },
-                        label = { Text("New Password (min 6 chars)") },
-                        singleLine = true,
-                        visualTransformation = if (showNewPass) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { showNewPass = !showNewPass }) {
-                                Icon(
-                                    if (showNewPass) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                    contentDescription = "Toggle password"
-                                )
-                            }
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().testTag("new_password_input")
-                    )
-
-                    OutlinedTextField(
-                        value = confirmPassword,
-                        onValueChange = {
-                            confirmPassword = it
-                            passwordError = null
-                        },
-                        label = { Text("Confirm New Password") },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().testTag("confirm_password_input")
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (newPassword.length < 6) {
-                            passwordError = "New password must be at least 6 characters"
-                            return@Button
-                        }
-                        if (newPassword != confirmPassword) {
-                            passwordError = "Passwords do not match"
-                            return@Button
-                        }
-                        isUpdatingPassword = true
-                        viewModel.updatePassword(currentPassword, newPassword) { success, err ->
-                            isUpdatingPassword = false
-                            if (success) {
-                                showUpdatePasswordDialog = false
-                                topToastState.show("Password updated successfully", ToastType.SUCCESS)
-                            } else {
-                                passwordError = err ?: "Failed to update password"
-                            }
-                        }
-                    },
-                    enabled = !isUpdatingPassword && newPassword.isNotBlank() && confirmPassword.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
-                    modifier = Modifier.testTag("submit_update_password_button")
-                ) {
-                    Text(if (isUpdatingPassword) "Updating..." else "Update")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showUpdatePasswordDialog = false },
-                    enabled = !isUpdatingPassword
-                ) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
 
 
     Box(
@@ -416,7 +296,7 @@ fun SettingsScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     border = if (isSystemInDarkTheme()) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)) else null
@@ -424,7 +304,7 @@ fun SettingsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(18.dp),
+                            .padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         ProfileAvatar(
@@ -498,19 +378,19 @@ fun SettingsScreen(
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 border = if (isSystemInDarkTheme()) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)) else null
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
+                Column(modifier = Modifier.padding(14.dp)) {
                     Text(
                         text = "General Preferences",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     // Currency Selector
                     Text("Currency Symbol", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -534,78 +414,25 @@ fun SettingsScreen(
             }
         }
 
-        // 3. App Security
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                border = if (isSystemInDarkTheme()) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)) else null
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Text(
-                        text = "Security & Privacy",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
 
-
-
-                    // Update Password Option
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable { showUpdatePasswordDialog = true }
-                            .padding(vertical = 4.dp)
-                            .testTag("update_password_row"),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Key,
-                                contentDescription = "Update Password",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text("Update Password", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                Text("Change your login password", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                            contentDescription = "Update",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-            }
-        }
 
         // 5. Budgets Management
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 border = if (isSystemInDarkTheme()) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)) else null
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
+                Column(modifier = Modifier.padding(14.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.PieChart, contentDescription = "Budgets", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.PieChart, contentDescription = "Budgets", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Budgets",
@@ -625,7 +452,7 @@ fun SettingsScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     if (budgets.isEmpty()) {
                         Text(
@@ -638,7 +465,7 @@ fun SettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
+                                    .padding(vertical = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -670,19 +497,19 @@ fun SettingsScreen(
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 border = if (isSystemInDarkTheme()) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)) else null
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
+                Column(modifier = Modifier.padding(14.dp)) {
                     Text(
                         text = "Notifications & Reminders",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     NotificationSettingRow(
                         title = "Daily Evening Reminder",
@@ -723,11 +550,11 @@ fun SettingsScreen(
             }
         }
 
-        // 7. Sign Out Section (Moved to the bottom as requested)
+        // 7. Sign Out Section
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 border = if (isSystemInDarkTheme()) BorderStroke(1.dp, FinanceError.copy(alpha = 0.35f)) else BorderStroke(1.dp, FinanceError.copy(alpha = 0.2f))
@@ -736,10 +563,10 @@ fun SettingsScreen(
                     onClick = { showLogoutConfirmDialog = true },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
-                        .height(50.dp)
+                        .padding(12.dp)
+                        .height(44.dp)
                         .testTag("settings_logout_button"),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = FinanceError.copy(alpha = 0.12f),
                         contentColor = FinanceError
@@ -759,6 +586,54 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Sign Out",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FinanceError
+                        )
+                    }
+                }
+            }
+        }
+
+        // 8. Delete Account Section
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                border = if (isSystemInDarkTheme()) BorderStroke(1.dp, FinanceError.copy(alpha = 0.35f)) else BorderStroke(1.dp, FinanceError.copy(alpha = 0.2f))
+            ) {
+                Button(
+                    onClick = {
+                        deleteConfirmationInput = ""
+                        showDeleteAccountDialog = true
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp)
+                        .height(44.dp)
+                        .testTag("settings_delete_account_button"),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = FinanceError.copy(alpha = 0.18f),
+                        contentColor = FinanceError
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete Account",
+                            tint = FinanceError,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Delete Account",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = FinanceError
@@ -794,6 +669,78 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { budgetToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Delete Account Confirmation Dialog
+    if (showDeleteAccountDialog) {
+        var isDeletingAccount by remember { mutableStateOf(false) }
+        AlertDialog(
+            onDismissRequest = { if (!isDeletingAccount) showDeleteAccountDialog = false },
+            title = {
+                Text(
+                    text = "Delete Account",
+                    fontWeight = FontWeight.Bold,
+                    color = FinanceError
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "This will permanently delete all your data from Firestore and remove your account authentication. This action CANNOT be undone.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        text = "Type 'DELETE' to confirm:",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    OutlinedTextField(
+                        value = deleteConfirmationInput,
+                        onValueChange = { deleteConfirmationInput = it },
+                        singleLine = true,
+                        placeholder = { Text("DELETE") },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().testTag("delete_account_confirm_input")
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (deleteConfirmationInput.trim().equals("DELETE", ignoreCase = true)) {
+                            isDeletingAccount = true
+                            viewModel.deleteAccount { success, err ->
+                                isDeletingAccount = false
+                                showDeleteAccountDialog = false
+                                if (success) {
+                                    onLogout()
+                                } else {
+                                    topToastState.show(err ?: "Failed to delete account", ToastType.ERROR)
+                                }
+                            }
+                        }
+                    },
+                    enabled = !isDeletingAccount && deleteConfirmationInput.trim().equals("DELETE", ignoreCase = true),
+                    colors = ButtonDefaults.buttonColors(containerColor = FinanceError),
+                    modifier = Modifier.testTag("confirm_delete_account_button")
+                ) {
+                    Text(if (isDeletingAccount) "Deleting..." else "Delete Account")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        deleteConfirmationInput = ""
+                        showDeleteAccountDialog = false
+                    },
+                    enabled = !isDeletingAccount
+                ) {
                     Text("Cancel")
                 }
             }
