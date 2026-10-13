@@ -408,8 +408,6 @@ fun MainScreen(
                         onLogout = {
                             coroutineScope.launch { pagerState.animateScrollToPage(0) }
                         },
-                        onOpenPrivacyPolicy = { activeLegalScreen = "privacy" },
-                        onOpenTermsAndConditions = { activeLegalScreen = "terms" },
                         listState = settingsListState
                     )
                 }
