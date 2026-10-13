@@ -473,6 +473,77 @@ class FinanceViewModel(
         }
     }
 
+    fun updateTransaction(
+        item: TransactionItem,
+        amount: Double,
+        categoryName: String,
+        categoryIcon: String = item.categoryIcon,
+        categoryColor: Long = item.categoryColor,
+        paymentMethod: String,
+        date: String,
+        time: String,
+        note: String,
+        onComplete: (Boolean) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            if (item.isExpense) {
+                val expense = expenses.value.find { it.id == item.id }
+                if (expense != null) {
+                    val updatedExpense = expense.copy(
+                        amount = amount,
+                        categoryName = categoryName.ifBlank { item.title },
+                        categoryIcon = categoryIcon,
+                        categoryColor = categoryColor,
+                        paymentMethod = paymentMethod,
+                        date = date,
+                        time = time,
+                        note = note
+                    )
+                    val result = repository.updateExpenseWithFirestoreCheck(
+                        expense = updatedExpense,
+                        oldAmount = expense.amount,
+                        oldAccountId = expense.accountId
+                    )
+                    if (result.isSuccess) {
+                        _snackbarMessage.emit("Expense updated successfully")
+                        onComplete(true)
+                    } else {
+                        _snackbarMessage.emit(result.exceptionOrNull()?.message ?: "Failed to update expense")
+                        onComplete(false)
+                    }
+                } else {
+                    onComplete(false)
+                }
+            } else {
+                val income = incomes.value.find { it.id == item.id }
+                if (income != null) {
+                    val updatedIncome = income.copy(
+                        amount = amount,
+                        source = categoryName.ifBlank { item.title },
+                        paymentMethod = paymentMethod,
+                        date = date,
+                        time = time,
+                        note = note
+                    )
+                    val result = repository.updateIncomeWithFirestoreCheck(
+                        income = updatedIncome,
+                        oldAmount = income.amount,
+                        oldAccountId = income.accountId
+                    )
+                    if (result.isSuccess) {
+                        _snackbarMessage.emit("Income updated successfully")
+                        onComplete(true)
+                    } else {
+                        _snackbarMessage.emit(result.exceptionOrNull()?.message ?: "Failed to update income")
+                        onComplete(false)
+                    }
+                } else {
+                    onComplete(false)
+                }
+            }
+        }
+    }
+
     fun deleteTransaction(item: TransactionItem) {
         viewModelScope.launch {
             if (item.isExpense) {

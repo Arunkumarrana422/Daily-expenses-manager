@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -60,7 +61,8 @@ fun TransactionDetailDialog(
     currencySymbol: String = "₹",
     onDismiss: () -> Unit,
     onDelete: () -> Unit,
-    onDuplicate: () -> Unit
+    onEdit: () -> Unit,
+    onDuplicate: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -188,22 +190,11 @@ fun TransactionDetailDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Actions: Duplicate, Share, Delete
+                // Actions: Share, Edit, Delete
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = onDuplicate,
-                        modifier = Modifier.weight(1f).testTag("duplicate_transaction_button"),
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.ContentCopy, contentDescription = "Duplicate", modifier = Modifier.size(15.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Copy", fontSize = 12.sp, maxLines = 1, softWrap = false)
-                    }
-
                     OutlinedButton(
                         onClick = {
                             val displayTime = DateTimeUtils.formatDisplayTime(transaction.time)
@@ -217,6 +208,17 @@ fun TransactionDetailDialog(
                         Icon(imageVector = Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Share", fontSize = 12.sp, maxLines = 1, softWrap = false)
+                    }
+
+                    OutlinedButton(
+                        onClick = onEdit,
+                        modifier = Modifier.weight(1f).testTag("edit_transaction_button"),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Edit", fontSize = 12.sp, maxLines = 1, softWrap = false)
                     }
 
                     Button(

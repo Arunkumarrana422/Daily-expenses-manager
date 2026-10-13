@@ -71,6 +71,26 @@ class FinanceRepository(
         return addExpenseWithFirestoreCheck(expense).getOrDefault(0L)
     }
 
+    suspend fun updateExpenseWithFirestoreCheck(expense: ExpenseEntity, oldAmount: Double, oldAccountId: Long): Result<Boolean> {
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null && syncManager.isOnline()) {
+            val isUploaded = syncManager.uploadExpense(currentUserId, expense)
+            if (isUploaded) {
+                expenseDao.updateExpense(expense)
+                accountDao.adjustBalance(oldAccountId, oldAmount)
+                accountDao.adjustBalance(expense.accountId, -expense.amount)
+                return Result.success(true)
+            } else {
+                return Result.failure(Exception("Failed to update entry in Firestore. Please check your internet connection."))
+            }
+        } else {
+            expenseDao.updateExpense(expense)
+            accountDao.adjustBalance(oldAccountId, oldAmount)
+            accountDao.adjustBalance(expense.accountId, -expense.amount)
+            return Result.success(true)
+        }
+    }
+
     suspend fun updateExpense(expense: ExpenseEntity, oldAmount: Double, oldAccountId: Long) {
         expenseDao.updateExpense(expense)
         // Revert old account deduction and apply new
@@ -124,6 +144,26 @@ class FinanceRepository(
 
     suspend fun addIncome(income: IncomeEntity): Long {
         return addIncomeWithFirestoreCheck(income).getOrDefault(0L)
+    }
+
+    suspend fun updateIncomeWithFirestoreCheck(income: IncomeEntity, oldAmount: Double, oldAccountId: Long): Result<Boolean> {
+        val currentUserId = syncManager.getCurrentUserId()
+        if (currentUserId != null && syncManager.isOnline()) {
+            val isUploaded = syncManager.uploadIncome(currentUserId, income)
+            if (isUploaded) {
+                incomeDao.updateIncome(income)
+                accountDao.adjustBalance(oldAccountId, -oldAmount)
+                accountDao.adjustBalance(income.accountId, income.amount)
+                return Result.success(true)
+            } else {
+                return Result.failure(Exception("Failed to update entry in Firestore. Please check your internet connection."))
+            }
+        } else {
+            incomeDao.updateIncome(income)
+            accountDao.adjustBalance(oldAccountId, -oldAmount)
+            accountDao.adjustBalance(income.accountId, income.amount)
+            return Result.success(true)
+        }
     }
 
     suspend fun updateIncome(income: IncomeEntity, oldAmount: Double, oldAccountId: Long) {

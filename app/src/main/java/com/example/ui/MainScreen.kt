@@ -62,11 +62,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import com.example.ui.components.AddAccountDialog
 import com.example.ui.components.AddBudgetDialog
+import com.example.ui.components.EditTransactionDialog
 import com.example.ui.components.ToastType
 import com.example.ui.components.TopToastHost
 import com.example.ui.components.TransactionDetailDialog
 import com.example.ui.components.TransferMoneyDialog
 import com.example.ui.components.rememberTopToastState
+import com.example.ui.viewmodel.TransactionItem
 import com.example.ui.navigation.Screen
 import com.example.ui.screens.AddTransactionScreen
 import com.example.ui.screens.ForgotPasswordScreen
@@ -107,6 +109,7 @@ fun MainScreen(
     var showAddAccountDialog by remember { mutableStateOf(false) }
     var showTransferDialog by remember { mutableStateOf(false) }
     var activeLegalScreen by remember { mutableStateOf<String?>(null) }
+    var editingTransaction by remember { mutableStateOf<TransactionItem?>(null) }
 
     // Collect snackbar messages
     LaunchedEffect(Unit) {
@@ -188,9 +191,38 @@ fun MainScreen(
             currencySymbol = prefs.currency,
             onDismiss = { viewModel.selectTransaction(null) },
             onDelete = { viewModel.deleteTransaction(tx) },
-            onDuplicate = {
-                viewModel.duplicateTransaction(tx)
+            onEdit = {
+                editingTransaction = tx
                 viewModel.selectTransaction(null)
+            }
+        )
+    }
+
+    // Edit Transaction Dialog Overlay
+    editingTransaction?.let { tx ->
+        EditTransactionDialog(
+            transaction = tx,
+            categories = categories,
+            currencySymbol = prefs.currency,
+            onDismiss = { editingTransaction = null },
+            onConfirm = { amount, catName, catIcon, catColor, paymentMethod, date, time, note, onFinish ->
+                viewModel.updateTransaction(
+                    item = tx,
+                    amount = amount,
+                    categoryName = catName,
+                    categoryIcon = catIcon,
+                    categoryColor = catColor,
+                    paymentMethod = paymentMethod,
+                    date = date,
+                    time = time,
+                    note = note,
+                    onComplete = { success ->
+                        onFinish(success)
+                        if (success) {
+                            editingTransaction = null
+                        }
+                    }
+                )
             }
         )
     }
