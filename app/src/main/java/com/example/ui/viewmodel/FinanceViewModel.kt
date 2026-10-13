@@ -40,7 +40,8 @@ data class TransactionItem(
     val note: String,
     val receiptUri: String? = null,
     val accountId: Long = 1,
-    val syncStatus: String = "SYNCED"
+    val syncStatus: String = "SYNCED",
+    val createdAt: Long = 0L
 )
 
 data class FilterCriteria(
@@ -202,7 +203,8 @@ class FinanceViewModel(
                 note = it.note,
                 receiptUri = it.receiptUri,
                 accountId = it.accountId,
-                syncStatus = it.syncStatus
+                syncStatus = it.syncStatus,
+                createdAt = it.createdAt
             )
         }
         val incItems = incList.map {
@@ -220,12 +222,14 @@ class FinanceViewModel(
                 note = it.note,
                 receiptUri = null,
                 accountId = it.accountId,
-                syncStatus = it.syncStatus
+                syncStatus = it.syncStatus,
+                createdAt = it.createdAt
             )
         }
         (expItems + incItems).sortedWith(
             compareByDescending<TransactionItem> { it.date }
-                .thenByDescending { it.time }
+                .thenByDescending { DateTimeUtils.parseTimeToMinutes(it.time) }
+                .thenByDescending { it.createdAt }
                 .thenByDescending { it.id }
         )
     }.stateIn(
@@ -283,10 +287,20 @@ class FinanceViewModel(
             matchesQuery && matchesCategory && matchesPayment && matchesType && matchesMin && matchesMax && matchesDate
         }.let { list ->
             when (filter.sortOrder) {
-                "OLDEST" -> list.sortedWith(compareBy<TransactionItem> { it.date }.thenBy { it.time })
+                "OLDEST" -> list.sortedWith(
+                    compareBy<TransactionItem> { it.date }
+                        .thenBy { DateTimeUtils.parseTimeToMinutes(it.time) }
+                        .thenBy { it.createdAt }
+                        .thenBy { it.id }
+                )
                 "HIGHEST" -> list.sortedByDescending { it.amount }
                 "LOWEST" -> list.sortedBy { it.amount }
-                else -> list.sortedWith(compareByDescending<TransactionItem> { it.date }.thenByDescending { it.time })
+                else -> list.sortedWith(
+                    compareByDescending<TransactionItem> { it.date }
+                        .thenByDescending { DateTimeUtils.parseTimeToMinutes(it.time) }
+                        .thenByDescending { it.createdAt }
+                        .thenByDescending { it.id }
+                )
             }
         }
     }.stateIn(

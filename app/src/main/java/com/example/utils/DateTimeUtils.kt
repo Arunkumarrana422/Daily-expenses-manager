@@ -17,20 +17,62 @@ object DateTimeUtils {
 
     fun formatDisplayTime(timeStr: String): String {
         if (timeStr.isBlank()) return ""
-        if (timeStr.contains("AM", ignoreCase = true) || timeStr.contains("PM", ignoreCase = true)) {
-            return timeStr
+        val normalized = timeStr.trim()
+        if (normalized.contains("AM", ignoreCase = true) || normalized.contains("PM", ignoreCase = true)) {
+            // Already 12-hour formatted, standardize it
+            return try {
+                val cleaned = normalized.replace(".", "").uppercase(Locale.US)
+                val parsed = LocalTime.parse(cleaned, DateTimeFormatter.ofPattern("hh:mm a", Locale.US))
+                parsed.format(timeFormatter12)
+            } catch (_: Exception) {
+                normalized
+            }
         }
         return try {
-            val parsed24 = LocalTime.parse(timeStr, timeFormatter24)
+            val parsed24 = LocalTime.parse(normalized, timeFormatter24)
             parsed24.format(timeFormatter12)
         } catch (_: Exception) {
             try {
-                val parsed = LocalTime.parse(timeStr)
+                val parsed = LocalTime.parse(normalized)
                 parsed.format(timeFormatter12)
             } catch (_: Exception) {
-                timeStr
+                normalized
             }
         }
+    }
+
+    /**
+     * Converts any time string (e.g. "10:43 am", "10:43 PM", "22:43", "9:05 AM")
+     * into total minutes from start of day (0 to 1439) for correct chronological sorting.
+     */
+    fun parseTimeToMinutes(timeStr: String): Int {
+        if (timeStr.isBlank()) return 0
+        val raw = timeStr.trim().replace(".", "")
+        // Try parsing as 12-hour format with AM/PM (e.g., "10:43 AM", "1:15 pm", "08:30AM")
+        val amPmMatch = Regex("(?i)^(\\d{1,2}):(\\d{2})\\s*(AM|PM)$").find(raw)
+        if (amPmMatch != null) {
+            val (hStr, mStr, meridiem) = amPmMatch.destructured
+            var hour = hStr.toIntOrNull() ?: 0
+            val minute = mStr.toIntOrNull() ?: 0
+            val isPm = meridiem.equals("PM", ignoreCase = true)
+            if (isPm) {
+                if (hour < 12) hour += 12
+            } else {
+                if (hour == 12) hour = 0
+            }
+            return hour * 60 + minute
+        }
+
+        // Try parsing as 24-hour format (e.g., "22:43", "09:15")
+        val h24Match = Regex("^(\\d{1,2}):(\\d{2})").find(raw)
+        if (h24Match != null) {
+            val (hStr, mStr) = h24Match.destructured
+            val hour = hStr.toIntOrNull() ?: 0
+            val minute = mStr.toIntOrNull() ?: 0
+            return hour * 60 + minute
+        }
+
+        return 0
     }
 
     fun getFormattedToday(): String = LocalDate.now().format(fullDisplayFormatter)
