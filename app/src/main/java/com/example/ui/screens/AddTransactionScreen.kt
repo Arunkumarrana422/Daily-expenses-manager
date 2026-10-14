@@ -172,7 +172,7 @@ fun AddTransactionScreen(
         )
     }
 
-    val quickAmounts = listOf(100, 500, 1000, 2000, 5000)
+    val quickAmounts = listOf(100, 500, 1000, 2000)
     val paymentMethods = listOf("Cash", "UPI", "Debit Card", "Credit Card", "Bank Transfer", "Wallet")
 
     if (showAddCategoryDialog) {

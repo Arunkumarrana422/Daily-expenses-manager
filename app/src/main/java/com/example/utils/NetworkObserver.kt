@@ -351,6 +351,22 @@ class NetworkObserver(private val context: Context) {
         )
     }
 
+    fun checkSilently() {
+        verificationJob?.cancel()
+        verificationJob = scope.launch {
+            val connected = checkHardwareConnection()
+            if (connected) {
+                _connectionState.value = NetworkConnectionState.Connected
+                _isOnline.value = true
+                _diagnostics.value = evaluateDiagnostics(isConnected = true)
+            } else {
+                _connectionState.value = NetworkConnectionState.NoInternet
+                _isOnline.value = false
+                _diagnostics.value = evaluateDiagnostics(isConnected = false)
+            }
+        }
+    }
+
     fun verifyConnectivity(isUserRetry: Boolean = false) {
         verificationJob?.cancel()
         verificationJob = scope.launch {
