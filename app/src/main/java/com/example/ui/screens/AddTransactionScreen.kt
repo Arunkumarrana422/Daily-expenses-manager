@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -335,15 +336,17 @@ fun AddTransactionScreen(
                         OutlinedTextField(
                             value = amountText,
                             onValueChange = { amountText = it.filter { ch -> ch.isDigit() || ch == '.' } },
-                            placeholder = { Text("0.00", fontSize = 32.sp) },
+                            placeholder = { Text("0.00", fontSize = 28.sp) },
                             textStyle = MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             ),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
-                                .width(200.dp)
+                                .width(160.dp)
+                                .heightIn(min = 60.dp)
                                 .testTag("amount_input_field")
                         )
                     }
