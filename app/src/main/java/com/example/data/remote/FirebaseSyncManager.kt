@@ -14,6 +14,7 @@ import com.example.data.local.entity.ExpenseEntity
 import com.example.data.local.entity.IncomeEntity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.example.utils.EncryptionHelper
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.PersistentCacheSettings
@@ -345,12 +346,12 @@ class FirebaseSyncManager(
                 "id" to expense.id,
                 "amount" to expense.amount,
                 "categoryId" to expense.categoryId,
-                "categoryName" to expense.categoryName,
-                "categoryIcon" to expense.categoryIcon,
+                "categoryName" to EncryptionHelper.encrypt(expense.categoryName),
+                "categoryIcon" to EncryptionHelper.encrypt(expense.categoryIcon),
                 "categoryColor" to expense.categoryColor,
-                "paymentMethod" to expense.paymentMethod,
+                "paymentMethod" to EncryptionHelper.encrypt(expense.paymentMethod),
                 "accountId" to expense.accountId,
-                "note" to expense.note,
+                "note" to EncryptionHelper.encrypt(expense.note),
                 "date" to expense.date,
                 "time" to expense.time,
                 "userId" to userId,
@@ -393,10 +394,10 @@ class FirebaseSyncManager(
             val data = hashMapOf(
                 "id" to income.id,
                 "amount" to income.amount,
-                "source" to income.source,
+                "source" to EncryptionHelper.encrypt(income.source),
                 "accountId" to income.accountId,
-                "paymentMethod" to income.paymentMethod,
-                "note" to income.note,
+                "paymentMethod" to EncryptionHelper.encrypt(income.paymentMethod),
+                "note" to EncryptionHelper.encrypt(income.note),
                 "date" to income.date,
                 "time" to income.time,
                 "userId" to userId,
@@ -438,7 +439,7 @@ class FirebaseSyncManager(
             val fs = firestore ?: return@withContext
             val data = hashMapOf(
                 "id" to budget.id,
-                "categoryName" to (budget.categoryName ?: ""),
+                "categoryName" to EncryptionHelper.encrypt(budget.categoryName ?: ""),
                 "amount" to budget.amount,
                 "period" to budget.period,
                 "warningThreshold" to budget.warningThreshold,
