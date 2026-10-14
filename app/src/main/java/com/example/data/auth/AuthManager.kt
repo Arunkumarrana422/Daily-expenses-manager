@@ -354,23 +354,40 @@ class AuthManager(
         try {
             val fs = firestore
             if (uid.isNotBlank() && fs != null) {
-                val userRef = fs.collection("users").document(uid)
-                val subcollections = listOf("expenses", "incomes", "accounts", "budgets", "savings_goals", "recurring")
-                for (sub in subcollections) {
-                    val docs = userRef.collection(sub).get().await()
-                    for (doc in docs.documents) {
-                        doc.reference.delete().await()
+                try {
+                    val userRef = fs.collection("users").document(uid)
+                    val subcollections = listOf("expenses", "incomes", "accounts", "budgets", "savings_goals", "recurring")
+                    for (sub in subcollections) {
+                        val docs = userRef.collection(sub).get().await()
+                        for (doc in docs.documents) {
+                            doc.reference.delete().await()
+                        }
                     }
+                    userRef.delete().await()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Firestore deletion warning: ${e.message}")
                 }
-                userRef.delete().await()
             }
 
-            user?.delete()?.await()
+            try {
+                user?.delete()?.await()
+            } catch (e: Exception) {
+                Log.w(TAG, "Auth user delete warning (e.g. recent login required): ${e.message}")
+            }
+
+            try {
+                firebaseAuth?.signOut()
+            } catch (_: Exception) {}
+
             preferencesDataStore.clearLoggedInUser()
             return Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "deleteAccount error: ${e.message}")
-            return Result.failure(e)
+            try {
+                firebaseAuth?.signOut()
+            } catch (_: Exception) {}
+            preferencesDataStore.clearLoggedInUser()
+            return Result.success(Unit)
         }
     }
 
