@@ -25,6 +25,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
@@ -255,47 +262,87 @@ fun AddTransactionScreen(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 1. Expense / Income Switch Tabs
+        // 1. Expense / Income Switch Tabs (Sliding Pill Switch matching Image 1)
         item {
-            TabRow(
-                selectedTabIndex = if (isExpense) 0 else 1,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = IndigoPrimary,
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
+                    .height(54.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .testTag("transaction_type_tabs")
             ) {
-                Tab(
-                    selected = isExpense,
-                    onClick = {
-                        isExpense = true
-                        selectedCategory = expenseCategories.firstOrNull()
-                    },
-                    text = {
+                val totalWidth = maxWidth
+                val tabWidth = totalWidth / 2
+                val indicatorOffset by animateDpAsState(
+                    targetValue = if (isExpense) 0.dp else tabWidth,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    ),
+                    label = "tabIndicator"
+                )
+
+                // Sliding pill background indicator
+                Box(
+                    modifier = Modifier
+                        .offset(x = indicatorOffset)
+                        .width(tabWidth)
+                        .fillMaxHeight()
+                        .padding(4.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.surface)
+                )
+
+                // Clickable tabs row
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Expense Tab
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            ) {
+                                isExpense = true
+                                selectedCategory = expenseCategories.firstOrNull()
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
-                            "Expense",
+                            text = "Expense",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                             color = if (isExpense) Color(0xFFD32F2F) else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                )
-                Tab(
-                    selected = !isExpense,
-                    onClick = {
-                        isExpense = false
-                        selectedCategory = incomeCategories.firstOrNull()
-                    },
-                    text = {
+
+                    // Income Tab
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            ) {
+                                isExpense = false
+                                selectedCategory = incomeCategories.firstOrNull()
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
-                            "Income",
+                            text = "Income",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                             color = if (!isExpense) FinanceSuccess else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                )
+                }
             }
         }
 
