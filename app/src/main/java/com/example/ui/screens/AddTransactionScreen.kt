@@ -214,6 +214,7 @@ fun AddTransactionScreen(
             confirmButton = {
                 Button(
                     onClick = {
+                        if (!viewModel.checkOnlineOrShowToast()) return@Button
                         if (newCategoryName.isNotBlank()) {
                             viewModel.addCustomCategory(
                                 name = newCategoryName.trim(),
@@ -626,6 +627,9 @@ fun AddTransactionScreen(
 
             Button(
                 onClick = {
+                    if (!viewModel.checkOnlineOrShowToast()) {
+                        return@Button
+                    }
                     if (isFormValid && !isSaving) {
                         isSaving = true
                         val cat = selectedCategory!!

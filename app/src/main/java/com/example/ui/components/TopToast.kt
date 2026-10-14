@@ -68,7 +68,13 @@ fun rememberTopToastState(): TopToastState {
 }
 
 fun showSystemTopToast(context: Context, message: String) {
-    // No-op: disabled to avoid bottom toasts as user requested all toasts to be at the top
+    try {
+        val toast = Toast.makeText(context.applicationContext, message, Toast.LENGTH_SHORT)
+        try {
+            toast.setGravity(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0, 120)
+        } catch (_: Exception) {}
+        toast.show()
+    } catch (_: Exception) {}
 }
 
 @Composable

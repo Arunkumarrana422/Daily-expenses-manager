@@ -14,13 +14,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.net.HttpURLConnection
-import java.net.URL
 
 sealed class NetworkConnectionState {
     object Connected : NetworkConnectionState()
@@ -41,13 +39,10 @@ enum class NetworkGeneration {
 
 enum class DiagnosticStatus {
     ONLINE,
-    RECHARGE_EXPIRED_OR_DATA_OVER, // 2G/3G/4G/5G tower connected, but internet packets blocked
-    CAPTIVE_PORTAL,                // Portal redirect detected (login or recharge required)
-    WIFI_NO_INTERNET,              // Wi-Fi connected to router, no external uplink
-    MOBILE_DATA_OFF,               // SIM ready but Mobile Data turned off
-    AIRPLANE_MODE_ON,              // Airplane mode active
-    NO_SIM_CARD,                   // No SIM card inserted
-    SERVER_DOWN,                   // Cloud Firestore unreachable
+    WIFI_NO_INTERNET,
+    MOBILE_DATA_OFF,
+    AIRPLANE_MODE_ON,
+    NO_SIM_CARD,
     UNKNOWN_OFFLINE
 }
 
@@ -59,18 +54,15 @@ data class NetworkDiagnostics(
     val isCellular: Boolean = false,
     val isAirplaneMode: Boolean = false,
     val hasLinkConnection: Boolean = false,
-    val isInternetValidated: Boolean = false,
-    val isHttpProbeSuccess: Boolean = false,
     val status: DiagnosticStatus = DiagnosticStatus.UNKNOWN_OFFLINE,
     val statusTitle: String = "No Internet Connection",
-    val statusDetail: String = "Please check your network settings.",
-    val estimatedBandwidthKbps: Int = 0
+    val statusDetail: String = "Please connect to Wi-Fi or Mobile Data to continue."
 )
 
 /**
- * Robust network monitor ensuring the app functions strictly online only.
- * Includes complete diagnostics for 2G / 3G / 4G / 5G / Wi-Fi detection,
- * Carrier / SIM identification, and Recharge Validity / Data Pack exhaustion diagnosis.
+ * Reliable, production-grade network monitor ensuring the app functions strictly online.
+ * Uses native Android ConnectivityManager with handover debouncing to prevent false lockouts,
+ * flickering, or screen flapping during cell tower or Wi-Fi handovers.
  */
 class NetworkObserver(private val context: Context) {
     private val TAG = "NetworkObserver"
@@ -81,7 +73,9 @@ class NetworkObserver(private val context: Context) {
         context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var debounceJob: Job? = null
     private var verificationJob: Job? = null
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     private val initialConnected = checkHardwareConnection()
 
@@ -93,44 +87,42 @@ class NetworkObserver(private val context: Context) {
     private val _isOnline = MutableStateFlow(initialConnected)
     val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 
-    private val _diagnostics = MutableStateFlow(evaluateDiagnostics(isProbeSuccess = initialConnected))
+    private val _diagnostics = MutableStateFlow(evaluateDiagnostics(isConnected = initialConnected))
     val diagnostics: StateFlow<NetworkDiagnostics> = _diagnostics.asStateFlow()
-
-    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     init {
         registerCallback()
-        if (!initialConnected) {
-            verifyConnectivity(isUserRetry = false)
-        }
     }
 
     private fun registerCallback() {
         val cm = connectivityManager ?: return
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                Log.d(TAG, "Network available: $network")
-                verifyConnectivity(isUserRetry = false)
-            }
-
-            override fun onLost(network: Network) {
-                Log.d(TAG, "Network lost: $network")
-                if (!checkHardwareConnection()) {
-                    scope.launch {
-                        _connectionState.value = NetworkConnectionState.NoInternet
-                        _isOnline.value = false
-                        _diagnostics.value = evaluateDiagnostics(isProbeSuccess = false)
+                // Cancel any pending lost/disconnect debounce
+                debounceJob?.cancel()
+                debounceJob = null
+                scope.launch {
+                    val isConnected = checkHardwareConnection()
+                    if (isConnected) {
+                        _connectionState.value = NetworkConnectionState.Connected
+                        _isOnline.value = true
+                        _diagnostics.value = evaluateDiagnostics(isConnected = true)
                     }
-                } else {
-                    verifyConnectivity(isUserRetry = false)
                 }
             }
 
-            override fun onUnavailable() {
-                scope.launch {
-                    _connectionState.value = NetworkConnectionState.NoInternet
-                    _isOnline.value = false
-                    _diagnostics.value = evaluateDiagnostics(isProbeSuccess = false)
+            override fun onLost(network: Network) {
+                // Network handover debounce (e.g. Wi-Fi <-> Cellular)
+                // Prevents transient drops during switching from falsely locking out user
+                debounceJob?.cancel()
+                debounceJob = scope.launch {
+                    delay(1200)
+                    val isConnected = checkHardwareConnection()
+                    if (!isConnected) {
+                        _connectionState.value = NetworkConnectionState.NoInternet
+                        _isOnline.value = false
+                        _diagnostics.value = evaluateDiagnostics(isConnected = false)
+                    }
                 }
             }
 
@@ -139,21 +131,32 @@ class NetworkObserver(private val context: Context) {
                 networkCapabilities: NetworkCapabilities
             ) {
                 val hasInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                if (!hasInternet) {
+                if (hasInternet) {
+                    debounceJob?.cancel()
+                    debounceJob = null
                     scope.launch {
-                        _connectionState.value = NetworkConnectionState.NoInternet
-                        _isOnline.value = false
-                        _diagnostics.value = evaluateDiagnostics(isProbeSuccess = false)
+                        _connectionState.value = NetworkConnectionState.Connected
+                        _isOnline.value = true
+                        _diagnostics.value = evaluateDiagnostics(isConnected = true)
                     }
                 } else {
-                    // Update diagnostics live (e.g. 4G/5G changes, bandwidth changes)
-                    if (_connectionState.value !is NetworkConnectionState.Connected) {
-                        verifyConnectivity(isUserRetry = false)
-                    } else {
-                        scope.launch {
-                            _diagnostics.value = evaluateDiagnostics(isProbeSuccess = true)
+                    debounceJob?.cancel()
+                    debounceJob = scope.launch {
+                        delay(1200)
+                        if (!checkHardwareConnection()) {
+                            _connectionState.value = NetworkConnectionState.NoInternet
+                            _isOnline.value = false
+                            _diagnostics.value = evaluateDiagnostics(isConnected = false)
                         }
                     }
+                }
+            }
+
+            override fun onUnavailable() {
+                scope.launch {
+                    _connectionState.value = NetworkConnectionState.NoInternet
+                    _isOnline.value = false
+                    _diagnostics.value = evaluateDiagnostics(isConnected = false)
                 }
             }
         }
@@ -170,7 +173,6 @@ class NetworkObserver(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error registering network callback", e)
-            verifyConnectivity(isUserRetry = false)
         }
     }
 
@@ -180,30 +182,14 @@ class NetworkObserver(private val context: Context) {
             val activeNetwork = cm.activeNetwork ?: return false
             val caps = cm.getNetworkCapabilities(activeNetwork) ?: return false
             caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    fun isNetworkValidated(): Boolean {
-        return try {
-            val cm = connectivityManager ?: return false
-            val activeNetwork = cm.activeNetwork ?: return false
-            val caps = cm.getNetworkCapabilities(activeNetwork) ?: return false
-            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
 
     fun checkConnection(): Boolean = checkHardwareConnection()
 
-    /**
-     * Evaluates comprehensive network diagnostics including 2G/3G/4G/5G generation,
-     * carrier identity, captive portal, and recharge validity / data pack exhaustion.
-     */
-    fun evaluateDiagnostics(isProbeSuccess: Boolean): NetworkDiagnostics {
+    fun evaluateDiagnostics(isConnected: Boolean): NetworkDiagnostics {
         val cm = connectivityManager
         val tm = telephonyManager
         val activeNetwork = try { cm?.activeNetwork } catch (_: Exception) { null }
@@ -221,7 +207,6 @@ class NetworkObserver(private val context: Context) {
         val isCellular = caps?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true
         val isEthernet = caps?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) == true
 
-        // Extract Operator Name
         var rawOpName = ""
         try {
             rawOpName = tm?.networkOperatorName?.trim().orEmpty()
@@ -230,20 +215,13 @@ class NetworkObserver(private val context: Context) {
             }
         } catch (_: Exception) {}
 
-        // Map USSD / Operator Info for Recharge Checking
-        val lowerOp = rawOpName.lowercase()
-        val (ussdCode, cleanOpName) = when {
-            lowerOp.contains("jio") || lowerOp.contains("reliance") -> Pair("1299", "Jio")
-            lowerOp.contains("airtel") -> Pair("*121#", "Airtel")
-            lowerOp.contains("vi") || lowerOp.contains("vodafone") || lowerOp.contains("idea") -> Pair("*199#", "Vi")
-            lowerOp.contains("bsnl") || lowerOp.contains("cellone") -> Pair("*123#", "BSNL")
-            rawOpName.isNotBlank() -> Pair("*121#", rawOpName)
-            isCellular -> Pair("*121#", "Mobile SIM")
-            isWifi -> Pair(null, "Wi-Fi Network")
-            else -> Pair(null, "No Network")
+        val cleanOpName = when {
+            rawOpName.isNotBlank() -> rawOpName
+            isCellular -> "Mobile SIM"
+            isWifi -> "Wi-Fi Network"
+            else -> "No Network"
         }
 
-        // Determine Generation (5G, 4G, 3G, 2G, Wi-Fi)
         val (generation, generationLabel) = when {
             isWifi -> Pair(NetworkGeneration.WIFI, "Wi-Fi")
             isEthernet -> Pair(NetworkGeneration.ETHERNET, "Ethernet")
@@ -259,23 +237,16 @@ class NetworkObserver(private val context: Context) {
                 when (netType) {
                     TelephonyManager.NETWORK_TYPE_NR -> Pair(NetworkGeneration.GEN_5G, "5G")
                     TelephonyManager.NETWORK_TYPE_LTE -> {
-                        if (bandwidthKbps >= 120_000) Pair(NetworkGeneration.GEN_5G, "5G (NSA)")
+                        if (bandwidthKbps >= 100_000) Pair(NetworkGeneration.GEN_5G, "5G")
                         else Pair(NetworkGeneration.GEN_4G, "4G (LTE)")
                     }
                     TelephonyManager.NETWORK_TYPE_HSPAP,
                     TelephonyManager.NETWORK_TYPE_HSPA,
                     TelephonyManager.NETWORK_TYPE_HSDPA,
                     TelephonyManager.NETWORK_TYPE_HSUPA,
-                    TelephonyManager.NETWORK_TYPE_UMTS,
-                    TelephonyManager.NETWORK_TYPE_EVDO_0,
-                    TelephonyManager.NETWORK_TYPE_EVDO_A,
-                    TelephonyManager.NETWORK_TYPE_EVDO_B,
-                    TelephonyManager.NETWORK_TYPE_EHRPD -> Pair(NetworkGeneration.GEN_3G, "3G")
+                    TelephonyManager.NETWORK_TYPE_UMTS -> Pair(NetworkGeneration.GEN_3G, "3G")
                     TelephonyManager.NETWORK_TYPE_GPRS,
                     TelephonyManager.NETWORK_TYPE_EDGE,
-                    TelephonyManager.NETWORK_TYPE_CDMA,
-                    TelephonyManager.NETWORK_TYPE_1xRTT,
-                    TelephonyManager.NETWORK_TYPE_IDEN,
                     TelephonyManager.NETWORK_TYPE_GSM -> Pair(NetworkGeneration.GEN_2G, "2G")
                     else -> {
                         when {
@@ -291,14 +262,11 @@ class NetworkObserver(private val context: Context) {
             else -> Pair(NetworkGeneration.NONE, "No Connection")
         }
 
-        val isCaptivePortal = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) == true
         val hasLink = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-        val isValidated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
         val simState = try { tm?.simState ?: TelephonyManager.SIM_STATE_UNKNOWN } catch (_: Exception) { TelephonyManager.SIM_STATE_UNKNOWN }
 
-        // Determine Diagnostic Status & User-friendly English explanations
         val (diagStatus, statusTitle, statusDetail) = when {
-            isProbeSuccess && (isValidated || hasLink) -> {
+            isConnected || hasLink -> {
                 Triple(
                     DiagnosticStatus.ONLINE,
                     "Internet Connected",
@@ -312,46 +280,32 @@ class NetworkObserver(private val context: Context) {
                     "Airplane mode is enabled. Turn it off to restore Mobile Data or Wi-Fi."
                 )
             }
-            isCaptivePortal -> {
-                Triple(
-                    DiagnosticStatus.CAPTIVE_PORTAL,
-                    "Recharge / Login Required",
-                    "The network is redirecting requests. Your recharge pack or daily data limit may be expired."
-                )
-            }
-            isCellular && !isProbeSuccess -> {
-                Triple(
-                    DiagnosticStatus.RECHARGE_EXPIRED_OR_DATA_OVER,
-                    "Recharge Expired or Data Pack Over",
-                    "Connected to $generationLabel tower ($cleanOpName), but internet data is not responding. Likely reasons: 1. Daily data quota (1.5GB/2GB) is exhausted. 2. Main plan validity has expired."
-                )
-            }
-            isWifi && !isProbeSuccess -> {
+            isWifi && !hasLink -> {
                 Triple(
                     DiagnosticStatus.WIFI_NO_INTERNET,
                     "Wi-Fi Connected Without Internet",
-                    "Connected to Wi-Fi router, but the internet service line is offline or disconnected."
+                    "Connected to Wi-Fi router, but the internet service line is offline."
                 )
             }
-            simState == TelephonyManager.SIM_STATE_ABSENT -> {
+            simState == TelephonyManager.SIM_STATE_ABSENT && !isWifi -> {
                 Triple(
                     DiagnosticStatus.NO_SIM_CARD,
                     "No SIM Card Detected",
-                    "No SIM card found in the device. Connect to Wi-Fi to use the application."
+                    "No SIM card found. Please connect to Wi-Fi to use the application."
                 )
             }
             !hasLink -> {
                 Triple(
                     DiagnosticStatus.MOBILE_DATA_OFF,
                     "Mobile Data is Turned Off",
-                    "Mobile data ($cleanOpName) is switched off. Please enable Mobile Data or Wi-Fi."
+                    "Mobile data is switched off. Please enable Mobile Data or Wi-Fi."
                 )
             }
             else -> {
                 Triple(
                     DiagnosticStatus.UNKNOWN_OFFLINE,
                     "No Internet Connection",
-                    "Unable to communicate with the network. Please verify connection and retry."
+                    "Please connect to the internet to use this application."
                 )
             }
         }
@@ -364,82 +318,28 @@ class NetworkObserver(private val context: Context) {
             isCellular = isCellular,
             isAirplaneMode = isAirplaneMode,
             hasLinkConnection = hasLink,
-            isInternetValidated = isValidated,
-            isHttpProbeSuccess = isProbeSuccess,
             status = diagStatus,
             statusTitle = statusTitle,
-            statusDetail = statusDetail,
-            estimatedBandwidthKbps = caps?.linkDownstreamBandwidthKbps ?: 0
+            statusDetail = statusDetail
         )
     }
 
-    /**
-     * Verifies connectivity cleanly and updates diagnostics.
-     */
     fun verifyConnectivity(isUserRetry: Boolean = false) {
         verificationJob?.cancel()
         verificationJob = scope.launch {
-            if (!checkHardwareConnection()) {
-                _connectionState.value = NetworkConnectionState.NoInternet
-                _isOnline.value = false
-                _diagnostics.value = evaluateDiagnostics(isProbeSuccess = false)
-                return@launch
-            }
-
-            if (isUserRetry && _connectionState.value !is NetworkConnectionState.Connected) {
+            if (isUserRetry) {
                 _connectionState.value = NetworkConnectionState.Checking
+                delay(600)
             }
-
-            if (isNetworkValidated()) {
+            val connected = checkHardwareConnection()
+            if (connected) {
                 _connectionState.value = NetworkConnectionState.Connected
                 _isOnline.value = true
-                _diagnostics.value = evaluateDiagnostics(isProbeSuccess = true)
-                return@launch
-            }
-
-            // Fallback: check HTTP reachability
-            val hasRealInternet = withContext(Dispatchers.IO) {
-                checkHttpProbe()
-            }
-
-            if (hasRealInternet) {
-                _connectionState.value = NetworkConnectionState.Connected
-                _isOnline.value = true
-                _diagnostics.value = evaluateDiagnostics(isProbeSuccess = true)
+                _diagnostics.value = evaluateDiagnostics(isConnected = true)
             } else {
                 _connectionState.value = NetworkConnectionState.NoInternet
                 _isOnline.value = false
-                _diagnostics.value = evaluateDiagnostics(isProbeSuccess = false)
-            }
-        }
-    }
-
-    private fun checkHttpProbe(): Boolean {
-        return try {
-            val url = URL("https://clients3.google.com/generate_204")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                connectTimeout = 3000
-                readTimeout = 3000
-                instanceFollowRedirects = false
-                useCaches = false
-            }
-            val code = connection.responseCode
-            connection.disconnect()
-            code in 200..299
-        } catch (e: Exception) {
-            try {
-                val url = URL("https://www.google.com/generate_204")
-                val connection = (url.openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 3000
-                    readTimeout = 3000
-                    instanceFollowRedirects = false
-                    useCaches = false
-                }
-                val code = connection.responseCode
-                connection.disconnect()
-                code in 200..299
-            } catch (e2: Exception) {
-                checkHardwareConnection()
+                _diagnostics.value = evaluateDiagnostics(isConnected = false)
             }
         }
     }
@@ -455,4 +355,3 @@ class NetworkObserver(private val context: Context) {
         verifyConnectivity(isUserRetry = true)
     }
 }
-

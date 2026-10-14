@@ -61,6 +61,7 @@ import com.example.ui.components.ToastType
 import com.example.ui.components.TopToastHost
 import com.example.ui.components.rememberTopToastState
 import com.example.ui.components.showSystemTopToast
+import com.example.utils.NetworkObserver
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -119,6 +120,11 @@ fun RegisterScreen(
     fun attemptRegister() {
         focusManager.clearFocus()
         keyboardController?.hide()
+        if (!NetworkObserver(context).checkConnection()) {
+            topToastState.show("No internet connection", ToastType.ERROR)
+            showSystemTopToast(context, "No internet connection")
+            return
+        }
         if (name.isBlank()) {
             val msg = "Please enter your name"
             topToastState.show(msg, ToastType.ERROR)

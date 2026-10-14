@@ -26,7 +26,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import com.example.utils.NetworkObserver
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,6 +43,7 @@ fun AddBudgetDialog(
     onDismiss: () -> Unit,
     onConfirm: (categoryName: String, amount: Double, period: String, threshold: Float) -> Unit
 ) {
+    val context = LocalContext.current
     val categoryNames = if (categories.isNotEmpty()) {
         categories.map { it.name }
     } else {
@@ -118,6 +121,10 @@ fun AddBudgetDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    if (!NetworkObserver(context).checkConnection()) {
+                        showSystemTopToast(context, "No internet connection")
+                        return@Button
+                    }
                     val amount = amountText.toDoubleOrNull() ?: 0.0
                     if (amount > 0) {
                         onConfirm(selectedCategory, amount, period, threshold)
@@ -140,6 +147,7 @@ fun AddAccountDialog(
     onDismiss: () -> Unit,
     onConfirm: (name: String, type: String, initialBalance: Double) -> Unit
 ) {
+    val context = LocalContext.current
     var name by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf("Bank Account") }
     var balanceText by remember { mutableStateOf("") }
@@ -179,6 +187,10 @@ fun AddAccountDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    if (!NetworkObserver(context).checkConnection()) {
+                        showSystemTopToast(context, "No internet connection")
+                        return@Button
+                    }
                     val balance = balanceText.toDoubleOrNull() ?: 0.0
                     if (name.isNotBlank()) {
                         onConfirm(name.trim(), selectedType, balance)
@@ -201,6 +213,7 @@ fun AddGoalDialog(
     onDismiss: () -> Unit,
     onConfirm: (name: String, target: Double, deadline: String) -> Unit
 ) {
+    val context = LocalContext.current
     var name by remember { mutableStateOf("") }
     var targetText by remember { mutableStateOf("") }
     var deadline by remember { mutableStateOf("2026-12-31") }
@@ -236,6 +249,10 @@ fun AddGoalDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    if (!NetworkObserver(context).checkConnection()) {
+                        showSystemTopToast(context, "No internet connection")
+                        return@Button
+                    }
                     val target = targetText.toDoubleOrNull() ?: 0.0
                     if (name.isNotBlank() && target > 0) {
                         onConfirm(name.trim(), target, deadline)
@@ -258,6 +275,7 @@ fun AddRecurringDialog(
     onDismiss: () -> Unit,
     onConfirm: (title: String, amount: Double, frequency: String, dueDate: String) -> Unit
 ) {
+    val context = LocalContext.current
     var title by remember { mutableStateOf("") }
     var amountText by remember { mutableStateOf("") }
     var frequency by remember { mutableStateOf("MONTHLY") }
@@ -305,6 +323,10 @@ fun AddRecurringDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    if (!NetworkObserver(context).checkConnection()) {
+                        showSystemTopToast(context, "No internet connection")
+                        return@Button
+                    }
                     val amount = amountText.toDoubleOrNull() ?: 0.0
                     if (title.isNotBlank() && amount > 0) {
                         onConfirm(title.trim(), amount, frequency, dueDate)
@@ -328,6 +350,7 @@ fun TransferMoneyDialog(
     onDismiss: () -> Unit,
     onConfirm: (fromId: Long, toId: Long, amount: Double) -> Unit
 ) {
+    val context = LocalContext.current
     if (accounts.size < 2) {
         AlertDialog(
             onDismissRequest = onDismiss,
@@ -364,6 +387,10 @@ fun TransferMoneyDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    if (!NetworkObserver(context).checkConnection()) {
+                        showSystemTopToast(context, "No internet connection")
+                        return@Button
+                    }
                     val amount = amountText.toDoubleOrNull() ?: 0.0
                     if (amount > 0 && fromAccount.id != toAccount.id) {
                         onConfirm(fromAccount.id, toAccount.id, amount)

@@ -53,6 +53,7 @@ import com.example.ui.theme.IndigoPrimary
 import com.example.ui.viewmodel.TransactionItem
 import com.example.utils.CurrencyFormatter
 import com.example.utils.DateTimeUtils
+import com.example.utils.NetworkObserver
 import com.example.utils.ExportUtils
 
 @Composable
@@ -75,6 +76,11 @@ fun TransactionDetailDialog(
             confirmButton = {
                 Button(
                     onClick = {
+                        if (!NetworkObserver(context).checkConnection()) {
+                            showDeleteConfirm = false
+                            showSystemTopToast(context, "No internet connection")
+                            return@Button
+                        }
                         showDeleteConfirm = false
                         onDelete()
                     },
@@ -182,7 +188,6 @@ fun TransactionDetailDialog(
                 DetailInfoRow(label = "Date", value = DateTimeUtils.formatDisplayDate(transaction.date))
                 DetailInfoRow(label = "Time", value = DateTimeUtils.formatDisplayTime(transaction.time))
                 DetailInfoRow(label = "Payment Method", value = transaction.paymentMethod)
-                DetailInfoRow(label = "Sync Status", value = transaction.syncStatus)
 
                 if (transaction.note.isNotBlank() && transaction.note != transaction.title) {
                     DetailInfoRow(label = "Item / Description", value = transaction.note)
@@ -197,6 +202,10 @@ fun TransactionDetailDialog(
                 ) {
                     OutlinedButton(
                         onClick = {
+                            if (!NetworkObserver(context).checkConnection()) {
+                                showSystemTopToast(context, "No internet connection")
+                                return@OutlinedButton
+                            }
                             val displayTime = DateTimeUtils.formatDisplayTime(transaction.time)
                             val shareText = "Daily Expense Manager\nType: ${if (transaction.isExpense) "Expense" else "Income"}\nTitle: ${transaction.title}\nAmount: ${CurrencyFormatter.format(transaction.amount, currencySymbol)}\nDate: ${transaction.date} $displayTime\nPayment: ${transaction.paymentMethod}"
                             ExportUtils.shareReport(context, "Transaction Details", shareText)
@@ -211,7 +220,13 @@ fun TransactionDetailDialog(
                     }
 
                     OutlinedButton(
-                        onClick = onEdit,
+                        onClick = {
+                            if (!NetworkObserver(context).checkConnection()) {
+                                showSystemTopToast(context, "No internet connection")
+                                return@OutlinedButton
+                            }
+                            onEdit()
+                        },
                         modifier = Modifier.weight(1f).testTag("edit_transaction_button"),
                         shape = RoundedCornerShape(12.dp),
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
@@ -222,7 +237,13 @@ fun TransactionDetailDialog(
                     }
 
                     Button(
-                        onClick = { showDeleteConfirm = true },
+                        onClick = {
+                            if (!NetworkObserver(context).checkConnection()) {
+                                showSystemTopToast(context, "No internet connection")
+                                return@Button
+                            }
+                            showDeleteConfirm = true
+                        },
                         modifier = Modifier.weight(1f).testTag("delete_transaction_button"),
                         colors = ButtonDefaults.buttonColors(containerColor = FinanceError),
                         shape = RoundedCornerShape(12.dp),

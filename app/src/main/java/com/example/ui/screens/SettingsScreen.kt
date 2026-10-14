@@ -195,6 +195,10 @@ fun SettingsScreen(
             confirmButton = {
                 Button(
                     onClick = {
+                        if (!viewModel.checkOnlineOrShowToast()) {
+                            showLogoutConfirmDialog = false
+                            return@Button
+                        }
                         showLogoutConfirmDialog = false
                         viewModel.logout()
                         onLogout()
@@ -246,6 +250,7 @@ fun SettingsScreen(
             confirmButton = {
                 Button(
                     onClick = {
+                        if (!viewModel.checkOnlineOrShowToast()) return@Button
                         val trimmed = newNameInput.trim()
                         if (trimmed.isNotEmpty()) {
                             viewModel.updateDisplayName(trimmed) { success, err ->
@@ -314,6 +319,7 @@ fun SettingsScreen(
                             fontSize = 22.sp,
                             showEditBadge = false,
                             onClick = {
+                                if (!viewModel.checkOnlineOrShowToast()) return@ProfileAvatar
                                 photoPickerLauncher.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                 )
@@ -335,6 +341,7 @@ fun SettingsScreen(
                                 )
                                 IconButton(
                                     onClick = {
+                                        if (!viewModel.checkOnlineOrShowToast()) return@IconButton
                                         newNameInput = prefs.userDisplayName
                                         showEditNameDialog = true
                                     },
@@ -503,7 +510,10 @@ fun SettingsScreen(
                                         fontSize = 14.sp
                                     )
                                     IconButton(
-                                        onClick = { budgetToDelete = b },
+                                        onClick = {
+                                            if (!viewModel.checkOnlineOrShowToast()) return@IconButton
+                                            budgetToDelete = b
+                                        },
                                         modifier = Modifier.size(28.dp).testTag("delete_budget_${b.id}")
                                     ) {
                                         Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Gray, modifier = Modifier.size(16.dp))
@@ -583,7 +593,10 @@ fun SettingsScreen(
                 border = if (isSystemInDarkTheme()) BorderStroke(1.dp, FinanceError.copy(alpha = 0.35f)) else BorderStroke(1.dp, FinanceError.copy(alpha = 0.2f))
             ) {
                 Button(
-                    onClick = { showLogoutConfirmDialog = true },
+                    onClick = {
+                        if (!viewModel.checkOnlineOrShowToast()) return@Button
+                        showLogoutConfirmDialog = true
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(12.dp)
@@ -629,6 +642,7 @@ fun SettingsScreen(
             ) {
                 Button(
                     onClick = {
+                        if (!viewModel.checkOnlineOrShowToast()) return@Button
                         deleteConfirmationInput = ""
                         showDeleteAccountDialog = true
                     },
@@ -682,6 +696,10 @@ fun SettingsScreen(
             confirmButton = {
                 Button(
                     onClick = {
+                        if (!viewModel.checkOnlineOrShowToast()) {
+                            budgetToDelete = null
+                            return@Button
+                        }
                         viewModel.deleteBudget(budget)
                         budgetToDelete = null
                     },
@@ -736,6 +754,10 @@ fun SettingsScreen(
             confirmButton = {
                 Button(
                     onClick = {
+                        if (!viewModel.checkOnlineOrShowToast()) {
+                            showDeleteAccountDialog = false
+                            return@Button
+                        }
                         if (deleteConfirmationInput.trim().equals("DELETE", ignoreCase = true)) {
                             isDeletingAccount = true
                             viewModel.deleteAccount { success, err ->

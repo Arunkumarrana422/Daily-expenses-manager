@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -56,9 +56,9 @@ fun IntroScreen(
             icon = Icons.Default.PieChart
         ),
         IntroPage(
-            title = "Secure Cloud Sync",
-            description = "Sign in with your Google account to securely synchronize all your financial data across devices.",
-            icon = Icons.Default.CloudSync
+            title = "Live Cloud Firestore",
+            description = "Sign in with your Google account to connect directly to Firebase Cloud Firestore with live updates.",
+            icon = Icons.Default.CloudDone
         )
     )
 

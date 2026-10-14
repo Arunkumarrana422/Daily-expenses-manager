@@ -359,52 +359,23 @@ fun NoInternetScreen(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         // Data Status Row
-                        val isRechargeIssue = diagnostics.status == DiagnosticStatus.RECHARGE_EXPIRED_OR_DATA_OVER ||
-                                diagnostics.status == DiagnosticStatus.CAPTIVE_PORTAL
-                        val rechargeStatusText = when {
-                            isRechargeIssue -> "⚠️ Expired / Exhausted"
-                            diagnostics.status == DiagnosticStatus.MOBILE_DATA_OFF -> "OFF (Disabled)"
-                            diagnostics.status == DiagnosticStatus.AIRPLANE_MODE_ON -> "Airplane Mode ON"
-                            diagnostics.status == DiagnosticStatus.WIFI_NO_INTERNET -> "No ISP Internet"
-                            diagnostics.status == DiagnosticStatus.NO_SIM_CARD -> "No SIM Card"
-                            else -> "Unavailable"
+                        val dataStatusText = when (diagnostics.status) {
+                            DiagnosticStatus.ONLINE -> "Connected"
+                            DiagnosticStatus.MOBILE_DATA_OFF -> "OFF (Disabled)"
+                            DiagnosticStatus.AIRPLANE_MODE_ON -> "Airplane Mode ON"
+                            DiagnosticStatus.WIFI_NO_INTERNET -> "No ISP Internet"
+                            DiagnosticStatus.NO_SIM_CARD -> "No SIM Card"
+                            else -> "Disconnected"
                         }
-                        val rechargeStatusColor = if (isRechargeIssue) Color(0xFFEF4444) else accentColor
+                        val dataStatusColor = if (diagnostics.status == DiagnosticStatus.ONLINE) MintGreenPrimary else accentColor
 
                         DiagnosticRow(
                             icon = Icons.Default.Info,
                             label = "Data Connection:",
-                            value = rechargeStatusText,
-                            textColor = rechargeStatusColor,
+                            value = dataStatusText,
+                            textColor = dataStatusColor,
                             subtitleColor = subtitleColor
                         )
-
-                        // Data Link Alert Banner if data throughput blocked
-                        if (isRechargeIssue) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFFEF4444).copy(alpha = 0.08f),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.25f)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    Text(
-                                        text = "🚨 Data Pack or Validity Issue",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFEF4444)
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "Connected to ${diagnostics.generationLabel} network, but internet data packets are not responding. Daily data pack may be over or recharge validity has expired.",
-                                        fontSize = 11.sp,
-                                        lineHeight = 16.sp,
-                                        color = subtitleColor
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
 

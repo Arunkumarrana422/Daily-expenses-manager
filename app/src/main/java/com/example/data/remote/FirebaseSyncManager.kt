@@ -15,11 +15,15 @@ import com.example.data.local.entity.IncomeEntity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
-import com.google.firebase.firestore.MemoryCacheSettings
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.PersistentCacheSettings
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
@@ -30,6 +34,11 @@ sealed class SyncState {
     data class Error(val message: String) : SyncState()
 }
 
+/**
+ * Direct Live Cloud Firestore Manager.
+ * Maintains persistent real-time snapshot listeners with Firebase Cloud Firestore.
+ * All writes, edits, and deletions happen directly on Cloud Firestore with automatic real-time streaming.
+ */
 class FirebaseSyncManager(
     private val context: Context,
     private val expenseDao: ExpenseDao,
@@ -38,7 +47,8 @@ class FirebaseSyncManager(
     private val budgetDao: BudgetDao,
     private val preferencesDataStore: com.example.data.local.preferences.UserPreferencesDataStore? = null
 ) {
-    private val TAG = "FirebaseSyncManager"
+    private val TAG = "LiveFirestoreManager"
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
@@ -56,15 +66,31 @@ class FirebaseSyncManager(
             val db = FirebaseFirestore.getInstance()
             try {
                 val settings = FirebaseFirestoreSettings.Builder()
-                    .setLocalCacheSettings(MemoryCacheSettings.newBuilder().build())
+                    .setLocalCacheSettings(PersistentCacheSettings.newBuilder().build())
                     .build()
                 db.firestoreSettings = settings
             } catch (e: Exception) {
-                Log.w(TAG, "Memory cache settings could not be applied: ${e.message}")
+                Log.w(TAG, "Persistent cache settings notice: ${e.message}")
             }
             db
         } catch (e: Exception) {
+            Log.e(TAG, "Error initializing Firestore: ${e.message}")
             null
+        }
+    }
+
+    // Real-time snapshot listener registrations
+    private var expenseListenerRegistration: ListenerRegistration? = null
+    private var incomeListenerRegistration: ListenerRegistration? = null
+    private var budgetListenerRegistration: ListenerRegistration? = null
+    private var profileListenerRegistration: ListenerRegistration? = null
+    private var activeUserId: String? = null
+
+    init {
+        // Automatically attach live listeners if user is already signed in
+        val currentUid = auth?.currentUser?.uid
+        if (currentUid != null) {
+            startLiveListeners(currentUid)
         }
     }
 
@@ -84,7 +110,233 @@ class FirebaseSyncManager(
     fun getCurrentUserId(): String? = auth?.currentUser?.uid
 
     /**
-     * Upload an expense directly to Firestore
+     * Start live real-time snapshot listeners directly on Cloud Firestore
+     */
+    fun startLiveListeners(userId: String) {
+        if (activeUserId == userId && expenseListenerRegistration != null) {
+            return
+        }
+        stopLiveListeners()
+        activeUserId = userId
+
+        val fs = firestore ?: return
+
+        try {
+            // 1. Live Expenses Listener
+            expenseListenerRegistration = fs.collection("users").document(userId)
+                .collection("expenses")
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Log.w(TAG, "Live expenses listener error: ${error.message}")
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null) {
+                        scope.launch {
+                            try {
+                                val remoteIds = snapshot.documents.mapNotNull { it.id.toLongOrNull() }.toSet()
+                                val parsedExpenses = snapshot.documents.mapNotNull { doc ->
+                                    try {
+                                        val amount = doc.getDouble("amount") ?: 0.0
+                                        val categoryName = doc.getString("categoryName") ?: "Other"
+                                        val categoryIcon = doc.getString("categoryIcon") ?: "category"
+                                        val categoryColor = doc.getLong("categoryColor") ?: 0xFF3949AB
+                                        val categoryId = doc.getLong("categoryId") ?: 1L
+                                        val paymentMethod = doc.getString("paymentMethod") ?: "Cash"
+                                        val accountId = doc.getLong("accountId") ?: 1L
+                                        val note = doc.getString("note") ?: ""
+                                        val date = doc.getString("date") ?: ""
+                                        val time = doc.getString("time") ?: ""
+                                        val id = doc.id.toLongOrNull() ?: 0L
+                                        val createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
+                                        val updatedAt = doc.getLong("updatedAt") ?: System.currentTimeMillis()
+
+                                        ExpenseEntity(
+                                            id = id,
+                                            userId = userId,
+                                            amount = amount,
+                                            categoryId = categoryId,
+                                            categoryName = categoryName,
+                                            categoryIcon = categoryIcon,
+                                            categoryColor = categoryColor,
+                                            paymentMethod = paymentMethod,
+                                            accountId = accountId,
+                                            note = note,
+                                            date = date,
+                                            time = time,
+                                            createdAt = createdAt,
+                                            updatedAt = updatedAt,
+                                            syncStatus = "LIVE"
+                                        )
+                                    } catch (e: Exception) {
+                                        null
+                                    }
+                                }
+
+                                for (exp in parsedExpenses) {
+                                    expenseDao.insertExpense(exp)
+                                }
+
+                                // Delete locally any items deleted in Firestore
+                                val localList = expenseDao.getAllExpensesList()
+                                for (local in localList) {
+                                    if (local.id !in remoteIds && remoteIds.isNotEmpty()) {
+                                        expenseDao.deleteExpense(local)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Error updating live expenses: ${e.message}")
+                            }
+                        }
+                    }
+                }
+
+            // 2. Live Incomes Listener
+            incomeListenerRegistration = fs.collection("users").document(userId)
+                .collection("incomes")
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Log.w(TAG, "Live incomes listener error: ${error.message}")
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null) {
+                        scope.launch {
+                            try {
+                                val remoteIds = snapshot.documents.mapNotNull { it.id.toLongOrNull() }.toSet()
+                                val parsedIncomes = snapshot.documents.mapNotNull { doc ->
+                                    try {
+                                        val amount = doc.getDouble("amount") ?: 0.0
+                                        val source = doc.getString("source") ?: "Income"
+                                        val accountId = doc.getLong("accountId") ?: 1L
+                                        val paymentMethod = doc.getString("paymentMethod") ?: "Cash"
+                                        val note = doc.getString("note") ?: ""
+                                        val date = doc.getString("date") ?: ""
+                                        val time = doc.getString("time") ?: ""
+                                        val id = doc.id.toLongOrNull() ?: 0L
+                                        val createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
+                                        val updatedAt = doc.getLong("updatedAt") ?: System.currentTimeMillis()
+
+                                        IncomeEntity(
+                                            id = id,
+                                            userId = userId,
+                                            amount = amount,
+                                            source = source,
+                                            accountId = accountId,
+                                            paymentMethod = paymentMethod,
+                                            note = note,
+                                            date = date,
+                                            time = time,
+                                            createdAt = createdAt,
+                                            updatedAt = updatedAt,
+                                            syncStatus = "LIVE"
+                                        )
+                                    } catch (e: Exception) {
+                                        null
+                                    }
+                                }
+
+                                for (inc in parsedIncomes) {
+                                    incomeDao.insertIncome(inc)
+                                }
+
+                                val localList = incomeDao.getAllIncomesList()
+                                for (local in localList) {
+                                    if (local.id !in remoteIds && remoteIds.isNotEmpty()) {
+                                        incomeDao.deleteIncome(local)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Error updating live incomes: ${e.message}")
+                            }
+                        }
+                    }
+                }
+
+            // 3. Live Budgets Listener
+            budgetListenerRegistration = fs.collection("users").document(userId)
+                .collection("budgets")
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Log.w(TAG, "Live budgets listener error: ${error.message}")
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null) {
+                        scope.launch {
+                            try {
+                                val parsedBudgets = snapshot.documents.mapNotNull { doc ->
+                                    try {
+                                        val categoryName = doc.getString("categoryName") ?: "All"
+                                        val amount = doc.getDouble("amount") ?: 0.0
+                                        val period = doc.getString("period") ?: "MONTHLY"
+                                        val warningThreshold = (doc.getDouble("warningThreshold") ?: 0.75).toFloat()
+                                        val id = doc.id.toLongOrNull() ?: 0L
+
+                                        BudgetEntity(
+                                            id = id,
+                                            userId = userId,
+                                            categoryName = categoryName,
+                                            amount = amount,
+                                            period = period,
+                                            warningThreshold = warningThreshold
+                                        )
+                                    } catch (e: Exception) {
+                                        null
+                                    }
+                                }
+
+                                for (bg in parsedBudgets) {
+                                    budgetDao.insertBudget(bg)
+                                }
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Error updating live budgets: ${e.message}")
+                            }
+                        }
+                    }
+                }
+
+            // 4. Live Profile Document Listener
+            profileListenerRegistration = fs.collection("users").document(userId)
+                .addSnapshotListener { doc, error ->
+                    if (error != null || doc == null || !doc.exists()) return@addSnapshotListener
+                    val name = doc.getString("name")
+                    val photo = doc.getString("profilePhotoBase64")
+                    scope.launch {
+                        if (!name.isNullOrBlank()) {
+                            preferencesDataStore?.setUserName(name)
+                        }
+                        if (!photo.isNullOrBlank()) {
+                            preferencesDataStore?.setProfilePhoto(photo)
+                        }
+                    }
+                }
+
+            Log.i(TAG, "Direct Live Firestore listeners connected successfully for user $userId")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start live Firestore listeners: ${e.message}")
+        }
+    }
+
+    /**
+     * Stop real-time snapshot listeners (called on sign out)
+     */
+    fun stopLiveListeners() {
+        try {
+            expenseListenerRegistration?.remove()
+            incomeListenerRegistration?.remove()
+            budgetListenerRegistration?.remove()
+            profileListenerRegistration?.remove()
+        } catch (e: Exception) {
+            Log.w(TAG, "Error detaching listeners: ${e.message}")
+        } finally {
+            expenseListenerRegistration = null
+            incomeListenerRegistration = null
+            budgetListenerRegistration = null
+            profileListenerRegistration = null
+            activeUserId = null
+        }
+    }
+
+    /**
+     * Write an expense directly to Firestore
      */
     suspend fun uploadExpense(userId: String, expense: ExpenseEntity): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -102,21 +354,21 @@ class FirebaseSyncManager(
                 "date" to expense.date,
                 "time" to expense.time,
                 "userId" to userId,
+                "createdAt" to expense.createdAt,
                 "updatedAt" to expense.updatedAt
             )
             fs.collection("users").document(userId)
                 .collection("expenses").document(expense.id.toString())
                 .set(data).await()
-            expenseDao.markSynced(listOf(expense.id))
             true
         } catch (e: Exception) {
-            Log.w(TAG, "uploadExpense error: ${e.message}")
+            Log.w(TAG, "Direct write expense error: ${e.message}")
             false
         }
     }
 
     /**
-     * Delete an expense from Firestore
+     * Delete an expense directly from Firestore
      */
     suspend fun deleteExpense(userId: String, id: Long) = withContext(Dispatchers.IO) {
         try {
@@ -125,12 +377,12 @@ class FirebaseSyncManager(
                 .collection("expenses").document(id.toString())
                 .delete().await()
         } catch (e: Exception) {
-            Log.w(TAG, "deleteExpense error: ${e.message}")
+            Log.w(TAG, "Direct delete expense error: ${e.message}")
         }
     }
 
     /**
-     * Upload an income directly to Firestore
+     * Write an income directly to Firestore
      */
     suspend fun uploadIncome(userId: String, income: IncomeEntity): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -145,21 +397,21 @@ class FirebaseSyncManager(
                 "date" to income.date,
                 "time" to income.time,
                 "userId" to userId,
+                "createdAt" to income.createdAt,
                 "updatedAt" to income.updatedAt
             )
             fs.collection("users").document(userId)
                 .collection("incomes").document(income.id.toString())
                 .set(data).await()
-            incomeDao.markSynced(listOf(income.id))
             true
         } catch (e: Exception) {
-            Log.w(TAG, "uploadIncome error: ${e.message}")
+            Log.w(TAG, "Direct write income error: ${e.message}")
             false
         }
     }
 
     /**
-     * Delete an income from Firestore
+     * Delete an income directly from Firestore
      */
     suspend fun deleteIncome(userId: String, id: Long) = withContext(Dispatchers.IO) {
         try {
@@ -168,36 +420,12 @@ class FirebaseSyncManager(
                 .collection("incomes").document(id.toString())
                 .delete().await()
         } catch (e: Exception) {
-            Log.w(TAG, "deleteIncome error: ${e.message}")
+            Log.w(TAG, "Direct delete income error: ${e.message}")
         }
     }
 
     /**
-     * Upload an account to Firestore (Disabled: accounts are kept local only and not synced as a collection to Firestore)
-     */
-    suspend fun uploadAccount(userId: String, account: AccountEntity) = withContext(Dispatchers.IO) {
-        // Accounts are kept purely local in Room DB and not stored in Firestore
-        return@withContext
-    }
-
-    /**
-     * Clean up any residual accounts subcollection in Firestore for the user
-     */
-    suspend fun removeAccountsCollectionFromFirestore(userId: String) = withContext(Dispatchers.IO) {
-        try {
-            val fs = firestore ?: return@withContext
-            val accSnapshot = fs.collection("users").document(userId)
-                .collection("accounts").get().await()
-            for (doc in accSnapshot.documents) {
-                doc.reference.delete().await()
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "removeAccountsCollectionFromFirestore error: ${e.message}")
-        }
-    }
-
-    /**
-     * Upload a budget to Firestore
+     * Write a budget directly to Firestore
      */
     suspend fun uploadBudget(userId: String, budget: BudgetEntity) = withContext(Dispatchers.IO) {
         try {
@@ -214,12 +442,12 @@ class FirebaseSyncManager(
                 .collection("budgets").document(budget.id.toString())
                 .set(data).await()
         } catch (e: Exception) {
-            Log.w(TAG, "uploadBudget error: ${e.message}")
+            Log.w(TAG, "Direct write budget error: ${e.message}")
         }
     }
 
     /**
-     * Delete a budget from Firestore
+     * Delete a budget directly from Firestore
      */
     suspend fun deleteBudget(userId: String, id: Long) = withContext(Dispatchers.IO) {
         try {
@@ -228,226 +456,41 @@ class FirebaseSyncManager(
                 .collection("budgets").document(id.toString())
                 .delete().await()
         } catch (e: Exception) {
-            Log.w(TAG, "deleteBudget error: ${e.message}")
+            Log.w(TAG, "Direct delete budget error: ${e.message}")
         }
     }
 
     /**
-     * Delete an account from Firestore
+     * Write an account directly
+     */
+    suspend fun uploadAccount(userId: String, account: AccountEntity) = withContext(Dispatchers.IO) {
+        // Accounts are stored in Room database
+    }
+
+    /**
+     * Delete an account
      */
     suspend fun deleteAccount(userId: String, id: Long) = withContext(Dispatchers.IO) {
-        try {
-            val fs = firestore ?: return@withContext
-            fs.collection("users").document(userId)
-                .collection("accounts").document(id.toString())
-                .delete().await()
-        } catch (e: Exception) {
-            Log.w(TAG, "deleteAccount error: ${e.message}")
-        }
+        // Accounts are stored in Room database
     }
 
     /**
-     * Upload all local data in Room to Firestore for this user
-     */
-    suspend fun uploadAllLocalDataToFirestore(userId: String) = withContext(Dispatchers.IO) {
-        try {
-            val exps = expenseDao.getAllExpensesList()
-            for (exp in exps) {
-                uploadExpense(userId, exp.copy(userId = userId))
-            }
-            val incs = incomeDao.getAllIncomesList()
-            for (inc in incs) {
-                uploadIncome(userId, inc.copy(userId = userId))
-            }
-            // Ensure no accounts collection exists in Firestore
-            removeAccountsCollectionFromFirestore(userId)
-
-            val bgs = budgetDao.getAllBudgetsList()
-            for (bg in bgs) {
-                uploadBudget(userId, bg.copy(userId = userId))
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "uploadAllLocalDataToFirestore error: ${e.message}")
-        }
-    }
-
-    /**
-     * Fetch all user data from Firebase and sync to local Room database
-     */
-    suspend fun fetchFromFirebase(userId: String): Boolean = withContext(Dispatchers.IO) {
-        if (!isOnline()) return@withContext false
-        val fs = firestore ?: return@withContext false
-
-        try {
-            // Clean up any accounts collection if it exists in Firestore
-            removeAccountsCollectionFromFirestore(userId)
-
-            // 0. Fetch user profile from Firestore to keep local profile photo and name restored
-            try {
-                val userDoc = fs.collection("users").document(userId).get().await()
-                if (userDoc != null && userDoc.exists()) {
-                    val name = userDoc.getString("name")
-                    val photo = userDoc.getString("profilePhotoBase64")
-                    if (!photo.isNullOrBlank()) {
-                        preferencesDataStore?.setProfilePhoto(photo)
-                    }
-                    if (!name.isNullOrBlank()) {
-                        preferencesDataStore?.setUserName(name)
-                    }
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "fetchFromFirebase profile sync error: ${e.message}")
-            }
-
-            // 1. Fetch expenses
-            val expSnapshot = fs.collection("users").document(userId)
-                .collection("expenses").get().await()
-
-            val fetchedExpenses = expSnapshot.documents.mapNotNull { doc ->
-                try {
-                    val amount = doc.getDouble("amount") ?: 0.0
-                    val categoryName = doc.getString("categoryName") ?: "Other"
-                    val categoryIcon = doc.getString("categoryIcon") ?: "category"
-                    val categoryColor = doc.getLong("categoryColor") ?: 0xFF3949AB
-                    val categoryId = doc.getLong("categoryId") ?: 1L
-                    val paymentMethod = doc.getString("paymentMethod") ?: "Cash"
-                    val accountId = doc.getLong("accountId") ?: 1L
-                    val note = doc.getString("note") ?: ""
-                    val date = doc.getString("date") ?: ""
-                    val time = doc.getString("time") ?: ""
-                    val id = doc.id.toLongOrNull() ?: 0L
-
-                    ExpenseEntity(
-                        id = id,
-                        userId = userId,
-                        amount = amount,
-                        categoryId = categoryId,
-                        categoryName = categoryName,
-                        categoryIcon = categoryIcon,
-                        categoryColor = categoryColor,
-                        paymentMethod = paymentMethod,
-                        accountId = accountId,
-                        note = note,
-                        date = date,
-                        time = time,
-                        syncStatus = "SYNCED"
-                    )
-                } catch (e: Exception) {
-                    null
-                }
-            }
-
-            for (exp in fetchedExpenses) {
-                expenseDao.insertExpense(exp)
-            }
-
-            // 2. Fetch incomes
-            val incSnapshot = fs.collection("users").document(userId)
-                .collection("incomes").get().await()
-
-            val fetchedIncomes = incSnapshot.documents.mapNotNull { doc ->
-                try {
-                    val amount = doc.getDouble("amount") ?: 0.0
-                    val source = doc.getString("source") ?: "Income"
-                    val accountId = doc.getLong("accountId") ?: 1L
-                    val paymentMethod = doc.getString("paymentMethod") ?: "Cash"
-                    val note = doc.getString("note") ?: ""
-                    val date = doc.getString("date") ?: ""
-                    val time = doc.getString("time") ?: ""
-                    val id = doc.id.toLongOrNull() ?: 0L
-
-                    IncomeEntity(
-                        id = id,
-                        userId = userId,
-                        amount = amount,
-                        source = source,
-                        accountId = accountId,
-                        paymentMethod = paymentMethod,
-                        note = note,
-                        date = date,
-                        time = time,
-                        syncStatus = "SYNCED"
-                    )
-                } catch (e: Exception) {
-                    null
-                }
-            }
-
-            for (inc in fetchedIncomes) {
-                incomeDao.insertIncome(inc)
-            }
-
-            // 3. Fetch budgets
-            val bgSnapshot = fs.collection("users").document(userId)
-                .collection("budgets").get().await()
-
-            val fetchedBudgets = bgSnapshot.documents.mapNotNull { doc ->
-                try {
-                    val categoryName = doc.getString("categoryName") ?: "All"
-                    val amount = doc.getDouble("amount") ?: 0.0
-                    val period = doc.getString("period") ?: "MONTHLY"
-                    val warningThreshold = (doc.getDouble("warningThreshold") ?: 0.75).toFloat()
-                    val id = doc.id.toLongOrNull() ?: 0L
-
-                    BudgetEntity(
-                        id = id,
-                        userId = userId,
-                        categoryName = categoryName,
-                        amount = amount,
-                        period = period,
-                        warningThreshold = warningThreshold
-                    )
-                } catch (e: Exception) {
-                    null
-                }
-            }
-
-            for (bg in fetchedBudgets) {
-                budgetDao.insertBudget(bg)
-            }
-
-            true
-        } catch (e: Exception) {
-            Log.w(TAG, "fetchFromFirebase error: ${e.message}")
-            false
-        }
-    }
-
-    /**
-     * Trigger full two-way synchronization
+     * Refresh connection / ensure listeners are active
      */
     suspend fun triggerSync(): Boolean = withContext(Dispatchers.IO) {
-        if (!isOnline()) {
-            _syncState.value = SyncState.Error("No internet connection")
-            return@withContext false
+        val uid = auth?.currentUser?.uid
+        if (uid != null) {
+            startLiveListeners(uid)
         }
+        true
+    }
 
-        _syncState.value = SyncState.Syncing
+    suspend fun fetchFromFirebase(userId: String): Boolean = withContext(Dispatchers.IO) {
+        startLiveListeners(userId)
+        true
+    }
 
-        try {
-            val currentUserId = auth?.currentUser?.uid
-            if (currentUserId != null) {
-                // 1. Push pending items to Firebase
-                val pendingExpenses = expenseDao.getPendingExpenses()
-                val pendingIncomes = incomeDao.getPendingIncomes()
-
-                for (exp in pendingExpenses) {
-                    uploadExpense(currentUserId, exp)
-                }
-                for (inc in pendingIncomes) {
-                    uploadIncome(currentUserId, inc)
-                }
-
-                // 2. Fetch fresh items from Firebase
-                fetchFromFirebase(currentUserId)
-            }
-
-            val now = System.currentTimeMillis()
-            _syncState.value = SyncState.Success("Data synchronized with Firebase", now)
-            true
-        } catch (e: Exception) {
-            _syncState.value = SyncState.Error("Sync failed: ${e.message}")
-            false
-        }
+    suspend fun uploadAllLocalDataToFirestore(userId: String) = withContext(Dispatchers.IO) {
+        startLiveListeners(userId)
     }
 }

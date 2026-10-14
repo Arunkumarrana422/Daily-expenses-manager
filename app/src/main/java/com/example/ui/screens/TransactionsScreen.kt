@@ -32,7 +32,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import com.example.data.remote.SyncState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -87,7 +86,6 @@ fun TransactionsScreen(
 
     val filteredTransactions by viewModel.filteredTransactions.collectAsStateWithLifecycle()
     val isLoadingTransactions by viewModel.isLoadingTransactions.collectAsStateWithLifecycle()
-    val syncState by viewModel.syncState.collectAsStateWithLifecycle()
     val allExpenses by viewModel.expenses.collectAsStateWithLifecycle()
     val allIncomes by viewModel.incomes.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
@@ -339,7 +337,7 @@ fun TransactionsScreen(
         }
 
         // Transactions List with Date Headers
-        val isListLoading = isLoadingTransactions || (syncState is SyncState.Syncing && filteredTransactions.isEmpty())
+        val isListLoading = isLoadingTransactions && filteredTransactions.isEmpty()
         if (isListLoading) {
             Box(
                 modifier = Modifier

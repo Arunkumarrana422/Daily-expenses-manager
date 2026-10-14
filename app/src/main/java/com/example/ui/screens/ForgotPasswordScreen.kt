@@ -52,6 +52,7 @@ import com.example.ui.components.ToastType
 import com.example.ui.components.TopToastHost
 import com.example.ui.components.rememberTopToastState
 import com.example.ui.components.showSystemTopToast
+import com.example.utils.NetworkObserver
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
@@ -100,6 +101,11 @@ fun ForgotPasswordScreen(
     val scrollState = rememberScrollState()
 
     fun attemptReset() {
+        if (!NetworkObserver(context).checkConnection()) {
+            topToastState.show("No internet connection", ToastType.ERROR)
+            showSystemTopToast(context, "No internet connection")
+            return
+        }
         if (email.isBlank() || !email.contains("@")) {
             val msg = "Please enter a valid email"
             topToastState.show(msg, ToastType.ERROR)

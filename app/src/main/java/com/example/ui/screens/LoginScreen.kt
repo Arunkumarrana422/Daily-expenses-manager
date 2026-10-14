@@ -41,6 +41,7 @@ import com.example.R
 import com.example.ui.components.ToastType
 import com.example.ui.components.TopToastHost
 import com.example.ui.components.rememberTopToastState
+import com.example.ui.components.showSystemTopToast
 import com.example.ui.theme.IndigoPrimary
 import com.example.ui.viewmodel.FinanceViewModel
 import com.example.utils.NetworkObserver
@@ -203,6 +204,7 @@ fun LoginScreen(
                  onClick = {
                      if (!NetworkObserver(context).checkConnection()) {
                          topToastState.show("No internet connection", ToastType.ERROR)
+                         showSystemTopToast(context, "No internet connection")
                          return@OutlinedButton
                      }
                      isGoogleLoading = true

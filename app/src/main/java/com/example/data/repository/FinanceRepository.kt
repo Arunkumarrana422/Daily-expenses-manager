@@ -46,28 +46,24 @@ class FinanceRepository(
     val userPreferences: Flow<AppUserPreferences> = preferencesDataStore.preferencesFlow
     val syncState: StateFlow<SyncState> = syncManager.syncState
 
-    // Expenses operations
+    init {
+        val uid = syncManager.getCurrentUserId()
+        if (uid != null) {
+            syncManager.startLiveListeners(uid)
+        }
+    }
+
+    // Expenses operations - Direct Live Cloud Firestore
     suspend fun addExpenseWithFirestoreCheck(expense: ExpenseEntity): Result<Long> {
-        if (!syncManager.isOnline()) {
-            return Result.failure(Exception("No internet connection. Active internet is required."))
-        }
         val currentUserId = syncManager.getCurrentUserId()
+        val generatedId = if (expense.id > 0) expense.id else System.currentTimeMillis()
+        val createdExpense = expense.copy(id = generatedId, syncStatus = "LIVE")
+        val id = expenseDao.insertExpense(createdExpense)
+        accountDao.adjustBalance(expense.accountId, -expense.amount)
         if (currentUserId != null) {
-            val id = expenseDao.insertExpense(expense)
-            val createdExpense = expense.copy(id = id)
-            val isUploaded = syncManager.uploadExpense(currentUserId, createdExpense)
-            if (isUploaded) {
-                accountDao.adjustBalance(expense.accountId, -expense.amount)
-                return Result.success(id)
-            } else {
-                expenseDao.deleteExpense(createdExpense)
-                return Result.failure(Exception("Failed to save entry to Firestore. Please check your internet connection."))
-            }
-        } else {
-            val id = expenseDao.insertExpense(expense)
-            accountDao.adjustBalance(expense.accountId, -expense.amount)
-            return Result.success(id)
+            syncManager.uploadExpense(currentUserId, createdExpense)
         }
+        return Result.success(id)
     }
 
     suspend fun addExpense(expense: ExpenseEntity): Long {
@@ -75,34 +71,21 @@ class FinanceRepository(
     }
 
     suspend fun updateExpenseWithFirestoreCheck(expense: ExpenseEntity, oldAmount: Double, oldAccountId: Long): Result<Boolean> {
-        if (!syncManager.isOnline()) {
-            return Result.failure(Exception("No internet connection. Active internet is required."))
-        }
         val currentUserId = syncManager.getCurrentUserId()
+        expenseDao.updateExpense(expense.copy(syncStatus = "LIVE"))
+        accountDao.adjustBalance(oldAccountId, oldAmount)
+        accountDao.adjustBalance(expense.accountId, -expense.amount)
         if (currentUserId != null) {
-            val isUploaded = syncManager.uploadExpense(currentUserId, expense)
-            if (isUploaded) {
-                expenseDao.updateExpense(expense)
-                accountDao.adjustBalance(oldAccountId, oldAmount)
-                accountDao.adjustBalance(expense.accountId, -expense.amount)
-                return Result.success(true)
-            } else {
-                return Result.failure(Exception("Failed to update entry in Firestore. Please check your internet connection."))
-            }
-        } else {
-            expenseDao.updateExpense(expense)
-            accountDao.adjustBalance(oldAccountId, oldAmount)
-            accountDao.adjustBalance(expense.accountId, -expense.amount)
-            return Result.success(true)
+            syncManager.uploadExpense(currentUserId, expense)
         }
+        return Result.success(true)
     }
 
     suspend fun updateExpense(expense: ExpenseEntity, oldAmount: Double, oldAccountId: Long) {
-        expenseDao.updateExpense(expense)
-        // Revert old account deduction and apply new
+        val currentUserId = syncManager.getCurrentUserId()
+        expenseDao.updateExpense(expense.copy(syncStatus = "LIVE"))
         accountDao.adjustBalance(oldAccountId, oldAmount)
         accountDao.adjustBalance(expense.accountId, -expense.amount)
-        val currentUserId = syncManager.getCurrentUserId()
         if (currentUserId != null) {
             syncManager.uploadExpense(currentUserId, expense)
         }
@@ -129,26 +112,15 @@ class FinanceRepository(
 
     // Incomes operations
     suspend fun addIncomeWithFirestoreCheck(income: IncomeEntity): Result<Long> {
-        if (!syncManager.isOnline()) {
-            return Result.failure(Exception("No internet connection. Active internet is required."))
-        }
         val currentUserId = syncManager.getCurrentUserId()
+        val generatedId = if (income.id > 0) income.id else System.currentTimeMillis()
+        val createdIncome = income.copy(id = generatedId, syncStatus = "LIVE")
+        val id = incomeDao.insertIncome(createdIncome)
+        accountDao.adjustBalance(income.accountId, income.amount)
         if (currentUserId != null) {
-            val id = incomeDao.insertIncome(income)
-            val createdIncome = income.copy(id = id)
-            val isUploaded = syncManager.uploadIncome(currentUserId, createdIncome)
-            if (isUploaded) {
-                accountDao.adjustBalance(income.accountId, income.amount)
-                return Result.success(id)
-            } else {
-                incomeDao.deleteIncome(createdIncome)
-                return Result.failure(Exception("Failed to save entry to Firestore. Please check your internet connection."))
-            }
-        } else {
-            val id = incomeDao.insertIncome(income)
-            accountDao.adjustBalance(income.accountId, income.amount)
-            return Result.success(id)
+            syncManager.uploadIncome(currentUserId, createdIncome)
         }
+        return Result.success(id)
     }
 
     suspend fun addIncome(income: IncomeEntity): Long {
@@ -156,33 +128,21 @@ class FinanceRepository(
     }
 
     suspend fun updateIncomeWithFirestoreCheck(income: IncomeEntity, oldAmount: Double, oldAccountId: Long): Result<Boolean> {
-        if (!syncManager.isOnline()) {
-            return Result.failure(Exception("No internet connection. Active internet is required."))
-        }
         val currentUserId = syncManager.getCurrentUserId()
+        incomeDao.updateIncome(income.copy(syncStatus = "LIVE"))
+        accountDao.adjustBalance(oldAccountId, -oldAmount)
+        accountDao.adjustBalance(income.accountId, income.amount)
         if (currentUserId != null) {
-            val isUploaded = syncManager.uploadIncome(currentUserId, income)
-            if (isUploaded) {
-                incomeDao.updateIncome(income)
-                accountDao.adjustBalance(oldAccountId, -oldAmount)
-                accountDao.adjustBalance(income.accountId, income.amount)
-                return Result.success(true)
-            } else {
-                return Result.failure(Exception("Failed to update entry in Firestore. Please check your internet connection."))
-            }
-        } else {
-            incomeDao.updateIncome(income)
-            accountDao.adjustBalance(oldAccountId, -oldAmount)
-            accountDao.adjustBalance(income.accountId, income.amount)
-            return Result.success(true)
+            syncManager.uploadIncome(currentUserId, income)
         }
+        return Result.success(true)
     }
 
     suspend fun updateIncome(income: IncomeEntity, oldAmount: Double, oldAccountId: Long) {
-        incomeDao.updateIncome(income)
+        val currentUserId = syncManager.getCurrentUserId()
+        incomeDao.updateIncome(income.copy(syncStatus = "LIVE"))
         accountDao.adjustBalance(oldAccountId, -oldAmount)
         accountDao.adjustBalance(income.accountId, income.amount)
-        val currentUserId = syncManager.getCurrentUserId()
         if (currentUserId != null) {
             syncManager.uploadIncome(currentUserId, income)
         }
@@ -295,12 +255,7 @@ class FinanceRepository(
     suspend fun signInWithGoogle(idToken: String, displayName: String, email: String, photoUrl: String): Result<AuthUser> {
         val result = authManager.signInWithGoogle(idToken, displayName, email, photoUrl)
         result.onSuccess { user ->
-            // Upload all local user data to Firestore
-            syncManager.uploadAllLocalDataToFirestore(user.uid)
-            // Fetch any existing cloud data
-            syncManager.fetchFromFirebase(user.uid)
-            // Synchronize status
-            syncManager.triggerSync()
+            syncManager.startLiveListeners(user.uid)
         }
         return result
     }
@@ -308,10 +263,9 @@ class FinanceRepository(
     suspend fun login(email: String, pass: String): Result<AuthUser> {
         val result = authManager.login(email, pass)
         result.onSuccess { user ->
-            // Clear local transactions and fetch fresh from Firebase for this user
             expenseDao.deleteAllExpenses()
             incomeDao.deleteAllIncomes()
-            syncManager.fetchFromFirebase(user.uid)
+            syncManager.startLiveListeners(user.uid)
         }
         return result
     }
@@ -319,10 +273,9 @@ class FinanceRepository(
     suspend fun register(name: String, email: String, pass: String): Result<AuthUser> {
         val result = authManager.register(name, email, pass)
         result.onSuccess { user ->
-            // Clear local transactions for new account
             expenseDao.deleteAllExpenses()
             incomeDao.deleteAllIncomes()
-            syncManager.fetchFromFirebase(user.uid)
+            syncManager.startLiveListeners(user.uid)
         }
         return result
     }
@@ -340,6 +293,7 @@ class FinanceRepository(
     suspend fun deleteUserAccount(): Result<Unit> {
         val result = authManager.deleteAccount()
         if (result.isSuccess) {
+            syncManager.stopLiveListeners()
             expenseDao.deleteAllExpenses()
             incomeDao.deleteAllIncomes()
             accountDao.deleteAllAccounts()
@@ -349,6 +303,7 @@ class FinanceRepository(
     }
 
     suspend fun logout() {
+        syncManager.stopLiveListeners()
         authManager.logout()
         // Clear local user transactions on logout
         expenseDao.deleteAllExpenses()

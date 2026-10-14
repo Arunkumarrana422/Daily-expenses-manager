@@ -56,7 +56,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import com.example.utils.NetworkObserver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -93,6 +95,7 @@ fun EditTransactionDialog(
         onFinish: (Boolean) -> Unit
     ) -> Unit
 ) {
+    val context = LocalContext.current
     val initialAmount = if (transaction.amount % 1.0 == 0.0) {
         transaction.amount.toLong().toString()
     } else {
@@ -423,6 +426,10 @@ fun EditTransactionDialog(
 
                     Button(
                         onClick = {
+                            if (!NetworkObserver(context).checkConnection()) {
+                                showSystemTopToast(context, "No internet connection")
+                                return@Button
+                            }
                             val amount = amountText.toDoubleOrNull() ?: 0.0
                             if (amount > 0.0) {
                                 isSaving = true

@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import com.example.ui.components.showSystemTopToast
 
 data class TransactionItem(
     val id: Long,
@@ -137,13 +138,10 @@ class FinanceViewModel(
     val isLoadingTransactions: StateFlow<Boolean> = _isLoadingTransactions.asStateFlow()
 
     init {
-        // Check internet connection before fetching data from Firestore on startup
         viewModelScope.launch {
             try {
                 if (repository.isOnline()) {
                     repository.syncWithCloud()
-                } else {
-                    _snackbarMessage.emit("No internet connection")
                 }
             } finally {
                 _isLoadingTransactions.value = false
@@ -361,6 +359,23 @@ class FinanceViewModel(
         _selectedTransaction.value = transaction
     }
 
+    fun isOnline(): Boolean = repository.isOnline()
+
+    fun showNoInternetToast() {
+        viewModelScope.launch {
+            _snackbarMessage.emit("No internet connection")
+        }
+        showSystemTopToast(context, "No internet connection")
+    }
+
+    fun checkOnlineOrShowToast(): Boolean {
+        if (!repository.isOnline()) {
+            showNoInternetToast()
+            return false
+        }
+        return true
+    }
+
     fun addExpense(
         amount: Double,
         categoryId: Long,
@@ -375,6 +390,10 @@ class FinanceViewModel(
         receiptUri: String? = null,
         onComplete: (Boolean) -> Unit = {}
     ) {
+        if (!checkOnlineOrShowToast()) {
+            onComplete(false)
+            return
+        }
         viewModelScope.launch {
             // Pre-calculate current monthly totals BEFORE adding the new expense to avoid double counting
             val currentCatExpenses = expenses.value.filter {
@@ -480,6 +499,10 @@ class FinanceViewModel(
         time: String,
         onComplete: (Boolean) -> Unit = {}
     ) {
+        if (!checkOnlineOrShowToast()) {
+            onComplete(false)
+            return
+        }
         viewModelScope.launch {
             val income = IncomeEntity(
                 amount = amount,
@@ -513,6 +536,10 @@ class FinanceViewModel(
         note: String,
         onComplete: (Boolean) -> Unit = {}
     ) {
+        if (!checkOnlineOrShowToast()) {
+            onComplete(false)
+            return
+        }
         viewModelScope.launch {
             if (item.isExpense) {
                 val expense = expenses.value.find { it.id == item.id }
@@ -573,6 +600,7 @@ class FinanceViewModel(
     }
 
     fun deleteTransaction(item: TransactionItem) {
+        if (!checkOnlineOrShowToast()) return
         viewModelScope.launch {
             if (item.isExpense) {
                 repository.deleteExpenseById(item.id)
@@ -590,6 +618,7 @@ class FinanceViewModel(
     }
 
     fun duplicateTransaction(item: TransactionItem) {
+        if (!checkOnlineOrShowToast()) return
         val today = DateTimeUtils.getTodayString()
         val nowTime = DateTimeUtils.getCurrentTimeString()
         if (item.isExpense) {
@@ -621,6 +650,7 @@ class FinanceViewModel(
 
     // Categories
     fun addCustomCategory(name: String, icon: String, color: Long, type: String) {
+        if (!checkOnlineOrShowToast()) return
         viewModelScope.launch {
             repository.addCategory(
                 CategoryEntity(
@@ -636,6 +666,7 @@ class FinanceViewModel(
 
     // Budget
     fun addBudget(categoryName: String, amount: Double, period: String, threshold: Float) {
+        if (!checkOnlineOrShowToast()) return
         viewModelScope.launch {
             repository.addBudget(
                 BudgetEntity(
@@ -650,6 +681,7 @@ class FinanceViewModel(
     }
 
     fun deleteBudget(budget: BudgetEntity) {
+        if (!checkOnlineOrShowToast()) return
         viewModelScope.launch {
             repository.deleteBudget(budget)
             _snackbarMessage.emit("Budget removed")
@@ -658,6 +690,7 @@ class FinanceViewModel(
 
     // Accounts & Transfer
     fun addAccount(name: String, type: String, initialBalance: Double) {
+        if (!checkOnlineOrShowToast()) return
         viewModelScope.launch {
             repository.addAccount(
                 AccountEntity(
@@ -671,6 +704,7 @@ class FinanceViewModel(
     }
 
     fun transferBetweenAccounts(fromId: Long, toId: Long, amount: Double) {
+        if (!checkOnlineOrShowToast()) return
         viewModelScope.launch {
             repository.transferBetweenAccounts(fromId, toId, amount)
             _snackbarMessage.emit("Transferred $amount successfully!")
@@ -679,6 +713,7 @@ class FinanceViewModel(
 
     // Recurring
     fun addRecurringExpense(title: String, amount: Double, frequency: String, dueDate: String) {
+        if (!checkOnlineOrShowToast()) return
         viewModelScope.launch {
             repository.addRecurring(
                 RecurringExpenseEntity(
@@ -697,6 +732,7 @@ class FinanceViewModel(
 
     // Savings Goals
     fun addSavingsGoal(name: String, targetAmount: Double, deadline: String) {
+        if (!checkOnlineOrShowToast()) return
         viewModelScope.launch {
             repository.addGoal(
                 SavingsGoalEntity(
@@ -711,6 +747,7 @@ class FinanceViewModel(
     }
 
     fun contributeToGoal(id: Long, amount: Double) {
+        if (!checkOnlineOrShowToast()) return
         viewModelScope.launch {
             repository.contributeToGoal(id, amount)
             _snackbarMessage.emit("Added $amount to goal!")
@@ -723,6 +760,7 @@ class FinanceViewModel(
     }
 
     fun setCurrency(currency: String) {
+        if (!checkOnlineOrShowToast()) return
         viewModelScope.launch { repository.setCurrency(currency) }
     }
 
@@ -731,6 +769,10 @@ class FinanceViewModel(
     }
 
     fun login(email: String, pass: String, onResult: (Boolean, String?) -> Unit) {
+        if (!checkOnlineOrShowToast()) {
+            onResult(false, "No internet connection")
+            return
+        }
         viewModelScope.launch {
             val result = repository.login(email, pass)
             result.onSuccess { user ->
@@ -749,6 +791,10 @@ class FinanceViewModel(
         photoUrl: String = "",
         onResult: (Boolean, String?) -> Unit
     ) {
+        if (!checkOnlineOrShowToast()) {
+            onResult(false, "No internet connection")
+            return
+        }
         viewModelScope.launch {
             val result = repository.signInWithGoogle(idToken, displayName, email, photoUrl)
             result.onSuccess { user ->
@@ -762,6 +808,10 @@ class FinanceViewModel(
     }
 
     fun googleLogin(email: String, displayName: String, photoUrl: String = "", onResult: (Boolean, String?) -> Unit) {
+        if (!checkOnlineOrShowToast()) {
+            onResult(false, "No internet connection")
+            return
+        }
         viewModelScope.launch {
             try {
                 repository.setLoggedInUser(email.hashCode().toString(), displayName, email, photoUrl)
@@ -774,6 +824,10 @@ class FinanceViewModel(
     }
 
     fun deleteAccount(onResult: (Boolean, String?) -> Unit) {
+        if (!checkOnlineOrShowToast()) {
+            onResult(false, "No internet connection")
+            return
+        }
         viewModelScope.launch {
             val result = repository.deleteUserAccount()
             result.onSuccess {
@@ -788,6 +842,10 @@ class FinanceViewModel(
     }
 
     fun register(name: String, email: String, pass: String, onResult: (Boolean, String?) -> Unit) {
+        if (!checkOnlineOrShowToast()) {
+            onResult(false, "No internet connection")
+            return
+        }
         viewModelScope.launch {
             val result = repository.register(name, email, pass)
             result.onSuccess { user ->
@@ -800,6 +858,10 @@ class FinanceViewModel(
     }
 
     fun sendPasswordReset(email: String, onResult: (Boolean, String?) -> Unit) {
+        if (!checkOnlineOrShowToast()) {
+            onResult(false, "No internet connection")
+            return
+        }
         viewModelScope.launch {
             val result = repository.sendPasswordReset(email)
             result.onSuccess {
@@ -812,6 +874,10 @@ class FinanceViewModel(
     }
 
     fun updateProfilePhoto(base64: String, onResult: (Boolean, String?) -> Unit = { _, _ -> }) {
+        if (!checkOnlineOrShowToast()) {
+            onResult(false, "No internet connection")
+            return
+        }
         viewModelScope.launch {
             val result = repository.updateProfilePhoto(base64)
             result.onSuccess {
@@ -824,6 +890,10 @@ class FinanceViewModel(
     }
 
     fun updateDisplayName(name: String, onResult: (Boolean, String?) -> Unit = { _, _ -> }) {
+        if (!checkOnlineOrShowToast()) {
+            onResult(false, "No internet connection")
+            return
+        }
         viewModelScope.launch {
             val result = repository.updateDisplayName(name)
             result.onSuccess {
@@ -836,6 +906,10 @@ class FinanceViewModel(
     }
 
     fun updatePassword(currentPass: String, newPass: String, onResult: (Boolean, String?) -> Unit) {
+        if (!checkOnlineOrShowToast()) {
+            onResult(false, "No internet connection")
+            return
+        }
         viewModelScope.launch {
             val result = repository.updatePassword(currentPass, newPass)
             result.onSuccess {
@@ -856,6 +930,7 @@ class FinanceViewModel(
     }
 
     fun logout() {
+        if (!checkOnlineOrShowToast()) return
         viewModelScope.launch {
             repository.logout()
             _snackbarMessage.emit("You have been signed out")

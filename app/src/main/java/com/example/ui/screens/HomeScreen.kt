@@ -62,7 +62,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.data.remote.SyncState
 import com.example.ui.components.FinanceBalanceCard
 import com.example.ui.components.ProfileAvatar
 import com.example.ui.components.SummaryCardsRow
@@ -93,7 +92,6 @@ fun HomeScreen(
     val allTransactions by viewModel.allTransactions.collectAsStateWithLifecycle()
     val isLoadingTransactions by viewModel.isLoadingTransactions.collectAsStateWithLifecycle()
     val prefs by viewModel.userPreferences.collectAsStateWithLifecycle()
-    val syncState by viewModel.syncState.collectAsStateWithLifecycle()
     val budgets by viewModel.budgets.collectAsStateWithLifecycle()
     val goals by viewModel.savingsGoals.collectAsStateWithLifecycle()
 
@@ -343,7 +341,7 @@ fun HomeScreen(
         }
 
         // 8. Recent Transactions List
-        val isListLoading = isLoadingTransactions || (syncState is SyncState.Syncing && recentTransactions.isEmpty())
+        val isListLoading = isLoadingTransactions && recentTransactions.isEmpty()
         if (isListLoading) {
             item {
                 Card(

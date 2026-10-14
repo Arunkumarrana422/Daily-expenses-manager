@@ -69,6 +69,7 @@ import com.example.ui.components.TopToastHost
 import com.example.ui.components.TransactionDetailDialog
 import com.example.ui.components.TransferMoneyDialog
 import com.example.ui.components.rememberTopToastState
+import com.example.ui.components.OfflineBanner
 import com.example.ui.viewmodel.TransactionItem
 import com.example.ui.navigation.Screen
 import com.example.ui.screens.AddTransactionScreen
@@ -161,45 +162,25 @@ fun MainScreen(
 
     var lastObservedState by remember { mutableStateOf<NetworkConnectionState?>(null) }
 
-    // Strict internet connection handling: Application does NOT work without internet
+    // Internet connection handling: sync data when connected, smoothly restore state
     LaunchedEffect(connectionState) {
         if (lastObservedState == null) {
             lastObservedState = connectionState
             if (connectionState is NetworkConnectionState.Connected) {
                 viewModel.triggerCloudSync(showToastOnNoInternet = false)
-            } else if (connectionState is NetworkConnectionState.NoInternet) {
-                topToastState.show("No internet connection", ToastType.ERROR)
-            } else if (connectionState is NetworkConnectionState.FirestoreUnavailable) {
-                topToastState.show("Firebase server unavailable", ToastType.ERROR)
             }
         } else if (lastObservedState != connectionState) {
             val wasBlocked = lastObservedState !is NetworkConnectionState.Connected
             lastObservedState = connectionState
             if (connectionState is NetworkConnectionState.Connected) {
                 if (wasBlocked) {
-                    topToastState.show("Connected! Syncing data with cloud...", ToastType.SUCCESS)
+                    topToastState.show("Internet connection restored", ToastType.SUCCESS)
                 }
                 viewModel.triggerCloudSync(showToastOnNoInternet = false)
-            } else if (connectionState is NetworkConnectionState.NoInternet) {
-                topToastState.show("No internet connection", ToastType.ERROR)
-            } else if (connectionState is NetworkConnectionState.FirestoreUnavailable) {
-                topToastState.show("Database server unavailable", ToastType.ERROR)
             }
         }
     }
 
-    // 1. BLOCKING NO INTERNET / SERVER UNAVAILABLE SCREEN
-    // If device is offline or server is unreachable, block the entire application immediately
-    if (connectionState is NetworkConnectionState.NoInternet || connectionState is NetworkConnectionState.FirestoreUnavailable) {
-        NoInternetScreen(
-            connectionState = connectionState,
-            diagnostics = diagnostics,
-            onRetry = {
-                networkObserver.verifyConnectivity(isUserRetry = true)
-            }
-        )
-        return
-    }
 
     // 2. Splash Screen on Initial App Launch Only (survives dark/light mode switches)
     if (!isSplashDismissed) {
@@ -251,10 +232,16 @@ fun MainScreen(
             transaction = tx,
             currencySymbol = prefs.currency,
             onDismiss = { viewModel.selectTransaction(null) },
-            onDelete = { viewModel.deleteTransaction(tx) },
+            onDelete = {
+                if (viewModel.checkOnlineOrShowToast()) {
+                    viewModel.deleteTransaction(tx)
+                }
+            },
             onEdit = {
-                editingTransaction = tx
-                viewModel.selectTransaction(null)
+                if (viewModel.checkOnlineOrShowToast()) {
+                    editingTransaction = tx
+                    viewModel.selectTransaction(null)
+                }
             }
         )
     }
@@ -267,6 +254,10 @@ fun MainScreen(
             currencySymbol = prefs.currency,
             onDismiss = { editingTransaction = null },
             onConfirm = { amount, catName, catIcon, catColor, paymentMethod, date, time, note, onFinish ->
+                if (!viewModel.checkOnlineOrShowToast()) {
+                    onFinish(false)
+                    return@EditTransactionDialog
+                }
                 viewModel.updateTransaction(
                     item = tx,
                     amount = amount,
@@ -294,6 +285,7 @@ fun MainScreen(
             categories = categories,
             onDismiss = { showAddBudgetDialog = false },
             onConfirm = { catName, amount, period, threshold ->
+                if (!viewModel.checkOnlineOrShowToast()) return@AddBudgetDialog
                 viewModel.addBudget(catName, amount, period, threshold)
                 showAddBudgetDialog = false
             }
@@ -304,6 +296,7 @@ fun MainScreen(
         AddAccountDialog(
             onDismiss = { showAddAccountDialog = false },
             onConfirm = { name, type, bal ->
+                if (!viewModel.checkOnlineOrShowToast()) return@AddAccountDialog
                 viewModel.addAccount(name, type, bal)
                 showAddAccountDialog = false
             }
@@ -315,6 +308,7 @@ fun MainScreen(
             accounts = accounts,
             onDismiss = { showTransferDialog = false },
             onConfirm = { fromId, toId, amount ->
+                if (!viewModel.checkOnlineOrShowToast()) return@TransferMoneyDialog
                 viewModel.transferBetweenAccounts(fromId, toId, amount)
                 showTransferDialog = false
             }
@@ -387,6 +381,9 @@ fun MainScreen(
                         selected = isSelected,
                         onClick = {
                             if (screen == Screen.Add) {
+                                if (!viewModel.checkOnlineOrShowToast()) {
+                                    return@NavigationBarItem
+                                }
                                 addScreenIsExpense = true
                             }
                             coroutineScope.launch {
@@ -421,6 +418,9 @@ fun MainScreen(
             ) {
                 FloatingActionButton(
                     onClick = {
+                        if (!viewModel.checkOnlineOrShowToast()) {
+                            return@FloatingActionButton
+                        }
                         addScreenIsExpense = true
                         coroutineScope.launch {
                             pagerState.animateScrollToPage(2)
@@ -441,12 +441,25 @@ fun MainScreen(
             }
         }
     ) { innerPadding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = innerPadding.calculateTopPadding())
         ) {
-            HorizontalPager(
+            OfflineBanner(
+                connectionState = connectionState,
+                diagnostics = diagnostics,
+                onRetry = {
+                    networkObserver.verifyConnectivity(isUserRetry = true)
+                }
+            )
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                HorizontalPager(
                 state = pagerState,
                 beyondViewportPageCount = 1,
                 modifier = Modifier.fillMaxSize()
@@ -455,10 +468,12 @@ fun MainScreen(
                     0 -> HomeScreen(
                         viewModel = viewModel,
                         onNavigateToAddExpense = {
+                            if (!viewModel.checkOnlineOrShowToast()) return@HomeScreen
                             addScreenIsExpense = true
                             coroutineScope.launch { pagerState.animateScrollToPage(2) }
                         },
                         onNavigateToAddIncome = {
+                            if (!viewModel.checkOnlineOrShowToast()) return@HomeScreen
                             addScreenIsExpense = false
                             coroutineScope.launch { pagerState.animateScrollToPage(2) }
                         },
@@ -468,8 +483,16 @@ fun MainScreen(
                         onNavigateToSettings = {
                             coroutineScope.launch { pagerState.animateScrollToPage(4) }
                         },
-                        onOpenTransferDialog = { showTransferDialog = true },
-                        onOpenAddBudgetDialog = { showAddBudgetDialog = true },
+                        onOpenTransferDialog = {
+                            if (viewModel.checkOnlineOrShowToast()) {
+                                showTransferDialog = true
+                            }
+                        },
+                        onOpenAddBudgetDialog = {
+                            if (viewModel.checkOnlineOrShowToast()) {
+                                showAddBudgetDialog = true
+                            }
+                        },
                         onTransactionClick = { tx -> viewModel.selectTransaction(tx) },
                         listState = homeListState,
                         onScrollDirectionChanged = { isDown -> fabVisible = !isDown }
@@ -496,8 +519,16 @@ fun MainScreen(
 
                     4 -> SettingsScreen(
                         viewModel = viewModel,
-                        onOpenAddBudgetDialog = { showAddBudgetDialog = true },
-                        onOpenAddAccountDialog = { showAddAccountDialog = true },
+                        onOpenAddBudgetDialog = {
+                            if (viewModel.checkOnlineOrShowToast()) {
+                                showAddBudgetDialog = true
+                            }
+                        },
+                        onOpenAddAccountDialog = {
+                            if (viewModel.checkOnlineOrShowToast()) {
+                                showAddAccountDialog = true
+                            }
+                        },
                         onLogout = {
                             coroutineScope.launch { pagerState.animateScrollToPage(0) }
                         },
@@ -512,4 +543,5 @@ fun MainScreen(
             )
         }
     }
+}
 }

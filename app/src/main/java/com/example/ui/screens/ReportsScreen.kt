@@ -171,6 +171,7 @@ fun ReportsScreen(
 
                 IconButton(
                     onClick = {
+                        if (!viewModel.checkOnlineOrShowToast()) return@IconButton
                         val breakdown = categorySlices.map { Triple(it.categoryName, it.amount, it.percentage.toDouble()) }
                         val reportTitle = when (reportsPeriod) {
                             "DAILY" -> "Daily Report - ${DateTimeUtils.getFormattedToday()}"
