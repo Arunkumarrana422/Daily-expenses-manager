@@ -86,7 +86,12 @@ import com.example.ui.screens.SplashScreen
 import com.example.ui.screens.TransactionsScreen
 import com.example.ui.theme.IndigoPrimary
 import com.example.ui.viewmodel.FinanceViewModel
+import com.example.utils.NetworkConnectionState
 import com.example.utils.NetworkObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.runtime.DisposableEffect
 
 @Composable
 fun MainScreen(
@@ -95,7 +100,29 @@ fun MainScreen(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val networkObserver = remember { NetworkObserver(context.applicationContext) }
+    val connectionState by networkObserver.connectionState.collectAsStateWithLifecycle()
     val isOnline by networkObserver.isOnline.collectAsStateWithLifecycle()
+
+    // Dispose network observer properly when MainScreen leaves composition
+    DisposableEffect(networkObserver) {
+        onDispose {
+            networkObserver.cleanup()
+        }
+    }
+
+    // Lifecycle observer: automatically re-verify connectivity whenever app resumes from background
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                networkObserver.verifyConnectivity()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     val selectedTx by viewModel.selectedTransaction.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
@@ -132,35 +159,53 @@ fun MainScreen(
         }
     }
 
-    var lastObservedOnlineState by remember { mutableStateOf<Boolean?>(null) }
+    var lastObservedState by remember { mutableStateOf<NetworkConnectionState?>(null) }
 
     // Strict internet connection handling: Application does NOT work without internet
-    LaunchedEffect(isOnline) {
-        if (lastObservedOnlineState == null) {
-            lastObservedOnlineState = isOnline
-            if (isOnline) {
+    LaunchedEffect(connectionState) {
+        if (lastObservedState == null) {
+            lastObservedState = connectionState
+            if (connectionState is NetworkConnectionState.Connected) {
                 viewModel.triggerCloudSync(showToastOnNoInternet = false)
-            } else {
+            } else if (connectionState is NetworkConnectionState.NoInternet) {
                 topToastState.show("No internet connection", ToastType.ERROR)
                 android.widget.Toast.makeText(context, "No internet connection. Internet is required to use this application.", Toast.LENGTH_SHORT).show()
+            } else if (connectionState is NetworkConnectionState.FirestoreUnavailable) {
+                topToastState.show("Firebase server unavailable", ToastType.ERROR)
+                android.widget.Toast.makeText(context, "Firebase server unavailable. Please tap retry.", Toast.LENGTH_SHORT).show()
             }
-        } else if (lastObservedOnlineState != isOnline) {
-            val wasOffline = lastObservedOnlineState == false
-            lastObservedOnlineState = isOnline
-            if (isOnline) {
-                if (wasOffline) {
-                    topToastState.show("Back online. Syncing data...", ToastType.SUCCESS)
-                    android.widget.Toast.makeText(context, "Back online. Syncing data...", Toast.LENGTH_SHORT).show()
+        } else if (lastObservedState != connectionState) {
+            val wasBlocked = lastObservedState !is NetworkConnectionState.Connected
+            lastObservedState = connectionState
+            if (connectionState is NetworkConnectionState.Connected) {
+                if (wasBlocked) {
+                    topToastState.show("Connected! Syncing data with cloud...", ToastType.SUCCESS)
+                    android.widget.Toast.makeText(context, "Connected! Syncing data with cloud...", Toast.LENGTH_SHORT).show()
                 }
                 viewModel.triggerCloudSync(showToastOnNoInternet = false)
-            } else {
+            } else if (connectionState is NetworkConnectionState.NoInternet) {
                 topToastState.show("No internet connection", ToastType.ERROR)
                 android.widget.Toast.makeText(context, "No internet connection. Internet is required to use this application.", Toast.LENGTH_SHORT).show()
+            } else if (connectionState is NetworkConnectionState.FirestoreUnavailable) {
+                topToastState.show("Database server unavailable", ToastType.ERROR)
+                android.widget.Toast.makeText(context, "Database server unavailable. Please tap retry.", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // 0. Splash Screen on Initial App Launch Only (survives dark/light mode switches)
+    // 1. BLOCKING NO INTERNET / SERVER UNAVAILABLE SCREEN
+    // If device is offline or Firestore is unreachable, block the entire application immediately
+    if (connectionState is NetworkConnectionState.NoInternet || connectionState is NetworkConnectionState.FirestoreUnavailable) {
+        NoInternetScreen(
+            connectionState = connectionState,
+            onRetry = {
+                networkObserver.verifyConnectivity()
+            }
+        )
+        return
+    }
+
+    // 2. Splash Screen on Initial App Launch Only (survives dark/light mode switches)
     if (!isSplashDismissed) {
         SplashScreen(
             onTimeout = {
@@ -170,11 +215,12 @@ fun MainScreen(
         return
     }
 
-    // BLOCKING NO INTERNET SCREEN: Application NOT working without internet
-    if (!isOnline) {
+    // 3. If splash dismissed but still checking connection, keep blocked on NoInternetScreen
+    if (connectionState !is NetworkConnectionState.Connected) {
         NoInternetScreen(
+            connectionState = connectionState,
             onRetry = {
-                networkObserver.refresh()
+                networkObserver.verifyConnectivity()
             }
         )
         return

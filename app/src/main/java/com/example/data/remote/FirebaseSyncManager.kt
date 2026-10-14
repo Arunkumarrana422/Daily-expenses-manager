@@ -14,6 +14,8 @@ import com.example.data.local.entity.ExpenseEntity
 import com.example.data.local.entity.IncomeEntity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.firebase.firestore.MemoryCacheSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,7 +53,16 @@ class FirebaseSyncManager(
 
     private val firestore: FirebaseFirestore? by lazy {
         try {
-            FirebaseFirestore.getInstance()
+            val db = FirebaseFirestore.getInstance()
+            try {
+                val settings = FirebaseFirestoreSettings.Builder()
+                    .setLocalCacheSettings(MemoryCacheSettings.newBuilder().build())
+                    .build()
+                db.firestoreSettings = settings
+            } catch (e: Exception) {
+                Log.w(TAG, "Memory cache settings could not be applied: ${e.message}")
+            }
+            db
         } catch (e: Exception) {
             null
         }
