@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 sealed class SyncState {
     object Idle : SyncState()
@@ -36,9 +37,8 @@ sealed class SyncState {
 }
 
 /**
- * Direct Live Cloud Firestore Manager.
- * Maintains persistent real-time snapshot listeners with Firebase Cloud Firestore.
- * All writes, edits, and deletions happen directly on Cloud Firestore with automatic real-time streaming.
+ * Direct Live Cloud Firestore Manager with 100% End-to-End Client-Side Payload Encryption.
+ * All sensitive financial data (amount, notes, dates, categories, sources) are encrypted into secure payloads.
  */
 class FirebaseSyncManager(
     private val context: Context,
@@ -80,7 +80,6 @@ class FirebaseSyncManager(
         }
     }
 
-    // Real-time snapshot listener registrations
     private var expenseListenerRegistration: ListenerRegistration? = null
     private var incomeListenerRegistration: ListenerRegistration? = null
     private var budgetListenerRegistration: ListenerRegistration? = null
@@ -88,7 +87,6 @@ class FirebaseSyncManager(
     private var activeUserId: String? = null
 
     init {
-        // Automatically attach live listeners if user is already signed in
         val currentUid = auth?.currentUser?.uid
         if (currentUid != null) {
             startLiveListeners(currentUid)
@@ -110,9 +108,6 @@ class FirebaseSyncManager(
 
     fun getCurrentUserId(): String? = auth?.currentUser?.uid
 
-    /**
-     * Start live real-time snapshot listeners directly on Cloud Firestore
-     */
     fun startLiveListeners(userId: String) {
         if (activeUserId == userId && expenseListenerRegistration != null) {
             return
@@ -123,7 +118,7 @@ class FirebaseSyncManager(
         val fs = firestore ?: return
 
         try {
-            // 1. Live Expenses Listener
+            // 1. Live Expenses Listener with Full Decryption
             expenseListenerRegistration = fs.collection("users").document(userId)
                 .collection("expenses")
                 .addSnapshotListener { snapshot, error ->
@@ -137,37 +132,60 @@ class FirebaseSyncManager(
                                 val remoteIds = snapshot.documents.mapNotNull { it.id.toLongOrNull() }.toSet()
                                 val parsedExpenses = snapshot.documents.mapNotNull { doc ->
                                     try {
-                                        val amount = doc.getDouble("amount") ?: 0.0
-                                        val categoryName = doc.getString("categoryName") ?: "Other"
-                                        val categoryIcon = doc.getString("categoryIcon") ?: "category"
-                                        val categoryColor = doc.getLong("categoryColor") ?: 0xFF3949AB
-                                        val categoryId = doc.getLong("categoryId") ?: 1L
-                                        val paymentMethod = doc.getString("paymentMethod") ?: "Cash"
-                                        val accountId = doc.getLong("accountId") ?: 1L
-                                        val note = doc.getString("note") ?: ""
-                                        val date = doc.getString("date") ?: ""
-                                        val time = doc.getString("time") ?: ""
-                                        val id = doc.id.toLongOrNull() ?: 0L
-                                        val createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
-                                        val updatedAt = doc.getLong("updatedAt") ?: System.currentTimeMillis()
+                                        val payloadStr = doc.getString("payload")
+                                        if (!payloadStr.isNullOrEmpty()) {
+                                            val decryptedJson = JSONObject(EncryptionHelper.decrypt(payloadStr))
+                                            ExpenseEntity(
+                                                id = doc.id.toLongOrNull() ?: decryptedJson.optLong("id", 0L),
+                                                userId = userId,
+                                                amount = decryptedJson.optDouble("amount", 0.0),
+                                                categoryId = decryptedJson.optLong("categoryId", 1L),
+                                                categoryName = decryptedJson.optString("categoryName", "Other"),
+                                                categoryIcon = decryptedJson.optString("categoryIcon", "category"),
+                                                categoryColor = decryptedJson.optLong("categoryColor", 0xFF3949AB),
+                                                paymentMethod = decryptedJson.optString("paymentMethod", "Cash"),
+                                                accountId = decryptedJson.optLong("accountId", 1L),
+                                                note = decryptedJson.optString("note", ""),
+                                                date = decryptedJson.optString("date", ""),
+                                                time = decryptedJson.optString("time", ""),
+                                                createdAt = decryptedJson.optLong("createdAt", System.currentTimeMillis()),
+                                                updatedAt = decryptedJson.optLong("updatedAt", System.currentTimeMillis()),
+                                                syncStatus = "LIVE"
+                                            )
+                                        } else {
+                                            // Legacy fallback
+                                            val amount = doc.getDouble("amount") ?: 0.0
+                                            val categoryName = EncryptionHelper.decrypt(doc.getString("categoryName") ?: "Other")
+                                            val categoryIcon = EncryptionHelper.decrypt(doc.getString("categoryIcon") ?: "category")
+                                            val categoryColor = doc.getLong("categoryColor") ?: 0xFF3949AB
+                                            val categoryId = doc.getLong("categoryId") ?: 1L
+                                            val paymentMethod = EncryptionHelper.decrypt(doc.getString("paymentMethod") ?: "Cash")
+                                            val accountId = doc.getLong("accountId") ?: 1L
+                                            val note = EncryptionHelper.decrypt(doc.getString("note") ?: "")
+                                            val date = doc.getString("date") ?: ""
+                                            val time = doc.getString("time") ?: ""
+                                            val id = doc.id.toLongOrNull() ?: 0L
+                                            val createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
+                                            val updatedAt = doc.getLong("updatedAt") ?: System.currentTimeMillis()
 
-                                        ExpenseEntity(
-                                            id = id,
-                                            userId = userId,
-                                            amount = amount,
-                                            categoryId = categoryId,
-                                            categoryName = categoryName,
-                                            categoryIcon = categoryIcon,
-                                            categoryColor = categoryColor,
-                                            paymentMethod = paymentMethod,
-                                            accountId = accountId,
-                                            note = note,
-                                            date = date,
-                                            time = time,
-                                            createdAt = createdAt,
-                                            updatedAt = updatedAt,
-                                            syncStatus = "LIVE"
-                                        )
+                                            ExpenseEntity(
+                                                id = id,
+                                                userId = userId,
+                                                amount = amount,
+                                                categoryId = categoryId,
+                                                categoryName = categoryName,
+                                                categoryIcon = categoryIcon,
+                                                categoryColor = categoryColor,
+                                                paymentMethod = paymentMethod,
+                                                accountId = accountId,
+                                                note = note,
+                                                date = date,
+                                                time = time,
+                                                createdAt = createdAt,
+                                                updatedAt = updatedAt,
+                                                syncStatus = "LIVE"
+                                            )
+                                        }
                                     } catch (e: Exception) {
                                         null
                                     }
@@ -177,7 +195,6 @@ class FirebaseSyncManager(
                                     expenseDao.insertExpense(exp)
                                 }
 
-                                // Delete locally any items deleted in Firestore
                                 val localList = expenseDao.getAllExpensesList()
                                 for (local in localList) {
                                     if (local.id !in remoteIds && remoteIds.isNotEmpty()) {
@@ -191,7 +208,7 @@ class FirebaseSyncManager(
                     }
                 }
 
-            // 2. Live Incomes Listener
+            // 2. Live Incomes Listener with Full Decryption
             incomeListenerRegistration = fs.collection("users").document(userId)
                 .collection("incomes")
                 .addSnapshotListener { snapshot, error ->
@@ -205,31 +222,51 @@ class FirebaseSyncManager(
                                 val remoteIds = snapshot.documents.mapNotNull { it.id.toLongOrNull() }.toSet()
                                 val parsedIncomes = snapshot.documents.mapNotNull { doc ->
                                     try {
-                                        val amount = doc.getDouble("amount") ?: 0.0
-                                        val source = doc.getString("source") ?: "Income"
-                                        val accountId = doc.getLong("accountId") ?: 1L
-                                        val paymentMethod = doc.getString("paymentMethod") ?: "Cash"
-                                        val note = doc.getString("note") ?: ""
-                                        val date = doc.getString("date") ?: ""
-                                        val time = doc.getString("time") ?: ""
-                                        val id = doc.id.toLongOrNull() ?: 0L
-                                        val createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
-                                        val updatedAt = doc.getLong("updatedAt") ?: System.currentTimeMillis()
+                                        val payloadStr = doc.getString("payload")
+                                        if (!payloadStr.isNullOrEmpty()) {
+                                            val decryptedJson = JSONObject(EncryptionHelper.decrypt(payloadStr))
+                                            IncomeEntity(
+                                                id = doc.id.toLongOrNull() ?: decryptedJson.optLong("id", 0L),
+                                                userId = userId,
+                                                amount = decryptedJson.optDouble("amount", 0.0),
+                                                source = decryptedJson.optString("source", "Income"),
+                                                accountId = decryptedJson.optLong("accountId", 1L),
+                                                paymentMethod = decryptedJson.optString("paymentMethod", "Cash"),
+                                                note = decryptedJson.optString("note", ""),
+                                                date = decryptedJson.optString("date", ""),
+                                                time = decryptedJson.optString("time", ""),
+                                                createdAt = decryptedJson.optLong("createdAt", System.currentTimeMillis()),
+                                                updatedAt = decryptedJson.optLong("updatedAt", System.currentTimeMillis()),
+                                                syncStatus = "LIVE"
+                                            )
+                                        } else {
+                                            // Legacy fallback
+                                            val amount = doc.getDouble("amount") ?: 0.0
+                                            val source = EncryptionHelper.decrypt(doc.getString("source") ?: "Income")
+                                            val accountId = doc.getLong("accountId") ?: 1L
+                                            val paymentMethod = EncryptionHelper.decrypt(doc.getString("paymentMethod") ?: "Cash")
+                                            val note = EncryptionHelper.decrypt(doc.getString("note") ?: "")
+                                            val date = doc.getString("date") ?: ""
+                                            val time = doc.getString("time") ?: ""
+                                            val id = doc.id.toLongOrNull() ?: 0L
+                                            val createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
+                                            val updatedAt = doc.getLong("updatedAt") ?: System.currentTimeMillis()
 
-                                        IncomeEntity(
-                                            id = id,
-                                            userId = userId,
-                                            amount = amount,
-                                            source = source,
-                                            accountId = accountId,
-                                            paymentMethod = paymentMethod,
-                                            note = note,
-                                            date = date,
-                                            time = time,
-                                            createdAt = createdAt,
-                                            updatedAt = updatedAt,
-                                            syncStatus = "LIVE"
-                                        )
+                                            IncomeEntity(
+                                                id = id,
+                                                userId = userId,
+                                                amount = amount,
+                                                source = source,
+                                                accountId = accountId,
+                                                paymentMethod = paymentMethod,
+                                                note = note,
+                                                date = date,
+                                                time = time,
+                                                createdAt = createdAt,
+                                                updatedAt = updatedAt,
+                                                syncStatus = "LIVE"
+                                            )
+                                        }
                                     } catch (e: Exception) {
                                         null
                                     }
@@ -252,7 +289,7 @@ class FirebaseSyncManager(
                     }
                 }
 
-            // 3. Live Budgets Listener
+            // 3. Live Budgets Listener with Full Decryption
             budgetListenerRegistration = fs.collection("users").document(userId)
                 .collection("budgets")
                 .addSnapshotListener { snapshot, error ->
@@ -265,20 +302,33 @@ class FirebaseSyncManager(
                             try {
                                 val parsedBudgets = snapshot.documents.mapNotNull { doc ->
                                     try {
-                                        val categoryName = doc.getString("categoryName") ?: "All"
-                                        val amount = doc.getDouble("amount") ?: 0.0
-                                        val period = doc.getString("period") ?: "MONTHLY"
-                                        val warningThreshold = (doc.getDouble("warningThreshold") ?: 0.75).toFloat()
-                                        val id = doc.id.toLongOrNull() ?: 0L
+                                        val payloadStr = doc.getString("payload")
+                                        if (!payloadStr.isNullOrEmpty()) {
+                                            val decryptedJson = JSONObject(EncryptionHelper.decrypt(payloadStr))
+                                            BudgetEntity(
+                                                id = doc.id.toLongOrNull() ?: decryptedJson.optLong("id", 0L),
+                                                userId = userId,
+                                                categoryName = decryptedJson.optString("categoryName", "All"),
+                                                amount = decryptedJson.optDouble("amount", 0.0),
+                                                period = decryptedJson.optString("period", "MONTHLY"),
+                                                warningThreshold = decryptedJson.optDouble("warningThreshold", 0.75).toFloat()
+                                            )
+                                        } else {
+                                            val categoryName = EncryptionHelper.decrypt(doc.getString("categoryName") ?: "All")
+                                            val amount = doc.getDouble("amount") ?: 0.0
+                                            val period = doc.getString("period") ?: "MONTHLY"
+                                            val warningThreshold = (doc.getDouble("warningThreshold") ?: 0.75).toFloat()
+                                            val id = doc.id.toLongOrNull() ?: 0L
 
-                                        BudgetEntity(
-                                            id = id,
-                                            userId = userId,
-                                            categoryName = categoryName,
-                                            amount = amount,
-                                            period = period,
-                                            warningThreshold = warningThreshold
-                                        )
+                                            BudgetEntity(
+                                                id = id,
+                                                userId = userId,
+                                                categoryName = categoryName,
+                                                amount = amount,
+                                                period = period,
+                                                warningThreshold = warningThreshold
+                                            )
+                                        }
                                     } catch (e: Exception) {
                                         null
                                     }
@@ -316,9 +366,6 @@ class FirebaseSyncManager(
         }
     }
 
-    /**
-     * Stop real-time snapshot listeners (called on sign out)
-     */
     fun stopLiveListeners() {
         try {
             expenseListenerRegistration?.remove()
@@ -337,26 +384,31 @@ class FirebaseSyncManager(
     }
 
     /**
-     * Write an expense directly to Firestore
+     * Write an expense directly to Firestore with Full Payload Encryption
      */
     suspend fun uploadExpense(userId: String, expense: ExpenseEntity): Boolean = withContext(Dispatchers.IO) {
         try {
             val fs = firestore ?: return@withContext false
+            val json = JSONObject().apply {
+                put("id", expense.id)
+                put("amount", expense.amount)
+                put("categoryId", expense.categoryId)
+                put("categoryName", expense.categoryName)
+                put("categoryIcon", expense.categoryIcon)
+                put("categoryColor", expense.categoryColor)
+                put("paymentMethod", expense.paymentMethod)
+                put("accountId", expense.accountId)
+                put("note", expense.note)
+                put("date", expense.date)
+                put("time", expense.time)
+                put("createdAt", expense.createdAt)
+                put("updatedAt", expense.updatedAt)
+            }
+            val encryptedPayload = EncryptionHelper.encrypt(json.toString())
             val data = hashMapOf(
                 "id" to expense.id,
-                "amount" to expense.amount,
-                "categoryId" to expense.categoryId,
-                "categoryName" to EncryptionHelper.encrypt(expense.categoryName),
-                "categoryIcon" to EncryptionHelper.encrypt(expense.categoryIcon),
-                "categoryColor" to expense.categoryColor,
-                "paymentMethod" to EncryptionHelper.encrypt(expense.paymentMethod),
-                "accountId" to expense.accountId,
-                "note" to EncryptionHelper.encrypt(expense.note),
-                "date" to expense.date,
-                "time" to expense.time,
                 "userId" to userId,
-                "createdAt" to expense.createdAt,
-                "updatedAt" to expense.updatedAt
+                "payload" to encryptedPayload
             )
             fs.collection("users").document(userId)
                 .collection("expenses").document(expense.id.toString())
@@ -368,9 +420,6 @@ class FirebaseSyncManager(
         }
     }
 
-    /**
-     * Delete an expense directly from Firestore
-     */
     suspend fun deleteExpense(userId: String, id: Long): Boolean = withContext(Dispatchers.IO) {
         try {
             val fs = firestore ?: return@withContext false
@@ -386,23 +435,28 @@ class FirebaseSyncManager(
     }
 
     /**
-     * Write an income directly to Firestore
+     * Write an income directly to Firestore with Full Payload Encryption
      */
     suspend fun uploadIncome(userId: String, income: IncomeEntity): Boolean = withContext(Dispatchers.IO) {
         try {
             val fs = firestore ?: return@withContext false
+            val json = JSONObject().apply {
+                put("id", income.id)
+                put("amount", income.amount)
+                put("source", income.source)
+                put("accountId", income.accountId)
+                put("paymentMethod", income.paymentMethod)
+                put("note", income.note)
+                put("date", income.date)
+                put("time", income.time)
+                put("createdAt", income.createdAt)
+                put("updatedAt", income.updatedAt)
+            }
+            val encryptedPayload = EncryptionHelper.encrypt(json.toString())
             val data = hashMapOf(
                 "id" to income.id,
-                "amount" to income.amount,
-                "source" to EncryptionHelper.encrypt(income.source),
-                "accountId" to income.accountId,
-                "paymentMethod" to EncryptionHelper.encrypt(income.paymentMethod),
-                "note" to EncryptionHelper.encrypt(income.note),
-                "date" to income.date,
-                "time" to income.time,
                 "userId" to userId,
-                "createdAt" to income.createdAt,
-                "updatedAt" to income.updatedAt
+                "payload" to encryptedPayload
             )
             fs.collection("users").document(userId)
                 .collection("incomes").document(income.id.toString())
@@ -414,9 +468,6 @@ class FirebaseSyncManager(
         }
     }
 
-    /**
-     * Delete an income directly from Firestore
-     */
     suspend fun deleteIncome(userId: String, id: Long): Boolean = withContext(Dispatchers.IO) {
         try {
             val fs = firestore ?: return@withContext false
@@ -432,18 +483,23 @@ class FirebaseSyncManager(
     }
 
     /**
-     * Write a budget directly to Firestore
+     * Write a budget directly to Firestore with Full Payload Encryption
      */
     suspend fun uploadBudget(userId: String, budget: BudgetEntity) = withContext(Dispatchers.IO) {
         try {
             val fs = firestore ?: return@withContext
+            val json = JSONObject().apply {
+                put("id", budget.id)
+                put("categoryName", budget.categoryName ?: "")
+                put("amount", budget.amount)
+                put("period", budget.period)
+                put("warningThreshold", budget.warningThreshold)
+            }
+            val encryptedPayload = EncryptionHelper.encrypt(json.toString())
             val data = hashMapOf(
                 "id" to budget.id,
-                "categoryName" to EncryptionHelper.encrypt(budget.categoryName ?: ""),
-                "amount" to budget.amount,
-                "period" to budget.period,
-                "warningThreshold" to budget.warningThreshold,
-                "userId" to userId
+                "userId" to userId,
+                "payload" to encryptedPayload
             )
             fs.collection("users").document(userId)
                 .collection("budgets").document(budget.id.toString())
@@ -453,9 +509,6 @@ class FirebaseSyncManager(
         }
     }
 
-    /**
-     * Delete a budget directly from Firestore
-     */
     suspend fun deleteBudget(userId: String, id: Long) = withContext(Dispatchers.IO) {
         try {
             val fs = firestore ?: return@withContext
@@ -467,23 +520,14 @@ class FirebaseSyncManager(
         }
     }
 
-    /**
-     * Write an account directly
-     */
     suspend fun uploadAccount(userId: String, account: AccountEntity) = withContext(Dispatchers.IO) {
-        // Accounts are stored in Room database
+        // Accounts stored locally
     }
 
-    /**
-     * Delete an account
-     */
     suspend fun deleteAccount(userId: String, id: Long) = withContext(Dispatchers.IO) {
-        // Accounts are stored in Room database
+        // Accounts stored locally
     }
 
-    /**
-     * Refresh connection / ensure listeners are active
-     */
     suspend fun triggerSync(): Boolean = withContext(Dispatchers.IO) {
         val uid = auth?.currentUser?.uid
         if (uid != null) {
