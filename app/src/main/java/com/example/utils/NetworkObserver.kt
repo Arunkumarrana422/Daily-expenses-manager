@@ -290,8 +290,8 @@ class NetworkObserver(private val context: Context) {
             simState == TelephonyManager.SIM_STATE_ABSENT && !isWifi -> {
                 Triple(
                     DiagnosticStatus.NO_SIM_CARD,
-                    "No SIM Card Detected",
-                    "No SIM card found. Please connect to Wi-Fi to use the application."
+                    "No Network Available",
+                    "No cellular network found. Please connect to Wi-Fi or mobile network."
                 )
             }
             !hasLink -> {

@@ -362,18 +362,11 @@ class FinanceViewModel(
     fun isOnline(): Boolean = repository.isOnline()
 
     fun showNoInternetToast() {
-        viewModelScope.launch {
-            _snackbarMessage.emit("No internet connection")
-        }
-        showSystemTopToast(context, "No internet connection")
+        // No-op: banner is already displayed at the top, so toast popups are omitted
     }
 
     fun checkOnlineOrShowToast(): Boolean {
-        if (!repository.isOnline()) {
-            showNoInternetToast()
-            return false
-        }
-        return true
+        return repository.isOnline()
     }
 
     fun addExpense(

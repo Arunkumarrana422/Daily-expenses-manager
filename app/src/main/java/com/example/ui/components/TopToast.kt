@@ -53,6 +53,11 @@ class TopToastState {
         private set
 
     fun show(msg: String, toastType: ToastType = ToastType.ERROR) {
+        // Suppress 'no internet' toast since the top offline banner is already displayed
+        if (msg.contains("no internet", ignoreCase = true) ||
+            msg.contains("internet connection", ignoreCase = true)) {
+            return
+        }
         message = msg
         type = toastType
     }
@@ -68,6 +73,11 @@ fun rememberTopToastState(): TopToastState {
 }
 
 fun showSystemTopToast(context: Context, message: String) {
+    // Suppress 'no internet' system toast since the top offline banner is already displayed
+    if (message.contains("no internet", ignoreCase = true) ||
+        message.contains("internet connection", ignoreCase = true)) {
+        return
+    }
     try {
         val toast = Toast.makeText(context.applicationContext, message, Toast.LENGTH_SHORT)
         try {

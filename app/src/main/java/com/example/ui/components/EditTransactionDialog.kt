@@ -427,7 +427,6 @@ fun EditTransactionDialog(
                     Button(
                         onClick = {
                             if (!NetworkObserver(context).checkConnection()) {
-                                showSystemTopToast(context, "No internet connection")
                                 return@Button
                             }
                             val amount = amountText.toDoubleOrNull() ?: 0.0

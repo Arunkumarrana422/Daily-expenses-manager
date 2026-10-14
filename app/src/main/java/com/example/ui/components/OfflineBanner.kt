@@ -193,7 +193,7 @@ fun OfflineBanner(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 10.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.Start,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -201,11 +201,6 @@ fun OfflineBanner(
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = diagnostics.operatorName,
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }

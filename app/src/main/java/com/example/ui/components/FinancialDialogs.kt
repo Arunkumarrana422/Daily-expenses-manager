@@ -122,7 +122,6 @@ fun AddBudgetDialog(
             Button(
                 onClick = {
                     if (!NetworkObserver(context).checkConnection()) {
-                        showSystemTopToast(context, "No internet connection")
                         return@Button
                     }
                     val amount = amountText.toDoubleOrNull() ?: 0.0
@@ -188,7 +187,6 @@ fun AddAccountDialog(
             Button(
                 onClick = {
                     if (!NetworkObserver(context).checkConnection()) {
-                        showSystemTopToast(context, "No internet connection")
                         return@Button
                     }
                     val balance = balanceText.toDoubleOrNull() ?: 0.0
@@ -250,7 +248,6 @@ fun AddGoalDialog(
             Button(
                 onClick = {
                     if (!NetworkObserver(context).checkConnection()) {
-                        showSystemTopToast(context, "No internet connection")
                         return@Button
                     }
                     val target = targetText.toDoubleOrNull() ?: 0.0
@@ -324,7 +321,6 @@ fun AddRecurringDialog(
             Button(
                 onClick = {
                     if (!NetworkObserver(context).checkConnection()) {
-                        showSystemTopToast(context, "No internet connection")
                         return@Button
                     }
                     val amount = amountText.toDoubleOrNull() ?: 0.0
@@ -388,7 +384,6 @@ fun TransferMoneyDialog(
             Button(
                 onClick = {
                     if (!NetworkObserver(context).checkConnection()) {
-                        showSystemTopToast(context, "No internet connection")
                         return@Button
                     }
                     val amount = amountText.toDoubleOrNull() ?: 0.0

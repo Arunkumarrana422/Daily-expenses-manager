@@ -336,20 +336,9 @@ fun NoInternetScreen(
                             color = if (isDark) Color(0xFF334155) else Color(0xFFE2E8F0)
                         )
 
-                        // Carrier / Network Row
-                        DiagnosticRow(
-                            icon = if (diagnostics.isWifi) Icons.Default.Wifi else Icons.Default.CellTower,
-                            label = "Carrier / Network:",
-                            value = if (diagnostics.operatorName.isNotBlank()) diagnostics.operatorName else "No Network",
-                            textColor = titleColor,
-                            subtitleColor = subtitleColor
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
                         // Signal Generation Row
                         DiagnosticRow(
-                            icon = Icons.Default.SignalCellularAlt,
+                            icon = if (diagnostics.isWifi) Icons.Default.Wifi else Icons.Default.SignalCellularAlt,
                             label = "Signal Generation:",
                             value = diagnostics.generationLabel,
                             textColor = titleColor,
@@ -364,7 +353,7 @@ fun NoInternetScreen(
                             DiagnosticStatus.MOBILE_DATA_OFF -> "OFF (Disabled)"
                             DiagnosticStatus.AIRPLANE_MODE_ON -> "Airplane Mode ON"
                             DiagnosticStatus.WIFI_NO_INTERNET -> "No ISP Internet"
-                            DiagnosticStatus.NO_SIM_CARD -> "No SIM Card"
+                            DiagnosticStatus.NO_SIM_CARD -> "No Cellular Network"
                             else -> "Disconnected"
                         }
                         val dataStatusColor = if (diagnostics.status == DiagnosticStatus.ONLINE) MintGreenPrimary else accentColor

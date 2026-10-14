@@ -78,7 +78,6 @@ fun TransactionDetailDialog(
                     onClick = {
                         if (!NetworkObserver(context).checkConnection()) {
                             showDeleteConfirm = false
-                            showSystemTopToast(context, "No internet connection")
                             return@Button
                         }
                         showDeleteConfirm = false
@@ -203,7 +202,6 @@ fun TransactionDetailDialog(
                     OutlinedButton(
                         onClick = {
                             if (!NetworkObserver(context).checkConnection()) {
-                                showSystemTopToast(context, "No internet connection")
                                 return@OutlinedButton
                             }
                             val displayTime = DateTimeUtils.formatDisplayTime(transaction.time)
@@ -222,7 +220,6 @@ fun TransactionDetailDialog(
                     OutlinedButton(
                         onClick = {
                             if (!NetworkObserver(context).checkConnection()) {
-                                showSystemTopToast(context, "No internet connection")
                                 return@OutlinedButton
                             }
                             onEdit()
@@ -239,7 +236,6 @@ fun TransactionDetailDialog(
                     Button(
                         onClick = {
                             if (!NetworkObserver(context).checkConnection()) {
-                                showSystemTopToast(context, "No internet connection")
                                 return@Button
                             }
                             showDeleteConfirm = true
