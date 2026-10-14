@@ -139,7 +139,7 @@ fun MainScreen(
     var activeLegalScreen by remember { mutableStateOf<String?>(null) }
     var editingTransaction by remember { mutableStateOf<TransactionItem?>(null) }
 
-    // Collect snackbar messages and show both TopToast and Android Toast
+    // Collect snackbar messages and show TopToast ONLY (bottom Android system Toast removed)
     LaunchedEffect(Unit) {
         viewModel.snackbarMessage.collect { msg ->
             val toastType = when {
@@ -155,7 +155,6 @@ fun MainScreen(
                 else -> ToastType.INFO
             }
             topToastState.show(msg, toastType)
-            android.widget.Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -169,10 +168,8 @@ fun MainScreen(
                 viewModel.triggerCloudSync(showToastOnNoInternet = false)
             } else if (connectionState is NetworkConnectionState.NoInternet) {
                 topToastState.show("No internet connection", ToastType.ERROR)
-                android.widget.Toast.makeText(context, "No internet connection. Internet is required to use this application.", Toast.LENGTH_SHORT).show()
             } else if (connectionState is NetworkConnectionState.FirestoreUnavailable) {
                 topToastState.show("Firebase server unavailable", ToastType.ERROR)
-                android.widget.Toast.makeText(context, "Firebase server unavailable. Please tap retry.", Toast.LENGTH_SHORT).show()
             }
         } else if (lastObservedState != connectionState) {
             val wasBlocked = lastObservedState !is NetworkConnectionState.Connected
@@ -180,26 +177,23 @@ fun MainScreen(
             if (connectionState is NetworkConnectionState.Connected) {
                 if (wasBlocked) {
                     topToastState.show("Connected! Syncing data with cloud...", ToastType.SUCCESS)
-                    android.widget.Toast.makeText(context, "Connected! Syncing data with cloud...", Toast.LENGTH_SHORT).show()
                 }
                 viewModel.triggerCloudSync(showToastOnNoInternet = false)
             } else if (connectionState is NetworkConnectionState.NoInternet) {
                 topToastState.show("No internet connection", ToastType.ERROR)
-                android.widget.Toast.makeText(context, "No internet connection. Internet is required to use this application.", Toast.LENGTH_SHORT).show()
             } else if (connectionState is NetworkConnectionState.FirestoreUnavailable) {
                 topToastState.show("Database server unavailable", ToastType.ERROR)
-                android.widget.Toast.makeText(context, "Database server unavailable. Please tap retry.", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     // 1. BLOCKING NO INTERNET / SERVER UNAVAILABLE SCREEN
-    // If device is offline or Firestore is unreachable, block the entire application immediately
+    // If device is offline or server is unreachable, block the entire application immediately
     if (connectionState is NetworkConnectionState.NoInternet || connectionState is NetworkConnectionState.FirestoreUnavailable) {
         NoInternetScreen(
             connectionState = connectionState,
             onRetry = {
-                networkObserver.verifyConnectivity()
+                networkObserver.verifyConnectivity(isUserRetry = true)
             }
         )
         return
@@ -210,17 +204,6 @@ fun MainScreen(
         SplashScreen(
             onTimeout = {
                 viewModel.dismissSplash()
-            }
-        )
-        return
-    }
-
-    // 3. If splash dismissed but still checking connection, keep blocked on NoInternetScreen
-    if (connectionState !is NetworkConnectionState.Connected) {
-        NoInternetScreen(
-            connectionState = connectionState,
-            onRetry = {
-                networkObserver.verifyConnectivity()
             }
         )
         return

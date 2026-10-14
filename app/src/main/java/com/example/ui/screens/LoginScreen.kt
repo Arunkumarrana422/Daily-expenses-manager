@@ -203,7 +203,6 @@ fun LoginScreen(
                  onClick = {
                      if (!NetworkObserver(context).checkConnection()) {
                          topToastState.show("No internet connection", ToastType.ERROR)
-                         Toast.makeText(context, "No internet connection", Toast.LENGTH_SHORT).show()
                          return@OutlinedButton
                      }
                      isGoogleLoading = true
