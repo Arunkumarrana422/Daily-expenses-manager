@@ -102,6 +102,7 @@ fun MainScreen(
     val networkObserver = remember { NetworkObserver(context.applicationContext) }
     val connectionState by networkObserver.connectionState.collectAsStateWithLifecycle()
     val isOnline by networkObserver.isOnline.collectAsStateWithLifecycle()
+    val diagnostics by networkObserver.diagnostics.collectAsStateWithLifecycle()
 
     // Dispose network observer properly when MainScreen leaves composition
     DisposableEffect(networkObserver) {
@@ -192,6 +193,7 @@ fun MainScreen(
     if (connectionState is NetworkConnectionState.NoInternet || connectionState is NetworkConnectionState.FirestoreUnavailable) {
         NoInternetScreen(
             connectionState = connectionState,
+            diagnostics = diagnostics,
             onRetry = {
                 networkObserver.verifyConnectivity(isUserRetry = true)
             }

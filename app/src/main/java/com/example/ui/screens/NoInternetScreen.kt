@@ -1,17 +1,15 @@
 package com.example.ui.screens
 
+import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -27,18 +25,28 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AirplanemodeActive
+import androidx.compose.material.icons.filled.CellTower
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SignalCellularAlt
+import androidx.compose.material.icons.filled.SignalCellularConnectedNoInternet0Bar
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -57,6 +65,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -68,21 +77,24 @@ import com.example.ui.theme.DarkError
 import com.example.ui.theme.DarkSurface
 import com.example.ui.theme.FinanceError
 import com.example.ui.theme.MintGreenPrimary
+import com.example.utils.DiagnosticStatus
 import com.example.utils.NetworkConnectionState
+import com.example.utils.NetworkDiagnostics
+import com.example.utils.NetworkGeneration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Premium full-screen blocking screen displayed when the device is offline
- * or when the Firebase database is unreachable.
- * The application is strictly online-only; access to all features is completely
- * blocked until connectivity and Firebase reachability are restored.
+ * Premium full-screen blocking screen displayed when offline or server unreachable.
+ * Includes clean live network status for 2G / 3G / 4G / 5G / Wi-Fi detection,
+ * Carrier SIM identification, and Retry / Network Settings actions.
  */
 @Composable
 fun NoInternetScreen(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    connectionState: NetworkConnectionState = NetworkConnectionState.NoInternet
+    connectionState: NetworkConnectionState = NetworkConnectionState.NoInternet,
+    diagnostics: NetworkDiagnostics = NetworkDiagnostics()
 ) {
     // Intercept hardware and gesture back button to strictly prevent bypassing the restriction
     BackHandler(enabled = true) {
@@ -98,7 +110,6 @@ fun NoInternetScreen(
 
     val isDark = MaterialTheme.colorScheme.background == DarkBackground || isSystemInDarkTheme()
 
-    // Smooth gradient background matching existing app theme
     val screenBgGradient = if (isDark) {
         Brush.verticalGradient(
             colors = listOf(
@@ -163,34 +174,34 @@ fun NoInternetScreen(
                 .fillMaxSize()
                 .background(screenBgGradient)
                 .padding(innerPadding)
-                .padding(horizontal = 24.dp),
-            contentAlignment = Alignment.Center
+                .padding(horizontal = 20.dp)
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Top
             ) {
-                // 1. Stylish Animated Wi-Fi-Off / Cloud-Off Icon with Pulsing Halo Glow
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 1. Stylish Animated Icon with Pulsing Halo Glow
                 Box(
-                    modifier = Modifier.size(130.dp),
+                    modifier = Modifier.size(116.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Outer Pulsing Glow Ring
                     Box(
                         modifier = Modifier
-                            .size(124.dp)
+                            .size(112.dp)
                             .scale(pulseScale)
                             .clip(CircleShape)
                             .background(accentColor.copy(alpha = pulseAlpha))
                     )
 
-                    // Inner Glow Container
                     Box(
                         modifier = Modifier
-                            .size(96.dp)
+                            .size(86.dp)
                             .offset(y = iconFloatY.dp)
                             .clip(CircleShape)
                             .background(
@@ -208,23 +219,29 @@ fun NoInternetScreen(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
+                        val iconVector = when {
+                            isFirestoreError -> Icons.Default.CloudOff
+                            diagnostics.isAirplaneMode -> Icons.Default.AirplanemodeActive
+                            diagnostics.isCellular -> Icons.Default.SignalCellularConnectedNoInternet0Bar
+                            else -> Icons.Default.WifiOff
+                        }
                         Icon(
-                            imageVector = if (isFirestoreError) Icons.Default.CloudOff else Icons.Default.WifiOff,
-                            contentDescription = if (isFirestoreError) "Server Offline" else "No Internet Connection",
+                            imageVector = iconVector,
+                            contentDescription = "No Internet Connection",
                             tint = accentColor,
-                            modifier = Modifier.size(46.dp)
+                            modifier = Modifier.size(42.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // 2. Status Pill
+                // 2. Status Pill Badge
                 Surface(
                     shape = RoundedCornerShape(50),
                     color = accentColor.copy(alpha = 0.12f),
                     border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.3f)),
-                    modifier = Modifier.padding(bottom = 12.dp)
+                    modifier = Modifier.padding(bottom = 8.dp)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
@@ -249,75 +266,151 @@ fun NoInternetScreen(
 
                 // 3. Main Headline
                 Text(
-                    text = if (isFirestoreError) "Database Server Unavailable" else "No Internet Connection",
-                    fontSize = 24.sp,
+                    text = if (isFirestoreError) "Database Server Unavailable" else diagnostics.statusTitle,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = titleColor,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // 4. Subtitle / Reason
+                // 4. Subtitle / Reason in English
                 Text(
                     text = if (isFirestoreError) {
                         (connectionState as? NetworkConnectionState.FirestoreUnavailable)?.message
-                            ?: "Connected to internet, but unable to establish a secure live session with the Firebase Cloud Firestore server. Please tap Retry to reconnect."
+                            ?: "Connected to internet, but unable to connect to Firebase Cloud Firestore. Please tap Retry."
                     } else {
-                        "Please connect to the internet to use this application."
+                        diagnostics.statusDetail
                     },
-                    fontSize = 14.sp,
-                    lineHeight = 22.sp,
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp,
                     color = subtitleColor,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 12.dp)
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(22.dp))
 
-                // 5. Help Checklist Card
+                // 5. LIVE NETWORK DIAGNOSTICS CARD (2G, 3G, 4G, 5G & Data Status)
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("network_diagnostics_card"),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = cardBg),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)
                     ) {
-                        Text(
-                            text = if (isFirestoreError) "Connection Diagnostics:" else "Please check the following:",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = titleColor
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.NetworkCheck,
+                                    contentDescription = null,
+                                    tint = MintGreenPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Live Network Status",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = titleColor
+                                )
+                            }
 
-                        TroubleshootItem(
-                            text = "Ensure Wi-Fi or Mobile Data is switched on",
-                            iconColor = accentColor,
-                            textColor = subtitleColor
+                            // 2G / 3G / 4G / 5G / Wi-Fi Generation Badge
+                            NetworkGenerationBadge(generation = diagnostics.generation, label = diagnostics.generationLabel)
+                        }
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            color = if (isDark) Color(0xFF334155) else Color(0xFFE2E8F0)
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        TroubleshootItem(
-                            text = "Disable Airplane mode if currently enabled",
-                            iconColor = accentColor,
-                            textColor = subtitleColor
+
+                        // Carrier / Network Row
+                        DiagnosticRow(
+                            icon = if (diagnostics.isWifi) Icons.Default.Wifi else Icons.Default.CellTower,
+                            label = "Carrier / Network:",
+                            value = if (diagnostics.operatorName.isNotBlank()) diagnostics.operatorName else "No Network",
+                            textColor = titleColor,
+                            subtitleColor = subtitleColor
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        TroubleshootItem(
-                            text = "Confirm active internet package or router signal",
-                            iconColor = accentColor,
-                            textColor = subtitleColor
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Signal Generation Row
+                        DiagnosticRow(
+                            icon = Icons.Default.SignalCellularAlt,
+                            label = "Signal Generation:",
+                            value = diagnostics.generationLabel,
+                            textColor = titleColor,
+                            subtitleColor = subtitleColor
                         )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Data Status Row
+                        val isRechargeIssue = diagnostics.status == DiagnosticStatus.RECHARGE_EXPIRED_OR_DATA_OVER ||
+                                diagnostics.status == DiagnosticStatus.CAPTIVE_PORTAL
+                        val rechargeStatusText = when {
+                            isRechargeIssue -> "⚠️ Expired / Exhausted"
+                            diagnostics.status == DiagnosticStatus.MOBILE_DATA_OFF -> "OFF (Disabled)"
+                            diagnostics.status == DiagnosticStatus.AIRPLANE_MODE_ON -> "Airplane Mode ON"
+                            diagnostics.status == DiagnosticStatus.WIFI_NO_INTERNET -> "No ISP Internet"
+                            diagnostics.status == DiagnosticStatus.NO_SIM_CARD -> "No SIM Card"
+                            else -> "Unavailable"
+                        }
+                        val rechargeStatusColor = if (isRechargeIssue) Color(0xFFEF4444) else accentColor
+
+                        DiagnosticRow(
+                            icon = Icons.Default.Info,
+                            label = "Data Connection:",
+                            value = rechargeStatusText,
+                            textColor = rechargeStatusColor,
+                            subtitleColor = subtitleColor
+                        )
+
+                        // Data Link Alert Banner if data throughput blocked
+                        if (isRechargeIssue) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color(0xFFEF4444).copy(alpha = 0.08f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.25f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(
+                                        text = "🚨 Data Pack or Validity Issue",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFEF4444)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Connected to ${diagnostics.generationLabel} network, but internet data packets are not responding. Daily data pack may be over or recharge validity has expired.",
+                                        fontSize = 11.sp,
+                                        lineHeight = 16.sp,
+                                        color = subtitleColor
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                // 6. Prominent "Retry Connection" Button with Loading Animation
+                // 6. Action: "Retry Connection" Button with Loading Animation
                 Button(
                     onClick = {
                         if (!isChecking) {
@@ -331,7 +424,7 @@ fun NoInternetScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(54.dp)
+                        .height(52.dp)
                         .testTag("retry_connection_button"),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -348,8 +441,8 @@ fun NoInternetScreen(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "Verifying Connection...",
-                            fontSize = 15.sp,
+                            text = "Checking Connection...",
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                     } else {
@@ -369,26 +462,14 @@ fun NoInternetScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // 7. Secondary Action: Open Device Network Settings
+                // 7. Action: Open Device Mobile Network / SIM Settings
                 OutlinedButton(
                     onClick = {
-                        try {
-                            val intent = Intent(Settings.ACTION_WIRELESS_SETTINGS).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            }
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            try {
-                                val intent = Intent(Settings.ACTION_SETTINGS).apply {
-                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                }
-                                context.startActivity(intent)
-                            } catch (_: Exception) {}
-                        }
+                        openNetworkSettings(context)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
+                        .height(48.dp)
                         .testTag("open_network_settings_button"),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
@@ -398,41 +479,106 @@ fun NoInternetScreen(
                     Icon(
                         imageVector = Icons.Default.Settings,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(17.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Open Network Settings",
-                        fontSize = 14.sp,
+                        text = "Open Mobile Network Settings",
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
 }
 
 @Composable
-private fun TroubleshootItem(
-    text: String,
-    iconColor: Color,
-    textColor: Color
+private fun NetworkGenerationBadge(
+    generation: NetworkGeneration,
+    label: String
+) {
+    val (badgeBg, textColor) = when (generation) {
+        NetworkGeneration.GEN_5G -> Pair(Color(0xFF8B5CF6), Color.White)
+        NetworkGeneration.GEN_4G -> Pair(Color(0xFF0EA5E9), Color.White)
+        NetworkGeneration.GEN_3G -> Pair(Color(0xFFF59E0B), Color.White)
+        NetworkGeneration.GEN_2G -> Pair(Color(0xFFF97316), Color.White)
+        NetworkGeneration.WIFI -> Pair(Color(0xFF10B981), Color.White)
+        NetworkGeneration.ETHERNET -> Pair(Color(0xFF06B6D4), Color.White)
+        NetworkGeneration.NONE -> Pair(Color(0xFFEF4444).copy(alpha = 0.2f), Color(0xFFEF4444))
+    }
+
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = badgeBg
+    ) {
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = textColor,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+    }
+}
+
+@Composable
+private fun DiagnosticRow(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    textColor: Color,
+    subtitleColor: Color
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(iconColor.copy(alpha = 0.85f))
-        )
-        Spacer(modifier = Modifier.width(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = subtitleColor,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = label,
+                fontSize = 13.sp,
+                color = subtitleColor
+            )
+        }
         Text(
-            text = text,
+            text = value,
             fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
             color = textColor
         )
+    }
+}
+
+private fun openNetworkSettings(context: Context) {
+    try {
+        val intent = Intent(Settings.ACTION_DATA_ROAMING_SETTINGS).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        context.startActivity(intent)
+    } catch (_: Exception) {
+        try {
+            val intent = Intent(Settings.ACTION_WIRELESS_SETTINGS).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        } catch (_: Exception) {
+            try {
+                val intent = Intent(Settings.ACTION_SETTINGS).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(intent)
+            } catch (_: Exception) {}
+        }
     }
 }
