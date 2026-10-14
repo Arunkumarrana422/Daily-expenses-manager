@@ -77,6 +77,8 @@ class NetworkObserver(private val context: Context) {
     private var verificationJob: Job? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
+    private var backgroundRetryJob: Job? = null
+
     private val initialConnected = checkHardwareConnection()
 
     private val _connectionState = MutableStateFlow<NetworkConnectionState>(
@@ -92,6 +94,31 @@ class NetworkObserver(private val context: Context) {
 
     init {
         registerCallback()
+        startBackgroundRetryLoop()
+    }
+
+    private fun startBackgroundRetryLoop() {
+        backgroundRetryJob?.cancel()
+        backgroundRetryJob = scope.launch {
+            while (true) {
+                delay(4000) // Silently check every 4 seconds when offline
+                val currentState = _connectionState.value
+                if (currentState is NetworkConnectionState.NoInternet || currentState is NetworkConnectionState.FirestoreUnavailable) {
+                    _connectionState.value = NetworkConnectionState.Checking
+                    delay(400)
+                    val connected = checkHardwareConnection()
+                    if (connected) {
+                        _connectionState.value = NetworkConnectionState.Connected
+                        _isOnline.value = true
+                        _diagnostics.value = evaluateDiagnostics(isConnected = true)
+                    } else {
+                        _connectionState.value = NetworkConnectionState.NoInternet
+                        _isOnline.value = false
+                        _diagnostics.value = evaluateDiagnostics(isConnected = false)
+                    }
+                }
+            }
+        }
     }
 
     private fun registerCallback() {
@@ -327,10 +354,8 @@ class NetworkObserver(private val context: Context) {
     fun verifyConnectivity(isUserRetry: Boolean = false) {
         verificationJob?.cancel()
         verificationJob = scope.launch {
-            if (isUserRetry) {
-                _connectionState.value = NetworkConnectionState.Checking
-                delay(600)
-            }
+            _connectionState.value = NetworkConnectionState.Checking
+            delay(500)
             val connected = checkHardwareConnection()
             if (connected) {
                 _connectionState.value = NetworkConnectionState.Connected
