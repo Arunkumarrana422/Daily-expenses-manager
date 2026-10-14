@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
@@ -284,6 +285,7 @@ fun AddTransactionScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp)
+                    .shadow(elevation = 2.dp, shape = RoundedCornerShape(50))
                     .clip(RoundedCornerShape(50))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
                     .border(
