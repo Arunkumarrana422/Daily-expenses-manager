@@ -286,6 +286,11 @@ fun AddTransactionScreen(
                     .height(54.dp)
                     .clip(RoundedCornerShape(50))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .border(
+                        width = 1.dp,
+                        color = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.primary.copy(alpha = 0.35f) else Color.Transparent,
+                        shape = RoundedCornerShape(50)
+                    )
                     .testTag("transaction_type_tabs")
             ) {
                 val totalWidth = maxWidth
