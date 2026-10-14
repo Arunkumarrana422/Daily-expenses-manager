@@ -43,6 +43,7 @@ import com.example.ui.components.TopToastHost
 import com.example.ui.components.rememberTopToastState
 import com.example.ui.theme.IndigoPrimary
 import com.example.ui.viewmodel.FinanceViewModel
+import com.example.utils.NetworkObserver
 
 @Composable
 fun LoginScreen(
@@ -197,9 +198,14 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 3. Primary Action: Google Sign-In Button
+             // 3. Primary Action: Google Sign-In Button
              OutlinedButton(
                  onClick = {
+                     if (!NetworkObserver(context).checkConnection()) {
+                         topToastState.show("No internet connection", ToastType.ERROR)
+                         Toast.makeText(context, "No internet connection", Toast.LENGTH_SHORT).show()
+                         return@OutlinedButton
+                     }
                      isGoogleLoading = true
                      coroutineScope.launch {
                          try {

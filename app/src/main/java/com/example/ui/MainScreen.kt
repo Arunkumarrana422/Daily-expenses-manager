@@ -1,5 +1,6 @@
 package com.example.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -75,7 +76,6 @@ import com.example.ui.screens.ForgotPasswordScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.IntroScreen
 import com.example.ui.screens.LoginScreen
-import com.example.ui.screens.NoInternetScreen
 import com.example.ui.screens.PrivacyPolicyScreen
 import com.example.ui.screens.TermsAndConditionsScreen
 import com.example.ui.screens.RegisterScreen
@@ -111,22 +111,46 @@ fun MainScreen(
     var activeLegalScreen by remember { mutableStateOf<String?>(null) }
     var editingTransaction by remember { mutableStateOf<TransactionItem?>(null) }
 
-    // Collect snackbar messages
+    // Collect snackbar messages and show both TopToast and Android Toast
     LaunchedEffect(Unit) {
         viewModel.snackbarMessage.collect { msg ->
             val toastType = when {
-                msg.contains("failed", ignoreCase = true) || msg.contains("error", ignoreCase = true) || msg.contains("offline", ignoreCase = true) -> ToastType.ERROR
-                msg.contains("success", ignoreCase = true) || msg.contains("saved", ignoreCase = true) || msg.contains("welcome", ignoreCase = true) || msg.contains("updated", ignoreCase = true) -> ToastType.SUCCESS
+                msg.contains("failed", ignoreCase = true) ||
+                msg.contains("error", ignoreCase = true) ||
+                msg.contains("offline", ignoreCase = true) ||
+                msg.contains("internet", ignoreCase = true) ||
+                msg.contains("network", ignoreCase = true) -> ToastType.ERROR
+                msg.contains("success", ignoreCase = true) ||
+                msg.contains("saved", ignoreCase = true) ||
+                msg.contains("welcome", ignoreCase = true) ||
+                msg.contains("updated", ignoreCase = true) -> ToastType.SUCCESS
                 else -> ToastType.INFO
             }
             topToastState.show(msg, toastType)
+            android.widget.Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         }
     }
 
-    // Automatically trigger cloud fetch/sync whenever internet is available or reconnected
+    var lastObservedOnlineState by remember { mutableStateOf<Boolean?>(null) }
+
+    // Check internet connection: if online load data from Firestore; if offline show toast message
     LaunchedEffect(isOnline) {
-        if (isOnline) {
-            viewModel.triggerCloudSync()
+        if (lastObservedOnlineState == null) {
+            lastObservedOnlineState = isOnline
+            if (isOnline) {
+                viewModel.triggerCloudSync(showToastOnNoInternet = false)
+            } else {
+                topToastState.show("No internet connection", ToastType.ERROR)
+                android.widget.Toast.makeText(context, "No internet connection", Toast.LENGTH_SHORT).show()
+            }
+        } else if (lastObservedOnlineState != isOnline) {
+            lastObservedOnlineState = isOnline
+            if (isOnline) {
+                viewModel.triggerCloudSync(showToastOnNoInternet = false)
+            } else {
+                topToastState.show("No internet connection", ToastType.ERROR)
+                android.widget.Toast.makeText(context, "No internet connection", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -135,16 +159,6 @@ fun MainScreen(
         SplashScreen(
             onTimeout = {
                 viewModel.dismissSplash()
-            }
-        )
-        return
-    }
-
-    // Global Internet Check: block application if offline
-    if (!isOnline) {
-        NoInternetScreen(
-            onRetry = {
-                networkObserver.refresh()
             }
         )
         return

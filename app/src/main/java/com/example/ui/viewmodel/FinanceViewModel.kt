@@ -133,10 +133,24 @@ class FinanceViewModel(
 
     val syncState: StateFlow<SyncState> = repository.syncState
 
+    private val _isLoadingTransactions = MutableStateFlow(true)
+    val isLoadingTransactions: StateFlow<Boolean> = _isLoadingTransactions.asStateFlow()
+
     init {
-        // Trigger cloud sync to load all data from Firebase on startup
+        // Check internet connection before fetching data from Firestore on startup
         viewModelScope.launch {
-            repository.syncWithCloud()
+            try {
+                if (repository.isOnline()) {
+                    repository.syncWithCloud()
+                } else {
+                    _snackbarMessage.emit("No internet connection")
+                }
+            } finally {
+                _isLoadingTransactions.value = false
+            }
+        }
+
+        viewModelScope.launch {
             repository.userPreferences.collect { prefs ->
                 if (prefs.dailyReminderEnabled) {
                     NotificationHelper.scheduleDailyEveningReminder(context)
@@ -873,9 +887,20 @@ class FinanceViewModel(
         }
     }
 
-    fun triggerCloudSync() {
+    fun triggerCloudSync(showToastOnNoInternet: Boolean = false) {
         viewModelScope.launch {
-            repository.syncWithCloud()
+            if (!repository.isOnline()) {
+                if (showToastOnNoInternet) {
+                    _snackbarMessage.emit("No internet connection")
+                }
+                return@launch
+            }
+            try {
+                _isLoadingTransactions.value = true
+                repository.syncWithCloud()
+            } finally {
+                _isLoadingTransactions.value = false
+            }
         }
     }
 }

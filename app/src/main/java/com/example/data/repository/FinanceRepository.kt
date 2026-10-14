@@ -350,7 +350,12 @@ class FinanceRepository(
     }
 
     // Sync
+    fun isOnline(): Boolean = syncManager.isOnline()
+
     suspend fun syncWithCloud(): Boolean {
+        if (!isOnline()) {
+            return false
+        }
         val success = syncManager.triggerSync()
         if (success) {
             preferencesDataStore.updateSyncTimestamp(System.currentTimeMillis())

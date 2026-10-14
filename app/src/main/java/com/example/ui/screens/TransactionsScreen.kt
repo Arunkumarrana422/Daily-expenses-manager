@@ -30,7 +30,9 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import com.example.data.remote.SyncState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -84,6 +86,8 @@ fun TransactionsScreen(
     val scope = rememberCoroutineScope()
 
     val filteredTransactions by viewModel.filteredTransactions.collectAsStateWithLifecycle()
+    val isLoadingTransactions by viewModel.isLoadingTransactions.collectAsStateWithLifecycle()
+    val syncState by viewModel.syncState.collectAsStateWithLifecycle()
     val allExpenses by viewModel.expenses.collectAsStateWithLifecycle()
     val allIncomes by viewModel.incomes.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
@@ -335,7 +339,35 @@ fun TransactionsScreen(
         }
 
         // Transactions List with Date Headers
-        if (filteredTransactions.isEmpty()) {
+        val isListLoading = isLoadingTransactions || (syncState is SyncState.Syncing && filteredTransactions.isEmpty())
+        if (isListLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .testTag("transactions_loading_spinner"),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 3.5.dp
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(
+                        text = "Loading transactions...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else if (filteredTransactions.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

@@ -62,7 +62,9 @@ class FirebaseSyncManager(
             val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
             val network = cm?.activeNetwork ?: return false
             val caps = cm.getNetworkCapabilities(network) ?: return false
-            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            val hasInternet = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            val hasValidated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            hasInternet && (hasValidated || caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET))
         } catch (e: Exception) {
             false
         }
@@ -405,7 +407,7 @@ class FirebaseSyncManager(
      */
     suspend fun triggerSync(): Boolean = withContext(Dispatchers.IO) {
         if (!isOnline()) {
-            _syncState.value = SyncState.Error("Internet connection required to sync data with Firebase.")
+            _syncState.value = SyncState.Error("No internet connection")
             return@withContext false
         }
 
