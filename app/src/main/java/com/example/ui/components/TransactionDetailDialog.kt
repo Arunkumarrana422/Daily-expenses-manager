@@ -25,6 +25,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +61,7 @@ import com.example.utils.ExportUtils
 fun TransactionDetailDialog(
     transaction: TransactionItem,
     currencySymbol: String = "₹",
+    isDeleting: Boolean = false,
     onDismiss: () -> Unit,
     onDelete: () -> Unit,
     onEdit: () -> Unit,
@@ -70,27 +72,41 @@ fun TransactionDetailDialog(
 
     if (showDeleteConfirm) {
         AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
+            onDismissRequest = { if (!isDeleting) showDeleteConfirm = false },
             title = { Text("Delete Transaction?") },
             text = { Text("Are you sure you want to delete this ${if (transaction.isExpense) "expense" else "income"} of ${CurrencyFormatter.format(transaction.amount, currencySymbol)}? This cannot be undone.") },
             confirmButton = {
                 Button(
                     onClick = {
                         if (!NetworkObserver(context).checkConnection()) {
-                            showDeleteConfirm = false
                             return@Button
                         }
-                        showDeleteConfirm = false
                         onDelete()
                     },
+                    enabled = !isDeleting,
                     colors = ButtonDefaults.buttonColors(containerColor = FinanceError),
                     modifier = Modifier.testTag("confirm_delete_button")
                 ) {
-                    Text("Delete")
+                    if (isDeleting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .testTag("delete_loading_indicator"),
+                            strokeWidth = 2.dp,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Deleting...")
+                    } else {
+                        Text("Delete")
+                    }
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
+                TextButton(
+                    onClick = { if (!isDeleting) showDeleteConfirm = false },
+                    enabled = !isDeleting
+                ) {
                     Text("Cancel")
                 }
             }

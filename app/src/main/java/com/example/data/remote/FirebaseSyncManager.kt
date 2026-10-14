@@ -370,14 +370,17 @@ class FirebaseSyncManager(
     /**
      * Delete an expense directly from Firestore
      */
-    suspend fun deleteExpense(userId: String, id: Long) = withContext(Dispatchers.IO) {
+    suspend fun deleteExpense(userId: String, id: Long): Boolean = withContext(Dispatchers.IO) {
         try {
-            val fs = firestore ?: return@withContext
-            fs.collection("users").document(userId)
+            val fs = firestore ?: return@withContext false
+            val docRef = fs.collection("users").document(userId)
                 .collection("expenses").document(id.toString())
-                .delete().await()
+            docRef.delete().await()
+            val snapshot = docRef.get().await()
+            !snapshot.exists()
         } catch (e: Exception) {
             Log.w(TAG, "Direct delete expense error: ${e.message}")
+            false
         }
     }
 
@@ -413,14 +416,17 @@ class FirebaseSyncManager(
     /**
      * Delete an income directly from Firestore
      */
-    suspend fun deleteIncome(userId: String, id: Long) = withContext(Dispatchers.IO) {
+    suspend fun deleteIncome(userId: String, id: Long): Boolean = withContext(Dispatchers.IO) {
         try {
-            val fs = firestore ?: return@withContext
-            fs.collection("users").document(userId)
+            val fs = firestore ?: return@withContext false
+            val docRef = fs.collection("users").document(userId)
                 .collection("incomes").document(id.toString())
-                .delete().await()
+            docRef.delete().await()
+            val snapshot = docRef.get().await()
+            !snapshot.exists()
         } catch (e: Exception) {
             Log.w(TAG, "Direct delete income error: ${e.message}")
+            false
         }
     }
 

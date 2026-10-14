@@ -100,12 +100,18 @@ class FinanceRepository(
         }
     }
 
-    suspend fun deleteExpenseById(id: Long) {
-        expenseDao.deleteExpenseById(id)
+    suspend fun deleteExpenseWithFirestoreCheck(id: Long) {
         val currentUserId = syncManager.getCurrentUserId()
         if (currentUserId != null) {
-            syncManager.deleteExpense(currentUserId, id)
+            var deleted = false
+            while (!deleted) {
+                deleted = syncManager.deleteExpense(currentUserId, id)
+                if (!deleted) {
+                    kotlinx.coroutines.delay(1000)
+                }
+            }
         }
+        expenseDao.deleteExpenseById(id)
     }
 
     fun getExpenseById(id: Long): Flow<ExpenseEntity?> = expenseDao.getExpenseById(id)
@@ -148,13 +154,19 @@ class FinanceRepository(
         }
     }
 
-    suspend fun deleteIncome(income: IncomeEntity) {
-        incomeDao.deleteIncome(income)
-        accountDao.adjustBalance(income.accountId, -income.amount)
+    suspend fun deleteIncomeWithFirestoreCheck(income: IncomeEntity) {
         val currentUserId = syncManager.getCurrentUserId()
         if (currentUserId != null) {
-            syncManager.deleteIncome(currentUserId, income.id)
+            var deleted = false
+            while (!deleted) {
+                deleted = syncManager.deleteIncome(currentUserId, income.id)
+                if (!deleted) {
+                    kotlinx.coroutines.delay(1000)
+                }
+            }
         }
+        incomeDao.deleteIncome(income)
+        accountDao.adjustBalance(income.accountId, -income.amount)
     }
 
     fun getIncomeById(id: Long): Flow<IncomeEntity?> = incomeDao.getIncomeById(id)

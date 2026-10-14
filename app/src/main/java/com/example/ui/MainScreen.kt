@@ -127,6 +127,7 @@ fun MainScreen(
     }
 
     val selectedTx by viewModel.selectedTransaction.collectAsStateWithLifecycle()
+    val isDeletingTransaction by viewModel.isDeletingTransaction.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val prefs by viewModel.userPreferences.collectAsStateWithLifecycle()
@@ -231,14 +232,17 @@ fun MainScreen(
         TransactionDetailDialog(
             transaction = tx,
             currencySymbol = prefs.currency,
-            onDismiss = { viewModel.selectTransaction(null) },
+            isDeleting = isDeletingTransaction,
+            onDismiss = { if (!isDeletingTransaction) viewModel.selectTransaction(null) },
             onDelete = {
                 if (viewModel.checkOnlineOrShowToast()) {
-                    viewModel.deleteTransaction(tx)
+                    viewModel.deleteTransaction(tx) {
+                        viewModel.selectTransaction(null)
+                    }
                 }
             },
             onEdit = {
-                if (viewModel.checkOnlineOrShowToast()) {
+                if (!isDeletingTransaction && viewModel.checkOnlineOrShowToast()) {
                     editingTransaction = tx
                     viewModel.selectTransaction(null)
                 }

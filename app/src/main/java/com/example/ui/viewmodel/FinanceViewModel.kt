@@ -92,6 +92,9 @@ class FinanceViewModel(
     private val _selectedTransaction = MutableStateFlow<TransactionItem?>(null)
     val selectedTransaction: StateFlow<TransactionItem?> = _selectedTransaction.asStateFlow()
 
+    private val _isDeletingTransaction = MutableStateFlow(false)
+    val isDeletingTransaction: StateFlow<Boolean> = _isDeletingTransaction.asStateFlow()
+
     // App Lock PIN Verification state
     private val _isAppUnlocked = MutableStateFlow(true)
     val isAppUnlocked: StateFlow<Boolean> = _isAppUnlocked.asStateFlow()
@@ -592,21 +595,43 @@ class FinanceViewModel(
         }
     }
 
-    fun deleteTransaction(item: TransactionItem) {
+    fun deleteTransaction(item: TransactionItem, onComplete: () -> Unit = {}) {
         if (!checkOnlineOrShowToast()) return
         viewModelScope.launch {
-            if (item.isExpense) {
-                repository.deleteExpenseById(item.id)
-            } else {
-                val inc = incomes.value.find { it.id == item.id }
-                if (inc != null) {
-                    repository.deleteIncome(inc)
+            _isDeletingTransaction.value = true
+            try {
+                if (item.isExpense) {
+                    repository.deleteExpenseWithFirestoreCheck(item.id)
+                } else {
+                    val inc = incomes.value.find { it.id == item.id }
+                    if (inc != null) {
+                        repository.deleteIncomeWithFirestoreCheck(inc)
+                    } else {
+                        repository.deleteIncomeWithFirestoreCheck(
+                            IncomeEntity(
+                                id = item.id,
+                                amount = item.amount,
+                                source = item.categoryName.ifBlank { item.title },
+                                accountId = item.accountId,
+                                paymentMethod = item.paymentMethod,
+                                note = item.note,
+                                date = item.date,
+                                time = item.time,
+                                createdAt = item.createdAt
+                            )
+                        )
+                    }
                 }
+                if (_selectedTransaction.value?.id == item.id) {
+                    _selectedTransaction.value = null
+                }
+                _snackbarMessage.emit("Transaction deleted successfully")
+                onComplete()
+            } catch (e: Exception) {
+                _snackbarMessage.emit("Failed to delete: ${e.localizedMessage}")
+            } finally {
+                _isDeletingTransaction.value = false
             }
-            if (_selectedTransaction.value?.id == item.id) {
-                _selectedTransaction.value = null
-            }
-            _snackbarMessage.emit("Transaction deleted")
         }
     }
 
