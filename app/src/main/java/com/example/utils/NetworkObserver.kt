@@ -63,7 +63,7 @@ class NetworkObserver(private val context: Context) {
 
     fun checkConnection(): Boolean {
         return try {
-            val cm = connectivityManager ?: return true
+            val cm = connectivityManager ?: return false
             val activeNetwork = cm.activeNetwork ?: return false
             val caps = cm.getNetworkCapabilities(activeNetwork) ?: return false
             val hasInternet = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
@@ -71,7 +71,7 @@ class NetworkObserver(private val context: Context) {
 
             hasInternet && (hasValidated || caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET))
         } catch (e: Exception) {
-            true
+            false
         }
     }
 

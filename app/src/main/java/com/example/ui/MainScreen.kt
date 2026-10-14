@@ -76,6 +76,7 @@ import com.example.ui.screens.ForgotPasswordScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.IntroScreen
 import com.example.ui.screens.LoginScreen
+import com.example.ui.screens.NoInternetScreen
 import com.example.ui.screens.PrivacyPolicyScreen
 import com.example.ui.screens.TermsAndConditionsScreen
 import com.example.ui.screens.RegisterScreen
@@ -133,7 +134,7 @@ fun MainScreen(
 
     var lastObservedOnlineState by remember { mutableStateOf<Boolean?>(null) }
 
-    // Check internet connection: if online load data from Firestore; if offline show toast message
+    // Strict internet connection handling: Application does NOT work without internet
     LaunchedEffect(isOnline) {
         if (lastObservedOnlineState == null) {
             lastObservedOnlineState = isOnline
@@ -141,15 +142,20 @@ fun MainScreen(
                 viewModel.triggerCloudSync(showToastOnNoInternet = false)
             } else {
                 topToastState.show("No internet connection", ToastType.ERROR)
-                android.widget.Toast.makeText(context, "No internet connection", Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(context, "No internet connection. Internet is required to use this application.", Toast.LENGTH_SHORT).show()
             }
         } else if (lastObservedOnlineState != isOnline) {
+            val wasOffline = lastObservedOnlineState == false
             lastObservedOnlineState = isOnline
             if (isOnline) {
+                if (wasOffline) {
+                    topToastState.show("Back online. Syncing data...", ToastType.SUCCESS)
+                    android.widget.Toast.makeText(context, "Back online. Syncing data...", Toast.LENGTH_SHORT).show()
+                }
                 viewModel.triggerCloudSync(showToastOnNoInternet = false)
             } else {
                 topToastState.show("No internet connection", ToastType.ERROR)
-                android.widget.Toast.makeText(context, "No internet connection", Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(context, "No internet connection. Internet is required to use this application.", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -159,6 +165,16 @@ fun MainScreen(
         SplashScreen(
             onTimeout = {
                 viewModel.dismissSplash()
+            }
+        )
+        return
+    }
+
+    // BLOCKING NO INTERNET SCREEN: Application NOT working without internet
+    if (!isOnline) {
+        NoInternetScreen(
+            onRetry = {
+                networkObserver.refresh()
             }
         )
         return

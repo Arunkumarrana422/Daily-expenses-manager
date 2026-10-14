@@ -48,8 +48,11 @@ class FinanceRepository(
 
     // Expenses operations
     suspend fun addExpenseWithFirestoreCheck(expense: ExpenseEntity): Result<Long> {
+        if (!syncManager.isOnline()) {
+            return Result.failure(Exception("No internet connection. Active internet is required."))
+        }
         val currentUserId = syncManager.getCurrentUserId()
-        if (currentUserId != null && syncManager.isOnline()) {
+        if (currentUserId != null) {
             val id = expenseDao.insertExpense(expense)
             val createdExpense = expense.copy(id = id)
             val isUploaded = syncManager.uploadExpense(currentUserId, createdExpense)
@@ -72,8 +75,11 @@ class FinanceRepository(
     }
 
     suspend fun updateExpenseWithFirestoreCheck(expense: ExpenseEntity, oldAmount: Double, oldAccountId: Long): Result<Boolean> {
+        if (!syncManager.isOnline()) {
+            return Result.failure(Exception("No internet connection. Active internet is required."))
+        }
         val currentUserId = syncManager.getCurrentUserId()
-        if (currentUserId != null && syncManager.isOnline()) {
+        if (currentUserId != null) {
             val isUploaded = syncManager.uploadExpense(currentUserId, expense)
             if (isUploaded) {
                 expenseDao.updateExpense(expense)
@@ -123,8 +129,11 @@ class FinanceRepository(
 
     // Incomes operations
     suspend fun addIncomeWithFirestoreCheck(income: IncomeEntity): Result<Long> {
+        if (!syncManager.isOnline()) {
+            return Result.failure(Exception("No internet connection. Active internet is required."))
+        }
         val currentUserId = syncManager.getCurrentUserId()
-        if (currentUserId != null && syncManager.isOnline()) {
+        if (currentUserId != null) {
             val id = incomeDao.insertIncome(income)
             val createdIncome = income.copy(id = id)
             val isUploaded = syncManager.uploadIncome(currentUserId, createdIncome)
@@ -147,8 +156,11 @@ class FinanceRepository(
     }
 
     suspend fun updateIncomeWithFirestoreCheck(income: IncomeEntity, oldAmount: Double, oldAccountId: Long): Result<Boolean> {
+        if (!syncManager.isOnline()) {
+            return Result.failure(Exception("No internet connection. Active internet is required."))
+        }
         val currentUserId = syncManager.getCurrentUserId()
-        if (currentUserId != null && syncManager.isOnline()) {
+        if (currentUserId != null) {
             val isUploaded = syncManager.uploadIncome(currentUserId, income)
             if (isUploaded) {
                 incomeDao.updateIncome(income)
