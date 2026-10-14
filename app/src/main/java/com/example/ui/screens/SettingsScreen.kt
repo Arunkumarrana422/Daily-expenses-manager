@@ -58,6 +58,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -599,6 +600,7 @@ fun SettingsScreen(
             }
         }
 
+
         // 7. Sign Out Section
         item {
             Card(
@@ -765,11 +767,20 @@ fun SettingsScreen(
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth().testTag("delete_account_confirm_input")
                     )
+                    if (isDeletingAccount) {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                            color = FinanceError
+                        )
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
+                        keyboardController?.hide()
                         if (!viewModel.checkOnlineOrShowToast()) {
                             showDeleteAccountDialog = false
                             return@Button
