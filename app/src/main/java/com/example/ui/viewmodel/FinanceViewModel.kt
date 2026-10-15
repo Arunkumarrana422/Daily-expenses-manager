@@ -53,7 +53,7 @@ data class FilterCriteria(
     val sortOrder: String = "NEWEST", // "NEWEST", "OLDEST", "HIGHEST", "LOWEST"
     val minAmount: Double? = null,
     val maxAmount: Double? = null,
-    val dateRange: String = "ALL", // "ALL", "TODAY", "THIS_WEEK", "THIS_MONTH", "LAST_MONTH", "CUSTOM_MONTH"
+    val dateRange: String = "THIS_MONTH", // "ALL", "TODAY", "THIS_WEEK", "THIS_MONTH", "LAST_MONTH", "CUSTOM_MONTH"
     val customYear: Int? = null,
     val customMonth: Int? = null
 )

@@ -98,7 +98,7 @@ fun TransactionsScreen(
     val hasActiveFilter = filterCriteria.categoryFilter != "All" ||
         filterCriteria.paymentMethodFilter != "All" ||
         filterCriteria.typeFilter != "ALL" ||
-        filterCriteria.dateRange != "ALL" ||
+        filterCriteria.dateRange != "THIS_MONTH" ||
         filterCriteria.sortOrder != "NEWEST"
 
     if (showFilterSheet) {
@@ -211,8 +211,10 @@ fun TransactionsScreen(
                 val isSelected = filterCriteria.dateRange == rangeKey
                 Surface(
                     onClick = {
-                        if (isSelected && rangeKey != "ALL") {
+                        if (isSelected && rangeKey == "THIS_MONTH") {
                             viewModel.setQuickDateFilter("ALL")
+                        } else if (isSelected) {
+                            viewModel.setQuickDateFilter("THIS_MONTH")
                         } else {
                             viewModel.setQuickDateFilter(rangeKey)
                         }
