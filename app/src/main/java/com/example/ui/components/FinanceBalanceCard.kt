@@ -1,8 +1,6 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,28 +14,24 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.Nfc
+import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.IndigoGradientEnd
-import com.example.ui.theme.IndigoGradientStart
 import com.example.utils.CurrencyFormatter
 
 @Composable
@@ -52,210 +46,200 @@ fun FinanceBalanceCard(
         modifier = modifier
             .fillMaxWidth()
             .testTag("balance_card"),
-        shape = RoundedCornerShape(22.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        shape = RoundedCornerShape(28.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    brush = Brush.linearGradient(
+                    brush = Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFF1E1B4B), // Deep Indigo / Dark Navy
-                            Color(0xFF312E81),
-                            Color(0xFF4338CA)  // Vibrant Indigo Gradient End
+                            Color(0xFF00C853), // Bright Emerald Green
+                            Color(0xFF00ACC1)  // Vibrant Teal Cyan
                         )
                     )
                 )
-                .padding(20.dp)
+                .padding(24.dp)
         ) {
-            // Decorative background glowing circles for premium credit card look
-            Box(
-                modifier = Modifier
-                    .size(160.dp)
-                    .align(Alignment.TopEnd)
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(Color.White.copy(alpha = 0.12f), Color.Transparent)
-                        ),
-                        shape = CircleShape
-                    )
-            )
-
             Column(modifier = Modifier.fillMaxWidth()) {
-                // Top Row: Chip & Contactless / Card Network Badge
+                // Top Row: Wallet Icon + Total Balance Title / Subtitle + Active Badge
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // EMV Smart Chip Simulator
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = Color(0xFFFFD700).copy(alpha = 0.9f), // Gold chip color
-                        modifier = Modifier.size(width = 38.dp, height = 28.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .border(0.5.dp, Color(0xFFB8860B), RoundedCornerShape(6.dp)),
-                            contentAlignment = Alignment.Center
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.White.copy(alpha = 0.22f),
+                            modifier = Modifier.size(52.dp)
                         ) {
-                            // Chip lines simulation
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(0.7f)
-                                    .height(0.5.dp)
-                                    .background(Color(0xFFB8860B))
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.AccountBalanceWallet,
+                                    contentDescription = "Wallet",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        Column {
+                            Text(
+                                text = "Total Balance",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Your money, your control",
+                                fontSize = 12.sp,
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontWeight = FontWeight.Normal
                             )
                         }
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Nfc,
-                            contentDescription = "Contactless",
-                            tint = Color.White.copy(alpha = 0.8f),
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = Color.White.copy(alpha = 0.2f)
+                    // Active Badge Pill
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFF004D40).copy(alpha = 0.65f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
+                            Icon(
+                                imageVector = Icons.Default.FiberManualRecord,
+                                contentDescription = "Active",
+                                tint = Color(0xFF22C55E),
+                                modifier = Modifier.size(10.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "PREMIUM",
+                                text = "Active",
                                 color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(22.dp))
 
-                // Total Balance Section
-                Text(
-                    text = "TOTAL BALANCE",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 1.2.sp
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
+                // Balance Amount
                 Text(
                     text = CurrencyFormatter.format(totalBalance, currencySymbol, showDecimals = false),
-                    fontSize = 32.sp,
+                    fontSize = 42.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
-                    letterSpacing = (-0.5).sp,
+                    letterSpacing = (-1).sp,
                     modifier = Modifier.testTag("total_balance_text")
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(22.dp))
 
-                // Card Number Mask & Holder
-                Row(
+                // Bottom Glassmorphic Container for Income & Expense
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White.copy(alpha = 0.16f)
                 ) {
-                    Text(
-                        text = "•••• •••• •••• 2026",
-                        fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.75f),
-                        fontWeight = FontWeight.Medium,
-                        letterSpacing = 2.sp
-                    )
-
-                    Text(
-                        text = "SECURE WALLET",
-                        fontSize = 11.sp,
-                        color = Color.White.copy(alpha = 0.6f),
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Income & Expense Glassmorphism Breakdown Row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color.White.copy(alpha = 0.12f))
-                        .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)), RoundedCornerShape(14.dp))
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Income
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color(0xFF22C55E), // Bright emerald green
-                            modifier = Modifier.size(32.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 18.dp, vertical = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Income
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowDownward,
-                                contentDescription = "Income",
-                                tint = Color.White,
-                                modifier = Modifier
-                                    .padding(7.dp)
-                                    .size(16.dp)
-                            )
+                            Surface(
+                                shape = CircleShape,
+                                color = Color(0xFF22C55E),
+                                modifier = Modifier.size(42.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDownward,
+                                        contentDescription = "Income",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Income",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.height(1.dp))
+                                Text(
+                                    text = CurrencyFormatter.format(totalIncome, currencySymbol, showDecimals = false),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "Income",
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = CurrencyFormatter.format(totalIncome, currencySymbol, showDecimals = false),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                    }
 
-                    // Expense
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color(0xFFEF4444), // Vibrant red
-                            modifier = Modifier.size(32.dp)
+                        // Vertical Divider
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(36.dp)
+                                .background(Color.White.copy(alpha = 0.25f))
+                        )
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        // Expense
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowUpward,
-                                contentDescription = "Expense",
-                                tint = Color.White,
-                                modifier = Modifier
-                                    .padding(7.dp)
-                                    .size(16.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "Expense",
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = CurrencyFormatter.format(totalExpense, currencySymbol, showDecimals = false),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                            Surface(
+                                shape = CircleShape,
+                                color = Color(0xFFFF5252),
+                                modifier = Modifier.size(42.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowUpward,
+                                        contentDescription = "Expense",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Expense",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.height(1.dp))
+                                Text(
+                                    text = CurrencyFormatter.format(totalExpense, currencySymbol, showDecimals = false),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFFF8A80) // Soft red matching image
+                                )
+                            }
                         }
                     }
                 }
