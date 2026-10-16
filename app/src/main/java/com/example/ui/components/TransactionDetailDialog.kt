@@ -71,7 +71,7 @@ fun TransactionDetailDialog(
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     if (showDeleteConfirm) {
-        AlertDialog(
+        AnimatedAlertDialog(
             onDismissRequest = { if (!isDeleting) showDeleteConfirm = false },
             title = { Text("Delete Transaction?") },
             text = { Text("Are you sure you want to delete this ${if (transaction.isExpense) "expense" else "income"} of ${CurrencyFormatter.format(transaction.amount, currencySymbol)}? This cannot be undone.") },
@@ -113,7 +113,7 @@ fun TransactionDetailDialog(
         )
     }
 
-    Dialog(onDismissRequest = onDismiss) {
+    AnimatedDialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()

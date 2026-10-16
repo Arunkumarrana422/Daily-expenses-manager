@@ -38,14 +38,14 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material3.AlertDialog
+import com.example.ui.components.AnimatedAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
+import com.example.ui.components.AnimatedDatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -124,7 +124,7 @@ fun AddTransactionScreen(
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState()
-        DatePickerDialog(
+        AnimatedDatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
@@ -155,7 +155,7 @@ fun AddTransactionScreen(
             initialMinute = currentTime.minute,
             is24Hour = false,
         )
-        AlertDialog(
+        AnimatedAlertDialog(
             onDismissRequest = { showTimePicker = false },
             confirmButton = {
                 TextButton(onClick = {
@@ -185,7 +185,7 @@ fun AddTransactionScreen(
     val paymentMethods = listOf("Cash", "UPI", "Debit Card", "Credit Card", "Bank Transfer", "Wallet")
 
     if (showAddCategoryDialog) {
-        AlertDialog(
+        AnimatedAlertDialog(
             onDismissRequest = { showAddCategoryDialog = false },
             title = { Text("Add New Category") },
             text = {

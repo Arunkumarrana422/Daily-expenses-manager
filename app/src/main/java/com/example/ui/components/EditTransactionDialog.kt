@@ -126,7 +126,7 @@ fun EditTransactionDialog(
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState()
-        DatePickerDialog(
+        AnimatedDatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
@@ -157,7 +157,7 @@ fun EditTransactionDialog(
             initialMinute = currentTime.minute,
             is24Hour = false
         )
-        AlertDialog(
+        AnimatedAlertDialog(
             onDismissRequest = { showTimePicker = false },
             confirmButton = {
                 TextButton(onClick = {
@@ -183,7 +183,7 @@ fun EditTransactionDialog(
 
     val paymentMethods = listOf("Cash", "UPI", "Debit Card", "Credit Card", "Bank Transfer", "Wallet")
 
-    Dialog(onDismissRequest = { if (!isSaving) onDismiss() }) {
+    AnimatedDialog(onDismissRequest = { if (!isSaving) onDismiss() }) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()

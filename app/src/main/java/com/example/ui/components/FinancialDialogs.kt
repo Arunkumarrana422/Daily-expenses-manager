@@ -56,7 +56,7 @@ fun AddBudgetDialog(
     var period by remember { mutableStateOf("MONTHLY") }
     var threshold by remember { mutableFloatStateOf(0.75f) }
 
-    AlertDialog(
+    AnimatedAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Set Category Budget") },
         text = {
@@ -151,7 +151,7 @@ fun AddAccountDialog(
     var selectedType by remember { mutableStateOf("Bank Account") }
     var balanceText by remember { mutableStateOf("") }
 
-    AlertDialog(
+    AnimatedAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add Financial Account") },
         text = {
@@ -216,7 +216,7 @@ fun AddGoalDialog(
     var targetText by remember { mutableStateOf("") }
     var deadline by remember { mutableStateOf("2026-12-31") }
 
-    AlertDialog(
+    AnimatedAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("New Savings Goal") },
         text = {
@@ -278,7 +278,7 @@ fun AddRecurringDialog(
     var frequency by remember { mutableStateOf("MONTHLY") }
     var dueDate by remember { mutableStateOf("2026-10-01") }
 
-    AlertDialog(
+    AnimatedAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add Recurring Payment") },
         text = {
@@ -348,7 +348,7 @@ fun TransferMoneyDialog(
 ) {
     val context = LocalContext.current
     if (accounts.size < 2) {
-        AlertDialog(
+        AnimatedAlertDialog(
             onDismissRequest = onDismiss,
             title = { Text("Account Transfer") },
             text = { Text("You need at least 2 accounts to transfer money between them.") },
@@ -363,7 +363,7 @@ fun TransferMoneyDialog(
     var toAccount by remember { mutableStateOf(accounts[1]) }
     var amountText by remember { mutableStateOf("") }
 
-    AlertDialog(
+    AnimatedAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Transfer Between Accounts") },
         text = {

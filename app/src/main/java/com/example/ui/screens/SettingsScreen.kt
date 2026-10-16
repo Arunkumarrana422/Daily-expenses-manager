@@ -46,7 +46,7 @@ import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.AlertDialog
+import com.example.ui.components.AnimatedAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -178,7 +178,7 @@ fun SettingsScreen(
 
     // Sign Out Confirmation Dialog
     if (showLogoutConfirmDialog) {
-        AlertDialog(
+        AnimatedAlertDialog(
             onDismissRequest = { showLogoutConfirmDialog = false },
             title = {
                 Text(
@@ -223,7 +223,7 @@ fun SettingsScreen(
 
     // Edit Name Dialog
     if (showEditNameDialog) {
-        AlertDialog(
+        AnimatedAlertDialog(
             onDismissRequest = { showEditNameDialog = false },
             title = {
                 Text("Edit Name", fontWeight = FontWeight.Bold)
@@ -707,7 +707,7 @@ fun SettingsScreen(
     // Budget Delete Confirmation Dialog
     if (budgetToDelete != null) {
         val budget = budgetToDelete!!
-        AlertDialog(
+        AnimatedAlertDialog(
             onDismissRequest = { budgetToDelete = null },
             title = { Text("Delete Budget") },
             text = { Text("Are you sure you want to delete the budget for '${budget.categoryName}'?") },
@@ -737,7 +737,7 @@ fun SettingsScreen(
     // Delete Account Confirmation Dialog
     if (showDeleteAccountDialog) {
         var isDeletingAccount by remember { mutableStateOf(false) }
-        AlertDialog(
+        AnimatedAlertDialog(
             onDismissRequest = { if (!isDeletingAccount) showDeleteAccountDialog = false },
             title = {
                 Text(
