@@ -37,11 +37,16 @@ import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.TimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -298,6 +303,18 @@ fun CustomTimePickerDialog(
 ) {
     val visibleState = remember {
         MutableTransitionState(false).apply { targetState = true }
+    }
+
+    val haptic = LocalHapticFeedback.current
+    var lastHour by remember { mutableStateOf(timePickerState.hour) }
+    var lastMinute by remember { mutableStateOf(timePickerState.minute) }
+
+    LaunchedEffect(timePickerState.hour, timePickerState.minute) {
+        if (timePickerState.hour != lastHour || timePickerState.minute != lastMinute) {
+            lastHour = timePickerState.hour
+            lastMinute = timePickerState.minute
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
     }
 
     LaunchedEffect(visibleState.isIdle, visibleState.currentState) {
