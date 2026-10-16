@@ -45,7 +45,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
-import com.example.ui.components.AnimatedDatePickerDialog
+import com.example.ui.components.CustomDatePickerDialog
+import com.example.ui.components.CustomTimePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -124,28 +125,18 @@ fun AddTransactionScreen(
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState()
-        AnimatedDatePickerDialog(
+        CustomDatePickerDialog(
             onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val instant = java.time.Instant.ofEpochMilli(millis)
-                        val date = java.time.LocalDate.ofInstant(instant, java.time.ZoneId.of("UTC"))
-                        selectedDate = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                    }
-                    showDatePicker = false
-                }) {
-                    Text("OK")
+            onConfirm = {
+                datePickerState.selectedDateMillis?.let { millis ->
+                    val instant = java.time.Instant.ofEpochMilli(millis)
+                    val date = java.time.LocalDate.ofInstant(instant, java.time.ZoneId.of("UTC"))
+                    selectedDate = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
                 }
+                showDatePicker = false
             },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancel")
-                }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+            datePickerState = datePickerState
+        )
     }
 
     if (showTimePicker) {
@@ -155,29 +146,16 @@ fun AddTransactionScreen(
             initialMinute = currentTime.minute,
             is24Hour = false,
         )
-        AnimatedAlertDialog(
+        CustomTimePickerDialog(
             onDismissRequest = { showTimePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    val hour = timePickerState.hour
-                    val minute = timePickerState.minute
-                    val localTime = java.time.LocalTime.of(hour, minute)
-                    selectedTime = localTime.format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a"))
-                    showTimePicker = false
-                }) {
-                    Text("OK")
-                }
+            onConfirm = {
+                val hour = timePickerState.hour
+                val minute = timePickerState.minute
+                val localTime = java.time.LocalTime.of(hour, minute)
+                selectedTime = localTime.format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a"))
+                showTimePicker = false
             },
-            dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) {
-                    Text("Cancel")
-                }
-            },
-            text = {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    TimePicker(state = timePickerState)
-                }
-            }
+            timePickerState = timePickerState
         )
     }
 

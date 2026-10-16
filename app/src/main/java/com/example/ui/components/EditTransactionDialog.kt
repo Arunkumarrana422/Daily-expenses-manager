@@ -126,28 +126,18 @@ fun EditTransactionDialog(
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState()
-        AnimatedDatePickerDialog(
+        CustomDatePickerDialog(
             onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val instant = Instant.ofEpochMilli(millis)
-                        val date = LocalDate.ofInstant(instant, ZoneId.of("UTC"))
-                        selectedDate = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                    }
-                    showDatePicker = false
-                }) {
-                    Text("OK")
+            onConfirm = {
+                datePickerState.selectedDateMillis?.let { millis ->
+                    val instant = Instant.ofEpochMilli(millis)
+                    val date = LocalDate.ofInstant(instant, ZoneId.of("UTC"))
+                    selectedDate = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
                 }
+                showDatePicker = false
             },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancel")
-                }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+            datePickerState = datePickerState
+        )
     }
 
     if (showTimePicker) {
@@ -157,27 +147,14 @@ fun EditTransactionDialog(
             initialMinute = currentTime.minute,
             is24Hour = false
         )
-        AnimatedAlertDialog(
+        CustomTimePickerDialog(
             onDismissRequest = { showTimePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    val localTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
-                    selectedTime = localTime.format(DateTimeFormatter.ofPattern("hh:mm a"))
-                    showTimePicker = false
-                }) {
-                    Text("OK")
-                }
+            onConfirm = {
+                val localTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
+                selectedTime = localTime.format(DateTimeFormatter.ofPattern("hh:mm a"))
+                showTimePicker = false
             },
-            dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) {
-                    Text("Cancel")
-                }
-            },
-            text = {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    androidx.compose.material3.TimePicker(state = timePickerState)
-                }
-            }
+            timePickerState = timePickerState
         )
     }
 
