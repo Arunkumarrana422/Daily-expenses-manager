@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring
@@ -9,6 +10,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,33 +54,59 @@ fun AnimatedDialog(
         }
     }
 
+    // Handle back button press with zoom out animation
+    BackHandler(enabled = visibleState.targetState) {
+        visibleState.targetState = false
+    }
+
     Dialog(
         onDismissRequest = {
             visibleState.targetState = false
         },
-        properties = properties
+        properties = DialogProperties(
+            dismissOnBackPress = properties.dismissOnBackPress,
+            dismissOnClickOutside = false, // Handled manually via Box click to play exit animation
+            securePolicy = properties.securePolicy,
+            usePlatformDefaultWidth = properties.usePlatformDefaultWidth
+        )
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) {
+                    visibleState.targetState = false
+                }
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
-            AnimatedVisibility(
-                visibleState = visibleState,
-                enter = scaleIn(
-                    initialScale = 0.8f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    )
-                ) + fadeIn(animationSpec = tween(150)),
-                exit = scaleOut(
-                    targetScale = 0.8f,
-                    animationSpec = tween(150)
-                ) + fadeOut(animationSpec = tween(150))
+            Box(
+                modifier = Modifier
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
+                        // Consume click so tapping on dialog content doesn't dismiss it
+                    }
             ) {
-                content()
+                AnimatedVisibility(
+                    visibleState = visibleState,
+                    enter = scaleIn(
+                        initialScale = 0.8f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    ) + fadeIn(animationSpec = tween(150)),
+                    exit = scaleOut(
+                        targetScale = 0.8f,
+                        animationSpec = tween(150)
+                    ) + fadeOut(animationSpec = tween(150))
+                ) {
+                    content()
+                }
             }
         }
     }
