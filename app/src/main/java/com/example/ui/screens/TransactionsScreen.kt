@@ -39,6 +39,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -338,114 +339,124 @@ fun TransactionsScreen(
             }
         }
 
-        // Transactions List with Date Headers
-        val isListLoading = isLoadingTransactions && filteredTransactions.isEmpty()
-        if (isListLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .testTag("transactions_loading_spinner"),
-                        color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 3.5.dp
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Text(
-                        text = "Loading transactions...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        } else if (filteredTransactions.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(0.9f),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.refreshData() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            // Transactions List with Date Headers
+            val isListLoading = isLoadingTransactions && filteredTransactions.isEmpty()
+            if (isListLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.size(44.dp)
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .testTag("transactions_loading_spinner"),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 3.5.dp
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            text = "No Transactions Found",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "Try adjusting your search query or reset active filters.",
-                            fontSize = 13.sp,
+                            text = "Loading transactions...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
-            }
-        } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 100.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                groupedTransactions.forEach { (dateStr, itemsForDate) ->
-                    // Date Header
-                    item(key = "header_$dateStr") {
-                        val totalDayExpense = itemsForDate.filter { it.isExpense }.sumOf { it.amount }
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+            } else if (filteredTransactions.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(0.9f),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.size(44.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = DateTimeUtils.formatDisplayDate(dateStr),
+                                text = "No Transactions Found",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
+                                fontSize = 16.sp,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            if (totalDayExpense > 0) {
-                                Text(
-                                    text = "Spent: ${CurrencyFormatter.format(totalDayExpense, prefs.currency)}",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Try adjusting your search query or reset active filters.",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 100.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    groupedTransactions.forEach { (dateStr, itemsForDate) ->
+                        // Date Header
+                        item(key = "header_$dateStr") {
+                            val totalDayExpense = itemsForDate.filter { it.isExpense }.sumOf { it.amount }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = DateTimeUtils.formatDisplayDate(dateStr),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                if (totalDayExpense > 0) {
+                                    Text(
+                                        text = "Spent: ${CurrencyFormatter.format(totalDayExpense, prefs.currency)}",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
 
-                    items(itemsForDate, key = { "tx_${it.id}_${it.isExpense}" }) { tx ->
-                        TransactionListItem(
-                            item = tx,
-                            currencySymbol = prefs.currency,
-                            onClick = { onTransactionClick(tx) }
-                        )
+                        items(itemsForDate, key = { "tx_${it.id}_${it.isExpense}" }) { tx ->
+                            TransactionListItem(
+                                item = tx,
+                                currencySymbol = prefs.currency,
+                                onClick = { onTransactionClick(tx) }
+                            )
+                        }
                     }
                 }
             }

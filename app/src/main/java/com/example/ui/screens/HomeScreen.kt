@@ -50,6 +50,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -74,6 +76,7 @@ import com.example.ui.viewmodel.TransactionItem
 import com.example.utils.CurrencyFormatter
 import com.example.utils.DateTimeUtils
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: FinanceViewModel,
@@ -121,15 +124,22 @@ fun HomeScreen(
         previousOffset = currentOffset
     }
 
-    LazyColumn(
-        state = listState,
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .testTag("home_screen"),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { viewModel.refreshData() },
+        modifier = modifier.fillMaxSize()
     ) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .testTag("home_screen"),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         // 1. Top Section: Greeting, Date, Profile, Notification/Sync
         item {
             Row(
@@ -430,4 +440,5 @@ fun HomeScreen(
             }
         }
     }
+}
 }

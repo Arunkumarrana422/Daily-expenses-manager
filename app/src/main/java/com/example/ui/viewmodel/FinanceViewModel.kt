@@ -140,6 +140,26 @@ class FinanceViewModel(
     private val _isLoadingTransactions = MutableStateFlow(true)
     val isLoadingTransactions: StateFlow<Boolean> = _isLoadingTransactions.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    fun refreshData() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                if (repository.isOnline()) {
+                    repository.syncWithCloud()
+                } else {
+                    kotlinx.coroutines.delay(600)
+                }
+            } catch (e: Exception) {
+                // Ignore
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
+    }
+
     init {
         viewModelScope.launch {
             try {
