@@ -79,7 +79,7 @@ fun AnimatedDialog(
                 ) {
                     visibleState.targetState = false
                 }
-                .padding(16.dp),
+                .padding(10.dp),
             contentAlignment = Alignment.Center
         ) {
             Box(
@@ -129,7 +129,7 @@ fun AnimatedAlertDialog(
         Surface(
             modifier = modifier
                 .fillMaxWidth()
-                .widthIn(max = 400.dp),
+                .widthIn(max = 520.dp),
             shape = shape,
             color = containerColor,
             tonalElevation = tonalElevation
@@ -192,7 +192,7 @@ fun AnimatedDatePickerDialog(
         Surface(
             modifier = modifier
                 .fillMaxWidth()
-                .widthIn(max = 450.dp),
+                .widthIn(max = 540.dp),
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             tonalElevation = 6.dp
