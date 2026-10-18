@@ -1,8 +1,6 @@
 package com.example.ui.components
 
 import android.graphics.BlurMaskFilter
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,11 +12,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -34,7 +34,6 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,9 +61,11 @@ data class NavigationTabItem(
 )
 
 /**
- * Custom Cradled Bottom Navigation Bar matching the provided reference designs.
- * Supports both Light mode and Dark mode with custom cradle notch, glowing center FAB,
- * and pill-shaped active tab indicators.
+ * Custom Cradled Bottom Navigation Bar:
+ * - Docked to bottom (full width edge-to-edge, no left/right/bottom gaps).
+ * - Exact circular cradle cutout conforming smoothly to the round Add button (not a V-cut).
+ * - Rounded top-left and top-right corners; flush flat bottom.
+ * - Supports Light and Dark modes with glowing green Add FAB and active pill indicators.
  */
 @Composable
 fun CradledBottomNavigationBar(
@@ -75,7 +76,7 @@ fun CradledBottomNavigationBar(
 ) {
     val isDark = isSystemInDarkTheme()
 
-    // Colors matching the reference photos
+    // Colors
     val barBgColor = if (isDark) Color(0xFF141A17) else Color(0xFFFFFFFF)
     val barBorderColor = if (isDark) Color(0xFF10B981).copy(alpha = 0.35f) else Color.Transparent
 
@@ -98,115 +99,109 @@ fun CradledBottomNavigationBar(
         )
     }
 
+    val navBarBottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val barContentHeight = 68.dp
+    val protrusion = 18.dp
+    val totalHeight = barContentHeight + protrusion + navBarBottomInset
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(horizontal = 8.dp)
-            .padding(bottom = 6.dp)
-            .height(94.dp)
+            .height(totalHeight)
             .testTag("main_bottom_nav_bar")
     ) {
-        // Draw the cradled bar background with smooth cutout notch
+        // Full width background canvas with exact circular cradle cutout
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(74.dp)
-                .align(Alignment.BottomCenter)
+                .fillMaxHeight()
                 .drawBehind {
                     val width = size.width
                     val height = size.height
+                    val barTop = protrusion.toPx()
                     val cornerRadius = 26.dp.toPx()
                     val cx = width / 2f
-                    val cradleRadius = 37.dp.toPx()
-                    val cradleBottomY = 40.dp.toPx()
-                    val shoulderWidth = 14.dp.toPx()
+
+                    // Exact circular cradle concentric with 56dp Add button
+                    val buttonRadius = 28.dp.toPx()
+                    val gap = 5.dp.toPx()
+                    val cradleRadius = buttonRadius + gap // ~33dp radius
+                    val buttonCenterY = 28.dp.toPx()
+                    val shoulderRadius = 10.dp.toPx()
+
+                    // Magic constant for cubic bezier circular arc approximation
+                    val k = 0.55228475f * cradleRadius
 
                     val path = Path().apply {
-                        // Start top-left corner
-                        moveTo(0f, cornerRadius)
+                        // 1. Top-left corner
+                        moveTo(0f, barTop + cornerRadius)
                         arcTo(
-                            rect = Rect(0f, 0f, cornerRadius * 2, cornerRadius * 2),
+                            rect = Rect(0f, barTop, cornerRadius * 2, barTop + cornerRadius * 2),
                             startAngleDegrees = 180f,
                             sweepAngleDegrees = 90f,
                             forceMoveTo = false
                         )
 
-                        // Top line to left of cradle
-                        val leftStart = cx - cradleRadius - shoulderWidth
-                        lineTo(leftStart, 0f)
+                        // 2. Horizontal line to left shoulder
+                        val leftShoulderStart = cx - cradleRadius - shoulderRadius
+                        lineTo(leftShoulderStart, barTop)
 
-                        // Left shoulder down to cradle bottom
-                        val leftCradleDipMidX = cx - cradleRadius * 0.65f
-                        val leftCradleDipMidY = cradleBottomY * 0.65f
-
+                        // 3. Smooth left shoulder curving into vertical tangent of the circle
                         cubicTo(
-                            x1 = leftStart + shoulderWidth * 0.5f,
-                            y1 = 0f,
+                            x1 = cx - cradleRadius - shoulderRadius * 0.45f,
+                            y1 = barTop,
                             x2 = cx - cradleRadius,
-                            y2 = leftCradleDipMidY * 0.4f,
-                            x3 = leftCradleDipMidX,
-                            y3 = leftCradleDipMidY
+                            y2 = barTop + (buttonCenterY - barTop) * 0.35f,
+                            x3 = cx - cradleRadius,
+                            y3 = buttonCenterY
                         )
 
+                        // 4. Exact semi-circular cradle arc: left to bottom
                         cubicTo(
-                            x1 = cx - cradleRadius * 0.35f,
-                            y1 = cradleBottomY,
-                            x2 = cx - 12.dp.toPx(),
-                            y2 = cradleBottomY,
+                            x1 = cx - cradleRadius,
+                            y1 = buttonCenterY + k,
+                            x2 = cx - k,
+                            y2 = buttonCenterY + cradleRadius,
                             x3 = cx,
-                            y3 = cradleBottomY
+                            y3 = buttonCenterY + cradleRadius
                         )
 
-                        // Cradle bottom to right shoulder
-                        val rightCradleDipMidX = cx + cradleRadius * 0.65f
-                        val rightEnd = cx + cradleRadius + shoulderWidth
-
+                        // 5. Exact semi-circular cradle arc: bottom to right
                         cubicTo(
-                            x1 = cx + 12.dp.toPx(),
-                            y1 = cradleBottomY,
-                            x2 = cx + cradleRadius * 0.35f,
-                            y2 = cradleBottomY,
-                            x3 = rightCradleDipMidX,
-                            y3 = leftCradleDipMidY
+                            x1 = cx + k,
+                            y1 = buttonCenterY + cradleRadius,
+                            x2 = cx + cradleRadius,
+                            y2 = buttonCenterY + k,
+                            x3 = cx + cradleRadius,
+                            y3 = buttonCenterY
                         )
 
+                        // 6. Smooth right shoulder curving back into horizontal line
                         cubicTo(
                             x1 = cx + cradleRadius,
-                            y1 = leftCradleDipMidY * 0.4f,
-                            x2 = rightEnd - shoulderWidth * 0.5f,
-                            y2 = 0f,
-                            x3 = rightEnd,
-                            y3 = 0f
+                            y1 = barTop + (buttonCenterY - barTop) * 0.35f,
+                            x2 = cx + cradleRadius + shoulderRadius * 0.45f,
+                            y2 = barTop,
+                            x3 = cx + cradleRadius + shoulderRadius,
+                            y3 = barTop
                         )
 
-                        // Top line to right corner
-                        lineTo(width - cornerRadius, 0f)
+                        // 7. Horizontal line to top-right corner
+                        lineTo(width - cornerRadius, barTop)
                         arcTo(
-                            rect = Rect(width - cornerRadius * 2, 0f, width, cornerRadius * 2),
+                            rect = Rect(width - cornerRadius * 2, barTop, width, barTop + cornerRadius * 2),
                             startAngleDegrees = 270f,
                             sweepAngleDegrees = 90f,
                             forceMoveTo = false
                         )
 
-                        // Right edge down
-                        lineTo(width, height - cornerRadius)
-                        arcTo(
-                            rect = Rect(width - cornerRadius * 2, height - cornerRadius * 2, width, height),
-                            startAngleDegrees = 0f,
-                            sweepAngleDegrees = 90f,
-                            forceMoveTo = false
-                        )
+                        // 8. Right edge straight down to bottom (docked flush!)
+                        lineTo(width, height)
 
-                        // Bottom line to left
-                        lineTo(cornerRadius, height)
-                        arcTo(
-                            rect = Rect(0f, height - cornerRadius * 2, cornerRadius * 2, height),
-                            startAngleDegrees = 90f,
-                            sweepAngleDegrees = 90f,
-                            forceMoveTo = false
-                        )
+                        // 9. Bottom edge straight to left (no bottom corners, no bottom gap!)
+                        lineTo(0f, height)
 
+                        // 10. Left edge straight up to start
                         close()
                     }
 
@@ -214,7 +209,7 @@ fun CradledBottomNavigationBar(
                     if (!isDark) {
                         drawContext.canvas.nativeCanvas.apply {
                             val shadowPaint = android.graphics.Paint().apply {
-                                color = android.graphics.Color.argb(38, 0, 0, 0)
+                                color = android.graphics.Color.argb(32, 0, 0, 0)
                                 isAntiAlias = true
                                 maskFilter = BlurMaskFilter(14.dp.toPx(), BlurMaskFilter.Blur.NORMAL)
                             }
@@ -223,7 +218,7 @@ fun CradledBottomNavigationBar(
                     } else {
                         drawContext.canvas.nativeCanvas.apply {
                             val glowPaint = android.graphics.Paint().apply {
-                                color = android.graphics.Color.argb(22, 16, 185, 129)
+                                color = android.graphics.Color.argb(20, 16, 185, 129)
                                 isAntiAlias = true
                                 maskFilter = BlurMaskFilter(10.dp.toPx(), BlurMaskFilter.Blur.NORMAL)
                             }
@@ -231,10 +226,10 @@ fun CradledBottomNavigationBar(
                         }
                     }
 
-                    // Fill bar background
+                    // Fill bar background completely to the bottom edge
                     drawPath(path, color = barBgColor)
 
-                    // Draw border in dark mode
+                    // Draw border in dark mode (along top curved line and sides)
                     if (isDark) {
                         drawPath(
                             path = path,
@@ -245,12 +240,13 @@ fun CradledBottomNavigationBar(
                 }
         )
 
-        // Navigation Items Row
+        // Navigation Items Row (placed in the top content area, safe from bottom nav insets)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(74.dp)
-                .align(Alignment.BottomCenter),
+                .height(barContentHeight)
+                .align(Alignment.TopCenter)
+                .offset(y = protrusion),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -258,7 +254,7 @@ fun CradledBottomNavigationBar(
                 val isSelected = selectedIndex == index
 
                 if (index == 2) {
-                    // Center Add Item (Empty placeholder at top, label at bottom)
+                    // Center Add Item (Add button is floating above, label is at bottom)
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -276,7 +272,7 @@ fun CradledBottomNavigationBar(
                             fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                             color = if (isSelected) activeContentColor else inactiveTextColor,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            modifier = Modifier.padding(bottom = 6.dp)
                         )
                     }
                 } else {
@@ -335,17 +331,17 @@ fun CradledBottomNavigationBar(
             }
         }
 
-        // Floating Center Green Plus Action Button (Nested in cradle)
+        // Floating Center Green Circular Action Button (Nested inside circular cradle)
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .offset(y = 2.dp)
+                .offset(y = 0.dp)
         ) {
             // Ambient Green Radial Glow in Dark Mode
             if (isDark) {
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(76.dp)
                         .align(Alignment.Center)
                         .drawBehind {
                             drawCircle(
@@ -366,7 +362,7 @@ fun CradledBottomNavigationBar(
             // Green Gradient Circular FAB
             Box(
                 modifier = Modifier
-                    .size(58.dp)
+                    .size(56.dp)
                     .align(Alignment.Center)
                     .shadow(
                         elevation = if (isDark) 8.dp else 6.dp,
@@ -383,8 +379,8 @@ fun CradledBottomNavigationBar(
                                     Color(0xFF10B981),
                                     Color(0xFF047857)
                                 ),
-                                center = Offset(20f, 18f),
-                                radius = 110f
+                                center = Offset(18f, 16f),
+                                radius = 100f
                             )
                         } else {
                             Brush.verticalGradient(
