@@ -30,6 +30,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import com.example.ui.components.CradledBottomNavigationBar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -366,83 +367,29 @@ fun MainScreen(
         contentWindowInsets = WindowInsets.statusBars,
         snackbarHost = {},
         bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                tonalElevation = 6.dp,
-                modifier = Modifier.testTag("main_bottom_nav_bar")
-            ) {
-                val navItems = listOf(
-                    Triple(Screen.Home, Icons.Default.Home, "Home"),
-                    Triple(Screen.Transactions, Icons.Default.ReceiptLong, "Expenses"),
-                    Triple(Screen.Add, Icons.Default.Add, "Add"),
-                    Triple(Screen.Reports, Icons.Default.BarChart, "Reports"),
-                    Triple(Screen.Settings, Icons.Default.Settings, "Settings")
-                )
-
-                navItems.forEachIndexed { index, (screen, icon, label) ->
-                    val isSelected = pagerState.currentPage == index
-                    NavigationBarItem(
-                        selected = isSelected,
-                        onClick = {
-                            if (screen == Screen.Add) {
-                                if (!viewModel.checkOnlineOrShowToast()) {
-                                    return@NavigationBarItem
-                                }
-                                addScreenIsExpense = true
-                            }
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(index)
-                            }
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = label,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        },
-                        label = { Text(label) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = IndigoPrimary,
-                            selectedTextColor = IndigoPrimary,
-                            indicatorColor = IndigoPrimary.copy(alpha = 0.12f),
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        modifier = Modifier.testTag("nav_item_${screen.route}")
-                    )
-                }
-            }
-        },
-        floatingActionButton = {
-            AnimatedVisibility(
-                visible = pagerState.currentPage == 0 && fabVisible,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                FloatingActionButton(
-                    onClick = {
+            CradledBottomNavigationBar(
+                selectedIndex = pagerState.currentPage,
+                onTabSelected = { index ->
+                    if (index == 2) {
                         if (!viewModel.checkOnlineOrShowToast()) {
-                            return@FloatingActionButton
+                            return@CradledBottomNavigationBar
                         }
                         addScreenIsExpense = true
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(2)
-                        }
-                    },
-                    containerColor = IndigoPrimary,
-                    contentColor = Color.White,
-                    shape = CircleShape,
-                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp),
-                    modifier = Modifier.testTag("home_fab_add")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add Expense",
-                        modifier = Modifier.size(28.dp)
-                    )
+                    }
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(index)
+                    }
+                },
+                onAddClick = {
+                    if (!viewModel.checkOnlineOrShowToast()) {
+                        return@CradledBottomNavigationBar
+                    }
+                    addScreenIsExpense = true
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(2)
+                    }
                 }
-            }
+            )
         }
     ) { innerPadding ->
         Column(
