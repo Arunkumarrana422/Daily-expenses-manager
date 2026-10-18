@@ -78,7 +78,7 @@ fun CradledBottomNavigationBar(
 
     // Colors
     val barBgColor = if (isDark) Color(0xFF141A17) else Color(0xFFFFFFFF)
-    val barBorderColor = if (isDark) Color(0xFF10B981).copy(alpha = 0.35f) else Color.Transparent
+    val barBorderColor = if (isDark) Color(0xFF10B981).copy(alpha = 0.35f) else Color(0x18000000)
 
     val activePillBg = if (isDark) Color(0xFF0D3322) else Color(0xFFE2F8EB)
     val activePillBorder = if (isDark) BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.7f)) else null
@@ -119,7 +119,7 @@ fun CradledBottomNavigationBar(
                     val width = size.width
                     val height = size.height
                     val barTop = protrusion.toPx()
-                    val cornerRadius = 26.dp.toPx()
+                    val cornerRadius = 12.dp.toPx()
                     val cx = width / 2f
 
                     // Exact circular cradle concentric with 56dp Add button
@@ -127,13 +127,13 @@ fun CradledBottomNavigationBar(
                     val gap = 5.dp.toPx()
                     val cradleRadius = buttonRadius + gap // ~33dp radius
                     val buttonCenterY = 28.dp.toPx()
-                    val shoulderRadius = 10.dp.toPx()
+                    val shoulderRadius = 8.dp.toPx()
 
                     // Magic constant for cubic bezier circular arc approximation
                     val k = 0.55228475f * cradleRadius
 
                     val path = Path().apply {
-                        // 1. Top-left corner
+                        // 1. Top-left corner (reduced roundness to 12dp)
                         moveTo(0f, barTop + cornerRadius)
                         arcTo(
                             rect = Rect(0f, barTop, cornerRadius * 2, barTop + cornerRadius * 2),
@@ -186,7 +186,7 @@ fun CradledBottomNavigationBar(
                             y3 = barTop
                         )
 
-                        // 7. Horizontal line to top-right corner
+                        // 7. Horizontal line to top-right corner (reduced roundness to 12dp)
                         lineTo(width - cornerRadius, barTop)
                         arcTo(
                             rect = Rect(width - cornerRadius * 2, barTop, width, barTop + cornerRadius * 2),
@@ -205,38 +205,30 @@ fun CradledBottomNavigationBar(
                         close()
                     }
 
-                    // Shadow / Ambient Glow
-                    if (!isDark) {
-                        drawContext.canvas.nativeCanvas.apply {
-                            val shadowPaint = android.graphics.Paint().apply {
-                                color = android.graphics.Color.argb(32, 0, 0, 0)
-                                isAntiAlias = true
-                                maskFilter = BlurMaskFilter(14.dp.toPx(), BlurMaskFilter.Blur.NORMAL)
-                            }
-                            drawPath(path.asAndroidPath(), shadowPaint)
+                    // Shadow (neutral drop shadow so the cradle cutout gap stays visible in dark mode too)
+                    drawContext.canvas.nativeCanvas.apply {
+                        val shadowColor = if (isDark) {
+                            android.graphics.Color.argb(45, 0, 0, 0)
+                        } else {
+                            android.graphics.Color.argb(25, 0, 0, 0)
                         }
-                    } else {
-                        drawContext.canvas.nativeCanvas.apply {
-                            val glowPaint = android.graphics.Paint().apply {
-                                color = android.graphics.Color.argb(20, 16, 185, 129)
-                                isAntiAlias = true
-                                maskFilter = BlurMaskFilter(10.dp.toPx(), BlurMaskFilter.Blur.NORMAL)
-                            }
-                            drawPath(path.asAndroidPath(), glowPaint)
+                        val shadowPaint = android.graphics.Paint().apply {
+                            color = shadowColor
+                            isAntiAlias = true
+                            maskFilter = BlurMaskFilter(8.dp.toPx(), BlurMaskFilter.Blur.NORMAL)
                         }
+                        drawPath(path.asAndroidPath(), shadowPaint)
                     }
 
                     // Fill bar background completely to the bottom edge
                     drawPath(path, color = barBgColor)
 
-                    // Draw border in dark mode (along top curved line and sides)
-                    if (isDark) {
-                        drawPath(
-                            path = path,
-                            color = barBorderColor,
-                            style = Stroke(width = 1.dp.toPx())
-                        )
-                    }
+                    // Draw border (along top curved line and sides)
+                    drawPath(
+                        path = path,
+                        color = barBorderColor,
+                        style = Stroke(width = 1.dp.toPx())
+                    )
                 }
         )
 
@@ -337,38 +329,16 @@ fun CradledBottomNavigationBar(
                 .align(Alignment.TopCenter)
                 .offset(y = 0.dp)
         ) {
-            // Ambient Green Radial Glow in Dark Mode
-            if (isDark) {
-                Box(
-                    modifier = Modifier
-                        .size(76.dp)
-                        .align(Alignment.Center)
-                        .drawBehind {
-                            drawCircle(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(
-                                        Color(0xFF10B981).copy(alpha = 0.55f),
-                                        Color(0xFF10B981).copy(alpha = 0.18f),
-                                        Color.Transparent
-                                    ),
-                                    center = Offset(size.width / 2f, size.height / 2f),
-                                    radius = size.width / 2f
-                                )
-                            )
-                        }
-                )
-            }
-
             // Green Gradient Circular FAB
             Box(
                 modifier = Modifier
                     .size(56.dp)
                     .align(Alignment.Center)
                     .shadow(
-                        elevation = if (isDark) 8.dp else 6.dp,
+                        elevation = 6.dp,
                         shape = CircleShape,
-                        spotColor = if (isDark) Color(0xFF10B981) else Color(0xFF059669),
-                        ambientColor = if (isDark) Color(0xFF10B981) else Color(0x33000000)
+                        spotColor = Color(0x35000000),
+                        ambientColor = Color(0x25000000)
                     )
                     .clip(CircleShape)
                     .background(
