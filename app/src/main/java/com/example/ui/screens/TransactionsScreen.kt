@@ -419,7 +419,7 @@ fun TransactionsScreen(
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 100.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     groupedTransactions.forEach { (dateStr, itemsForDate) ->

@@ -238,7 +238,7 @@ fun AddTransactionScreen(
                 })
             }
             .testTag("add_transaction_screen"),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Top Header
