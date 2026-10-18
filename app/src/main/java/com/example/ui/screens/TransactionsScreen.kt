@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -220,13 +221,13 @@ fun TransactionsScreen(
                             viewModel.setQuickDateFilter(rangeKey)
                         }
                     },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = CircleShape,
                     color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface,
                     border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
                     modifier = Modifier.testTag("quick_filter_$rangeKey")
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (rangeKey == "LAST_MONTH" || rangeKey == "THIS_MONTH") {
@@ -236,7 +237,7 @@ fun TransactionsScreen(
                                 tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(14.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(5.dp))
                         }
                         Text(
                             text = label,
@@ -322,10 +323,10 @@ fun TransactionsScreen(
                 )
                 Surface(
                     onClick = { viewModel.resetFilters() },
-                    shape = RoundedCornerShape(8.dp),
+                    shape = CircleShape,
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(CircleShape)
                         .testTag("clear_filter_chip")
                 ) {
                     Text(
@@ -333,7 +334,7 @@ fun TransactionsScreen(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                     )
                 }
             }

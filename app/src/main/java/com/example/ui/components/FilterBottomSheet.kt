@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -83,6 +84,7 @@ fun FilterBottomSheet(
                         selected = criteria.typeFilter == type,
                         onClick = { criteria = criteria.copy(typeFilter = type) },
                         label = { Text(label) },
+                        shape = CircleShape,
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = IndigoPrimary.copy(alpha = 0.15f),
                             selectedLabelColor = IndigoPrimary
@@ -115,7 +117,8 @@ fun FilterBottomSheet(
                     FilterChip(
                         selected = criteria.dateRange == range,
                         onClick = { criteria = criteria.copy(dateRange = range) },
-                        label = { Text(label) }
+                        label = { Text(label) },
+                        shape = CircleShape
                     )
                 }
             }
@@ -143,7 +146,8 @@ fun FilterBottomSheet(
                     FilterChip(
                         selected = criteria.sortOrder == sort,
                         onClick = { criteria = criteria.copy(sortOrder = sort) },
-                        label = { Text(label) }
+                        label = { Text(label) },
+                        shape = CircleShape
                     )
                 }
             }
@@ -167,7 +171,8 @@ fun FilterBottomSheet(
                     FilterChip(
                         selected = criteria.categoryFilter == cat,
                         onClick = { criteria = criteria.copy(categoryFilter = cat) },
-                        label = { Text(cat) }
+                        label = { Text(cat) },
+                        shape = CircleShape
                     )
                 }
             }
@@ -190,7 +195,8 @@ fun FilterBottomSheet(
                     FilterChip(
                         selected = criteria.paymentMethodFilter == method,
                         onClick = { criteria = criteria.copy(paymentMethodFilter = method) },
-                        label = { Text(method) }
+                        label = { Text(method) },
+                        shape = CircleShape
                     )
                 }
             }
