@@ -515,16 +515,22 @@ fun AddTransactionScreen(
 
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         currentCategoryList.forEach { category ->
                             val isSelected = selectedCategory?.id == category.id
+                            val isOther = category.name.equals("Other", ignoreCase = true) || category.name.equals("Other Income", ignoreCase = true)
+                            val chipModifier = if (isOther) {
+                                Modifier
+                            } else {
+                                Modifier.weight(1f)
+                            }
                             Surface(
                                 shape = CircleShape,
                                 color = if (isSelected) IndigoPrimary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                 border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, IndigoPrimary) else null,
-                                modifier = Modifier
+                                modifier = chipModifier
                                     .clickable(
                                         interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                                         indication = null
@@ -532,8 +538,15 @@ fun AddTransactionScreen(
                                     .testTag("category_chip_${category.name}")
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                    modifier = if (isOther) {
+                                        Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                                    } else {
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                                    },
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
                                 ) {
                                     Icon(
                                         imageVector = CategoryIconHelper.getIcon(category.name, category.icon),
@@ -546,7 +559,9 @@ fun AddTransactionScreen(
                                         text = category.name,
                                         fontSize = 12.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) IndigoPrimary else MaterialTheme.colorScheme.onSurface
+                                        color = if (isSelected) IndigoPrimary else MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
                             }
@@ -575,21 +590,42 @@ fun AddTransactionScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         paymentMethods.forEach { method ->
-                            FilterChip(
-                                selected = selectedPaymentMethod == method,
-                                onClick = { selectedPaymentMethod = method },
-                                label = { Text(method) },
+                            val isSelected = selectedPaymentMethod == method
+                            Surface(
                                 shape = CircleShape,
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = IndigoPrimary.copy(alpha = 0.15f),
-                                    selectedLabelColor = IndigoPrimary
-                                ),
-                                modifier = Modifier.testTag("payment_method_$method")
-                            )
+                                color = if (isSelected) IndigoPrimary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                                border = if (isSelected) BorderStroke(1.5.dp, IndigoPrimary) else BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(CircleShape)
+                                    .clickable(
+                                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                        indication = null
+                                    ) { selectedPaymentMethod = method }
+                                    .testTag("payment_method_$method")
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = method,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) IndigoPrimary else MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
                         }
                     }
                 }

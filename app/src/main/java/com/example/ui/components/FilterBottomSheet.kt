@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -23,6 +25,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -188,16 +193,33 @@ fun FilterBottomSheet(
             )
             Spacer(modifier = Modifier.height(8.dp))
             FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 listOf("All", "Cash", "UPI", "Debit Card", "Credit Card", "Bank Transfer").forEach { method ->
-                    FilterChip(
-                        selected = criteria.paymentMethodFilter == method,
-                        onClick = { criteria = criteria.copy(paymentMethodFilter = method) },
-                        label = { Text(method) },
-                        shape = CircleShape
-                    )
+                    val isSelected = criteria.paymentMethodFilter == method
+                    Surface(
+                        shape = CircleShape,
+                        color = if (isSelected) IndigoPrimary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                        border = if (isSelected) BorderStroke(1.5.dp, IndigoPrimary) else BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { criteria = criteria.copy(paymentMethodFilter = method) }
+                            .testTag("filter_payment_method_$method")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = method,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) IndigoPrimary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
                 }
             }
 
