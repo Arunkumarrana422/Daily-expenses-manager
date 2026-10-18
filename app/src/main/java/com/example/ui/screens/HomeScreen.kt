@@ -68,6 +68,7 @@ import com.example.ui.components.FinanceBalanceCard
 import com.example.ui.components.ProfileAvatar
 import com.example.ui.components.SummaryCardsRow
 import com.example.ui.components.TransactionListItem
+import com.example.ui.components.rememberBottomBarPadding
 import com.example.ui.theme.FinanceSuccess
 import com.example.ui.theme.FinanceWarning
 import com.example.ui.theme.IndigoPrimary
@@ -131,13 +132,14 @@ fun HomeScreen(
         onRefresh = { viewModel.refreshData() },
         modifier = modifier.fillMaxSize()
     ) {
+        val bottomPadding = rememberBottomBarPadding()
         LazyColumn(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .testTag("home_screen"),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = bottomPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
         // 1. Top Section: Greeting, Date, Profile, Notification/Sync

@@ -60,6 +60,21 @@ data class NavigationTabItem(
     val label: String
 )
 
+val CRADLED_NAV_BAR_CONTENT_HEIGHT = 68.dp
+val CRADLED_NAV_BAR_PROTRUSION = 18.dp
+val CRADLED_NAV_BAR_BASE_HEIGHT = CRADLED_NAV_BAR_CONTENT_HEIGHT + CRADLED_NAV_BAR_PROTRUSION
+
+/**
+ * Dynamic content bottom padding that automatically adjusts when the user
+ * switches between 3-button system navigation and gesture swipe navigation.
+ * Ensures cards, buttons, and bottom content are never hidden behind the navigation bar.
+ */
+@Composable
+fun rememberBottomBarPadding(extraPadding: androidx.compose.ui.unit.Dp = 16.dp): androidx.compose.ui.unit.Dp {
+    val navBarBottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    return CRADLED_NAV_BAR_BASE_HEIGHT + navBarBottomInset + extraPadding
+}
+
 /**
  * Custom Cradled Bottom Navigation Bar:
  * - Docked to bottom (full width edge-to-edge, no left/right/bottom gaps).
@@ -100,8 +115,8 @@ fun CradledBottomNavigationBar(
     }
 
     val navBarBottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val barContentHeight = 68.dp
-    val protrusion = 18.dp
+    val barContentHeight = CRADLED_NAV_BAR_CONTENT_HEIGHT
+    val protrusion = CRADLED_NAV_BAR_PROTRUSION
     val totalHeight = barContentHeight + protrusion + navBarBottomInset
 
     Box(

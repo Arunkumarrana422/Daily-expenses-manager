@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.FilterBottomSheet
 import com.example.ui.components.TransactionListItem
+import com.example.ui.components.rememberBottomBarPadding
 import com.example.ui.theme.IndigoPrimary
 import com.example.ui.viewmodel.FinanceViewModel
 import com.example.ui.viewmodel.TransactionItem
@@ -417,10 +418,11 @@ fun TransactionsScreen(
                     }
                 }
             } else {
+                val bottomPadding = rememberBottomBarPadding()
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 100.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = bottomPadding),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     groupedTransactions.forEach { (dateStr, itemsForDate) ->

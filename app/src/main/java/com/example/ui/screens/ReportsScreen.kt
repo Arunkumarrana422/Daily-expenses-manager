@@ -51,6 +51,7 @@ import com.example.ui.components.ChartCategorySlice
 import com.example.ui.components.DonutChart
 import com.example.ui.components.SpendingTrendBar
 import com.example.ui.components.SpendingTrendChart
+import com.example.ui.components.rememberBottomBarPadding
 import com.example.ui.theme.FinanceSuccess
 import com.example.ui.theme.IndigoPrimary
 import androidx.compose.foundation.lazy.LazyListState
@@ -146,13 +147,14 @@ fun ReportsScreen(
         bars.map { it.copy(isPeak = it.amount > 0 && it.amount == maxVal) }
     }
 
+    val bottomPadding = rememberBottomBarPadding()
     LazyColumn(
         state = listState,
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .testTag("reports_screen"),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 96.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = bottomPadding),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Top Header

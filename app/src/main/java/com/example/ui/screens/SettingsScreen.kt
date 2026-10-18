@@ -89,6 +89,7 @@ import com.example.ui.components.ProfileAvatar
 import com.example.ui.components.ProfileImageHelper
 import com.example.ui.components.ToastType
 import com.example.ui.components.TopToastHost
+import com.example.ui.components.rememberBottomBarPadding
 import com.example.ui.components.rememberTopToastState
 import com.example.data.local.entity.BudgetEntity
 import com.example.ui.theme.FinanceError
@@ -283,6 +284,7 @@ fun SettingsScreen(
     Box(
         modifier = modifier.fillMaxSize()
     ) {
+        val bottomPadding = rememberBottomBarPadding()
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -295,7 +297,7 @@ fun SettingsScreen(
                     })
                 }
                 .testTag("settings_screen"),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 100.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = bottomPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Top Header

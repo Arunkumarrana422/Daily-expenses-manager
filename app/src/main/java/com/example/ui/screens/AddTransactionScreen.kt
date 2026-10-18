@@ -82,6 +82,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.entity.CategoryEntity
 import com.example.ui.components.CategoryIconHelper
+import com.example.ui.components.rememberBottomBarPadding
 import com.example.ui.theme.FinanceSuccess
 import com.example.ui.theme.IndigoPrimary
 import com.example.ui.viewmodel.FinanceViewModel
@@ -227,6 +228,7 @@ fun AddTransactionScreen(
         )
     }
 
+    val bottomPadding = rememberBottomBarPadding()
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -238,7 +240,7 @@ fun AddTransactionScreen(
                 })
             }
             .testTag("add_transaction_screen"),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 100.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = bottomPadding),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Top Header
