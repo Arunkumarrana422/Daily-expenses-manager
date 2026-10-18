@@ -521,7 +521,7 @@ fun AddTransactionScreen(
                         currentCategoryList.forEach { category ->
                             val isSelected = selectedCategory?.id == category.id
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
+                                shape = CircleShape,
                                 color = if (isSelected) IndigoPrimary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                 border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, IndigoPrimary) else null,
                                 modifier = Modifier
@@ -532,7 +532,7 @@ fun AddTransactionScreen(
                                     .testTag("category_chip_${category.name}")
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
@@ -583,6 +583,7 @@ fun AddTransactionScreen(
                                 selected = selectedPaymentMethod == method,
                                 onClick = { selectedPaymentMethod = method },
                                 label = { Text(method) },
+                                shape = CircleShape,
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = IndigoPrimary.copy(alpha = 0.15f),
                                     selectedLabelColor = IndigoPrimary

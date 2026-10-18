@@ -134,11 +134,11 @@ fun DonutChart(
             ) {
                 for (slice in slices) {
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = CircleShape,
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(

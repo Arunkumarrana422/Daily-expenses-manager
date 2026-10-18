@@ -302,15 +302,15 @@ fun EditTransactionDialog(
                         val isSelected = selectedPaymentMethod.equals(method, ignoreCase = true)
                         Surface(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(CircleShape)
                                 .clickable { selectedPaymentMethod = method }
                                 .testTag("edit_payment_method_$method"),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = CircleShape,
                             color = if (isSelected) IndigoPrimary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         ) {
                             Text(
                                 text = method,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                 fontSize = 12.sp,
                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                 color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
